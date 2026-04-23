@@ -2,13 +2,14 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { Plus, Search, X } from "lucide-react";
+import { PencilLine, Plus, Search, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ExerciseCard } from "@/components/product/exercise-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
+import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Exercise } from "@/lib/types";
 
 const filters = ["All", "Squat", "Hinge", "Pull", "Push", "Core", "Mobility", "Beginner"];
@@ -53,14 +54,25 @@ function splitList(value: string) {
     .filter(Boolean);
 }
 
-export function ExerciseLibrary({ initialExercises }: { initialExercises: Exercise[] }) {
+export function ExerciseLibrary({
+  initialExercises,
+  mode,
+}: {
+  initialExercises: Exercise[];
+  mode: "demo" | "supabase";
+}) {
   const [exercises, setExercises] = useState(initialExercises);
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DraftExercise>(emptyDraft);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (mode !== "demo") return;
+
     const timeout = window.setTimeout(() => {
       const stored = window.localStorage.getItem(storageKey);
       if (!stored) return;
@@ -73,7 +85,7 @@ export function ExerciseLibrary({ initialExercises }: { initialExercises: Exerci
     }, 0);
 
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [mode]);
 
   const visibleExercises = useMemo(() => {
     const normalizedQuery = query.toLowerCase().trim();
@@ -105,13 +117,9 @@ export function ExerciseLibrary({ initialExercises }: { initialExercises: Exerci
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
-  function createExercise(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!draft.name.trim()) return;
-
-    const nextExercise: Exercise = {
-      id: `custom-${Date.now()}`,
+  function toExerciseFromDraft(id: string) {
+    return {
+      id,
       name: draft.name.trim(),
       category: draft.category.trim() || "Strength",
       muscleGroups: splitList(draft.muscleGroups),
@@ -124,13 +132,136 @@ export function ExerciseLibrary({ initialExercises }: { initialExercises: Exerci
       substitutions: splitList(draft.substitutions),
       demoUrl: draft.demoUrl.trim() || fallbackDemoUrl,
       tags: splitList(draft.tags),
+      editable: true,
+    } satisfies Exercise;
+  }
+
+  function populateDraft(exercise: Exercise) {
+    setDraft({
+      name: exercise.name,
+      category: exercise.category,
+      muscleGroups: exercise.muscleGroups.join(", "),
+      equipment: exercise.equipment.join(", "),
+      pattern: exercise.pattern,
+      difficulty: exercise.difficulty,
+      instructions: exercise.instructions,
+      cues: exercise.cues.join(", "),
+      mistakes: exercise.mistakes.join(", "),
+      substitutions: exercise.substitutions.join(", "),
+      demoUrl: exercise.demoUrl,
+      tags: exercise.tags.join(", "),
+    });
+  }
+
+  async function resolveTrainerId() {
+    const supabase = createBrowserClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("You need an authenticated trainer session to edit the exercise library.");
+    }
+
+    const { data: trainer } = await supabase
+      .from("trainers")
+      .select("id")
+      .eq("profile_id", user.id)
+      .maybeSingle<{ id: string }>();
+
+    if (!trainer?.id) {
+      throw new Error("Trainer profile not found. Seed the trainer row in Supabase first.");
+    }
+
+    return { supabase, trainerId: trainer.id };
+  }
+
+  async function persistExercise(nextExercise: Exercise, currentEditingId: string | null) {
+    const { supabase, trainerId } = await resolveTrainerId();
+      const payload = {
+      trainer_id: trainerId,
+      name: nextExercise.name,
+      category: nextExercise.category,
+      muscle_groups: nextExercise.muscleGroups,
+      equipment: nextExercise.equipment,
+      movement_pattern: nextExercise.pattern,
+      difficulty: nextExercise.difficulty.toLowerCase() as "beginner" | "intermediate" | "advanced",
+      instructions: nextExercise.instructions,
+      coaching_cues: nextExercise.cues,
+      mistakes_to_avoid: nextExercise.mistakes,
+      substitutions: nextExercise.substitutions,
+      demo_url: nextExercise.demoUrl,
+      is_global: false,
     };
 
-    const nextExercises = [nextExercise, ...exercises];
-    setExercises(nextExercises);
-    window.localStorage.setItem(storageKey, JSON.stringify(nextExercises));
-    setDraft(emptyDraft);
-    setOpen(false);
+    if (currentEditingId) {
+      const { error } = await supabase.from("exercises").update(payload).eq("id", currentEditingId);
+      if (error) throw error;
+      await supabase.from("exercise_tags").delete().eq("exercise_id", currentEditingId);
+      if (nextExercise.tags.length) {
+        const { error: tagsError } = await supabase.from("exercise_tags").insert(
+          nextExercise.tags.map((tag) => ({
+            exercise_id: currentEditingId,
+            tag,
+          })),
+        );
+        if (tagsError) throw tagsError;
+      }
+      return currentEditingId;
+    }
+
+    const { data: inserted, error } = await supabase
+      .from("exercises")
+      .insert(payload)
+      .select("id")
+      .single<{ id: string }>();
+
+    if (error || !inserted?.id) throw error ?? new Error("Exercise was not created.");
+
+    if (nextExercise.tags.length) {
+      const { error: tagsError } = await supabase.from("exercise_tags").insert(
+        nextExercise.tags.map((tag) => ({
+          exercise_id: inserted.id,
+          tag,
+        })),
+      );
+      if (tagsError) throw tagsError;
+    }
+
+    return inserted.id;
+  }
+
+  async function createExercise(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!draft.name.trim()) return;
+
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const nextExercise = toExerciseFromDraft(editingId ?? `custom-${Date.now()}`);
+      const resolvedId = mode === "supabase" ? await persistExercise(nextExercise, editingId) : nextExercise.id;
+      const resolvedExercise = { ...nextExercise, id: resolvedId };
+
+      const nextExercises = editingId
+        ? exercises.map((exercise) => (exercise.id === editingId ? resolvedExercise : exercise))
+        : [resolvedExercise, ...exercises];
+
+      setExercises(nextExercises);
+      if (mode === "demo") {
+        window.localStorage.setItem(storageKey, JSON.stringify(nextExercises));
+      }
+      setDraft(emptyDraft);
+      setEditingId(null);
+      setOpen(false);
+      setMessage(editingId ? "Exercise updated." : "Exercise created.");
+      window.setTimeout(() => setMessage(null), 2400);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to save exercise.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -148,7 +279,13 @@ export function ExerciseLibrary({ initialExercises }: { initialExercises: Exerci
           </div>
           <Dialog.Root open={open} onOpenChange={setOpen}>
             <Dialog.Trigger asChild>
-              <Button variant="warm">
+              <Button
+                variant="warm"
+                onClick={() => {
+                  setDraft(emptyDraft);
+                  setEditingId(null);
+                }}
+              >
                 <Plus className="size-4" />
                 Create exercise
               </Button>
@@ -165,10 +302,12 @@ export function ExerciseLibrary({ initialExercises }: { initialExercises: Exerci
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <Dialog.Title className="font-serif text-4xl font-semibold text-charcoal-950">
-                        Create exercise
+                        {editingId ? "Edit exercise" : "Create exercise"}
                       </Dialog.Title>
                       <Dialog.Description className="mt-2 text-sm leading-6 text-stone-600">
-                        Add enough context for a client to execute the movement safely and confidently.
+                        {editingId
+                          ? "Refine the coaching reference clients see when they need a reminder."
+                          : "Add enough context for a client to execute the movement safely and confidently."}
                       </Dialog.Description>
                     </div>
                     <Dialog.Close asChild>
@@ -289,11 +428,18 @@ export function ExerciseLibrary({ initialExercises }: { initialExercises: Exerci
                       />
                     </label>
 
-                    <div className="flex flex-col-reverse gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:justify-end">
+                    <div className="flex flex-col-reverse gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:justify-between">
+                      <div className="text-sm text-stone-500">
+                        {mode === "supabase" ? "Saving to Supabase" : "Saving in local demo mode"}
+                      </div>
+                      <div className="flex flex-col-reverse gap-3 sm:flex-row">
                       <Dialog.Close asChild>
                         <Button type="button" variant="secondary">Cancel</Button>
                       </Dialog.Close>
-                      <Button type="submit" variant="warm">Create exercise</Button>
+                      <Button type="submit" variant="warm" disabled={saving}>
+                        {saving ? "Saving..." : editingId ? "Save changes" : "Create exercise"}
+                      </Button>
+                      </div>
                     </div>
                   </form>
                 </motion.div>
@@ -320,7 +466,27 @@ export function ExerciseLibrary({ initialExercises }: { initialExercises: Exerci
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(index * 0.035, 0.2) }}
             >
-              <ExerciseCard exercise={exercise} />
+              <div className="space-y-3">
+                <ExerciseCard exercise={exercise} />
+                {exercise.editable ?? mode === "demo" ? (
+                  <Button
+                    variant="secondary"
+                    className="w-full rounded-2xl"
+                    onClick={() => {
+                      populateDraft(exercise);
+                      setEditingId(exercise.id);
+                      setOpen(true);
+                    }}
+                  >
+                    <PencilLine className="size-4" />
+                    Edit exercise
+                  </Button>
+                ) : (
+                  <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm text-stone-500">
+                    Global reference exercise
+                  </div>
+                )}
+              </div>
             </motion.div>
           ))}
         </div>
@@ -334,6 +500,12 @@ export function ExerciseLibrary({ initialExercises }: { initialExercises: Exerci
           </Button>
         </Card>
       )}
+
+      {message ? (
+        <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">
+          {message}
+        </div>
+      ) : null}
     </>
   );
 }

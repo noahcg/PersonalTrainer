@@ -3,10 +3,22 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { plans } from "@/lib/demo-data";
+import { getClientAssignedPlan } from "@/lib/plans";
 
-export default function ClientPlanPage() {
-  const plan = plans[0];
+export default async function ClientPlanPage() {
+  const { plan } = await getClientAssignedPlan();
+  if (!plan) {
+    return (
+      <AppShell role="client" title="My plan" subtitle="Your training cycle will appear here as soon as your trainer assigns it.">
+        <Card className="max-w-3xl p-8">
+          <p className="font-serif text-4xl font-semibold">No plan assigned yet.</p>
+          <p className="mt-3 text-sm leading-6 text-stone-600">
+            Your trainer has not assigned an active plan yet. Check back soon or send them a note.
+          </p>
+        </Card>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell role="client" title="My plan" subtitle="Your current training cycle, weekly rhythm, coach notes, and assigned workouts.">

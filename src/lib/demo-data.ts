@@ -66,6 +66,7 @@ export const exercises: Exercise[] = [
     substitutions: ["Box squat", "Heel-elevated squat", "Front squat"],
     demoUrl: "https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?auto=format&fit=crop&w=900&q=80",
     tags: ["lower body", "squat", "home gym"],
+    editable: true,
   },
   {
     id: "db-row",
@@ -81,6 +82,7 @@ export const exercises: Exercise[] = [
     substitutions: ["Chest-supported row", "Cable row", "Band row"],
     demoUrl: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=900&q=80",
     tags: ["upper body", "pull", "back"],
+    editable: true,
   },
   {
     id: "rdl",
@@ -96,6 +98,7 @@ export const exercises: Exercise[] = [
     substitutions: ["Kickstand RDL", "Cable pull-through", "Hip thrust"],
     demoUrl: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=900&q=80",
     tags: ["posterior chain", "hinge", "strength"],
+    editable: true,
   },
   {
     id: "dead-bug",
@@ -111,6 +114,7 @@ export const exercises: Exercise[] = [
     substitutions: ["Heel taps", "Hollow hold", "Bird dog"],
     demoUrl: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=900&q=80",
     tags: ["core", "mobility", "warm-up"],
+    editable: true,
   },
 ];
 

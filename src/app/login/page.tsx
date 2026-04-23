@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import type { Profile, Role } from "@/lib/types";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("trainer@example.com");
   const [password, setPassword] = useState("demo-password");
   const [loading, setLoading] = useState(false);
@@ -24,7 +26,26 @@ export default function LoginPage() {
       router.push(role === "trainer" ? "/trainer/dashboard" : "/client/home");
       return;
     }
-    router.push(role === "trainer" ? "/trainer/dashboard" : "/client/home");
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    let destination = searchParams.get("next");
+
+    if (!destination && user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle<Pick<Profile, "role">>();
+
+      const resolvedRole: Role = profile?.role ?? role;
+      destination = resolvedRole === "trainer" ? "/trainer/dashboard" : "/client/home";
+    }
+
+    router.push(destination ?? (role === "trainer" ? "/trainer/dashboard" : "/client/home"));
+    router.refresh();
   }
 
   return (

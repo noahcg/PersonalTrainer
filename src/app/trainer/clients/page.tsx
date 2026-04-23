@@ -2,9 +2,11 @@ import { AppShell } from "@/components/layout/app-shell";
 import { ClientCard } from "@/components/product/client-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { clients } from "@/lib/demo-data";
+import { getTrainerClients } from "@/lib/clients";
 
-export default function ClientsPage() {
+export default async function ClientsPage() {
+  const { clients } = await getTrainerClients();
+
   return (
     <AppShell role="trainer" title="Client roster" subtitle="Manage profiles, goals, limitations, coaching notes, status, and metrics in one polished client view.">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row">

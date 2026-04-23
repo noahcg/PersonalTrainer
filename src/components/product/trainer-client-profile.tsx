@@ -10,13 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import type { Client, ClientStatus, Plan } from "@/lib/types";
-
-type CoachingEntry = {
-  id: string;
-  body: string;
-  createdAt: string;
-};
+import { createClient as createBrowserClient } from "@/lib/supabase-browser";
+import type { Client, ClientStatus, CoachingEntry, Plan } from "@/lib/types";
 
 type StoredState = {
   client: Client;
@@ -28,18 +23,26 @@ const coachStorageKey = (clientId: string) => `aurelian-client-profile-${clientI
 export function TrainerClientProfile({
   initialClient,
   assignedPlan,
+  initialCoachingNotes,
+  mode,
 }: {
   initialClient: Client;
   assignedPlan: Plan;
+  initialCoachingNotes: CoachingEntry[];
+  mode: "demo" | "supabase";
 }) {
   const [client, setClient] = useState(initialClient);
-  const [coachingNotes, setCoachingNotes] = useState<CoachingEntry[]>([]);
+  const [coachingNotes, setCoachingNotes] = useState<CoachingEntry[]>(initialCoachingNotes);
   const [editOpen, setEditOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(initialClient);
   const [draftNote, setDraftNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (mode !== "demo") return;
+
     const stored = window.localStorage.getItem(coachStorageKey(initialClient.id));
     if (!stored) return;
 
@@ -55,7 +58,7 @@ export function TrainerClientProfile({
     }, 0);
 
     return () => window.clearTimeout(timeout);
-  }, [initialClient]);
+  }, [initialClient, mode]);
 
   function persist(nextClient: Client, nextNotes: CoachingEntry[]) {
     window.localStorage.setItem(
@@ -68,48 +71,160 @@ export function TrainerClientProfile({
     setDraftClient((current) => ({ ...current, [field]: value }));
   }
 
-  function saveProfile() {
-    setClient(draftClient);
-    persist(draftClient, coachingNotes);
-    setEditOpen(false);
+  async function saveProfile() {
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      if (mode === "supabase") {
+        const supabase = createBrowserClient();
+        const { error } = await supabase
+          .from("clients")
+          .update({
+            full_name: draftClient.name,
+            email: draftClient.email,
+            goals: draftClient.goals,
+            fitness_level: draftClient.level,
+            injuries_limitations: draftClient.injuries,
+            notes: draftClient.notes,
+            preferred_training_style: draftClient.style,
+            availability: draftClient.availability,
+            status: draftClient.status,
+          })
+          .eq("id", draftClient.id);
+
+        if (error) throw error;
+      } else {
+        persist(draftClient, coachingNotes);
+      }
+
+      setClient(draftClient);
+      setEditOpen(false);
+      setMessage("Profile saved.");
+      window.setTimeout(() => setMessage(null), 2400);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to save profile.");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function addCoachingNote() {
+  async function addCoachingNote() {
     if (!draftNote.trim()) return;
 
-    const nextNotes = [
-      {
-        id: `note-${Date.now()}`,
-        body: draftNote.trim(),
-        createdAt: new Date().toLocaleString("en-US", {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        }),
-      },
-      ...coachingNotes,
-    ];
+    setBusy(true);
+    setMessage(null);
 
-    const nextClient = {
-      ...client,
-      notes: draftNote.trim(),
-    };
+    try {
+      let nextNotes = coachingNotes;
+      if (mode === "supabase") {
+        const supabase = createBrowserClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-    setCoachingNotes(nextNotes);
-    setClient(nextClient);
-    setDraftClient(nextClient);
-    persist(nextClient, nextNotes);
-    setDraftNote("");
-    setNoteOpen(false);
+        if (!user) {
+          throw new Error("You need an authenticated trainer session to leave a coaching note.");
+        }
+
+        const { data: trainer } = await supabase
+          .from("trainers")
+          .select("id")
+          .eq("profile_id", user.id)
+          .maybeSingle<{ id: string }>();
+
+        if (!trainer?.id) {
+          throw new Error("Trainer profile not found.");
+        }
+
+        const { data: inserted, error } = await supabase
+          .from("messages")
+          .insert({
+            trainer_id: trainer.id,
+            client_id: client.id,
+            sender_profile_id: user.id,
+            kind: "coaching_note",
+            body: draftNote.trim(),
+          })
+          .select("id, body, created_at")
+          .single<{ id: string; body: string; created_at: string }>();
+
+        if (error || !inserted) throw error ?? new Error("Unable to save coaching note.");
+
+        nextNotes = [
+          {
+            id: inserted.id,
+            body: inserted.body,
+            createdAt: new Date(inserted.created_at).toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            }),
+          },
+          ...coachingNotes,
+        ];
+      } else {
+        nextNotes = [
+          {
+            id: `note-${Date.now()}`,
+            body: draftNote.trim(),
+            createdAt: new Date().toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            }),
+          },
+          ...coachingNotes,
+        ];
+
+        const nextClient = {
+          ...client,
+          notes: draftNote.trim(),
+        };
+
+        setClient(nextClient);
+        setDraftClient(nextClient);
+        persist(nextClient, nextNotes);
+      }
+
+      setCoachingNotes(nextNotes);
+      setDraftNote("");
+      setNoteOpen(false);
+      setMessage("Coaching note saved.");
+      window.setTimeout(() => setMessage(null), 2400);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to save coaching note.");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function deactivateClient() {
+  async function deactivateClient() {
     const nextStatus: ClientStatus = client.status === "archived" ? "active" : "archived";
     const nextClient = { ...client, status: nextStatus };
-    setClient(nextClient);
-    setDraftClient(nextClient);
-    persist(nextClient, coachingNotes);
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      if (mode === "supabase") {
+        const supabase = createBrowserClient();
+        const { error } = await supabase.from("clients").update({ status: nextStatus }).eq("id", client.id);
+        if (error) throw error;
+      } else {
+        persist(nextClient, coachingNotes);
+      }
+
+      setClient(nextClient);
+      setDraftClient(nextClient);
+      setMessage(nextStatus === "archived" ? "Client archived." : "Client reactivated.");
+      window.setTimeout(() => setMessage(null), 2400);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to update client status.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const sections = useMemo(
@@ -157,7 +272,7 @@ export function TrainerClientProfile({
               <PencilLine className="size-4" />
               Edit profile
             </Button>
-            <Button variant="ghost" onClick={deactivateClient}>
+            <Button variant="ghost" onClick={deactivateClient} disabled={busy}>
               <Ban className="size-4" />
               {client.status === "archived" ? "Reactivate client" : "Deactivate client"}
             </Button>
@@ -267,9 +382,9 @@ export function TrainerClientProfile({
                 <Dialog.Close asChild>
                   <Button variant="secondary">Cancel</Button>
                 </Dialog.Close>
-                <Button variant="warm" onClick={saveProfile}>
+                <Button variant="warm" onClick={saveProfile} disabled={busy}>
                   <Save className="size-4" />
-                  Save profile
+                  {busy ? "Saving..." : "Save profile"}
                 </Button>
               </div>
             </ModalShell>
@@ -291,15 +406,21 @@ export function TrainerClientProfile({
                 <Dialog.Close asChild>
                   <Button variant="secondary">Cancel</Button>
                 </Dialog.Close>
-                <Button variant="warm" onClick={addCoachingNote}>
+                <Button variant="warm" onClick={addCoachingNote} disabled={busy}>
                   <StickyNote className="size-4" />
-                  Save note
+                  {busy ? "Saving..." : "Save note"}
                 </Button>
               </div>
             </ModalShell>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {message ? (
+        <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">
+          {message}
+        </div>
+      ) : null}
     </>
   );
 }

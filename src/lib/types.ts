@@ -1,5 +1,19 @@
 export type Role = "trainer" | "client";
 
+export type Profile = {
+  id: string;
+  role: Role;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
+};
+
+export type CoachingEntry = {
+  id: string;
+  body: string;
+  createdAt: string;
+};
+
 export type ClientStatus = "active" | "needs_attention" | "paused" | "archived";
 
 export type Client = {
@@ -38,6 +52,7 @@ export type Exercise = {
   substitutions: string[];
   demoUrl: string;
   tags: string[];
+  editable?: boolean;
 };
 
 export type WorkoutExercise = {
