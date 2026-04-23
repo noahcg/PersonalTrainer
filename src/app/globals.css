@@ -1,26 +1,99 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4efe7;
+  --foreground: #201d18;
+  --font-sans: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  --font-mono: "SFMono-Regular", Consolas, monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+  --color-ivory-50: #fffaf1;
+  --color-ivory-100: #f8f1e6;
+  --color-stone-50: #faf8f4;
+  --color-stone-100: #eee8de;
+  --color-stone-200: #ded4c6;
+  --color-stone-300: #c8bba8;
+  --color-stone-400: #aa9a86;
+  --color-stone-500: #817463;
+  --color-stone-600: #655a4e;
+  --color-stone-700: #4a4239;
+  --color-charcoal-900: #28241f;
+  --color-charcoal-950: #171411;
+  --color-bronze-50: #fbf3e8;
+  --color-bronze-100: #f4dfbf;
+  --color-bronze-200: #e8c28b;
+  --color-bronze-400: #c88d4a;
+  --color-bronze-500: #a96f35;
+  --color-bronze-600: #875527;
+  --color-bronze-800: #523117;
+  --color-sage-50: #f0f4ed;
+  --color-sage-100: #dfe8d8;
+  --color-sage-200: #c3d0b8;
+  --color-sage-500: #788d63;
+  --color-sage-700: #4a5d3d;
+  --color-sage-800: #35442d;
+  --shadow-soft: 0 24px 70px -36px rgba(32, 29, 24, 0.35), 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+  --shadow-warm: 0 22px 45px -28px rgba(135, 85, 39, 0.75);
+  --shadow-inner-soft: inset 0 1px 2px rgba(32, 29, 24, 0.04);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  content: "";
+  background:
+    radial-gradient(circle at top left, rgba(200, 141, 74, 0.2), transparent 30rem),
+    radial-gradient(circle at 85% 15%, rgba(120, 141, 99, 0.18), transparent 28rem),
+    linear-gradient(135deg, #fbf7ef 0%, #eee6d8 52%, #e8ddcd 100%);
+}
+
+body::after {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  opacity: 0.38;
+  background-image:
+    linear-gradient(rgba(32, 29, 24, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(32, 29, 24, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+
+::selection {
+  background: #c88d4a;
+  color: white;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

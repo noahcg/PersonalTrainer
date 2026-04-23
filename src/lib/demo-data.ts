@@ -1,0 +1,186 @@
+import type { CheckIn, Client, Exercise, Message, Plan, ProgressPoint, Workout } from "./types";
+
+export const clients: Client[] = [
+  {
+    id: "mara-lee",
+    name: "Mara Lee",
+    email: "mara@example.com",
+    photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80",
+    goals: "Build confident strength, improve posture, and train for a fall half marathon.",
+    level: "Intermediate",
+    injuries: "Occasional right hip tightness. Avoid high-volume deep flexion when sore.",
+    notes: "Responds well to specific cues and concise weekly priorities.",
+    style: "Strength-first, calm coaching, measurable progression.",
+    availability: "Mon/Wed/Fri mornings, Sunday mobility.",
+    startDate: "2026-01-12",
+    status: "active",
+    adherence: 91,
+    metrics: { bodyWeight: "142 lb", workouts: 38, streak: 7, lastCheckIn: "Today" },
+  },
+  {
+    id: "eli-brooks",
+    name: "Eli Brooks",
+    email: "eli@example.com",
+    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=320&q=80",
+    goals: "Return to pain-free lifting and rebuild work capacity.",
+    level: "Foundation",
+    injuries: "History of shoulder impingement. Keep pressing neutral-grip for now.",
+    notes: "Needs reminders to log RPE and sleep.",
+    style: "Technique-focused, low ego, mobility emphasis.",
+    availability: "Tue/Thu evenings, Saturday morning.",
+    startDate: "2026-02-03",
+    status: "needs_attention",
+    adherence: 68,
+    metrics: { bodyWeight: "188 lb", workouts: 19, streak: 1, lastCheckIn: "3 days ago" },
+  },
+  {
+    id: "nina-patel",
+    name: "Nina Patel",
+    email: "nina@example.com",
+    photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=320&q=80",
+    goals: "Increase lean mass, hit first pull-up, and improve energy.",
+    level: "Advanced",
+    injuries: "No current limitations.",
+    notes: "Enjoys data and progression charts.",
+    style: "Athletic hypertrophy with skill work.",
+    availability: "Four flexible lunch sessions weekly.",
+    startDate: "2025-11-18",
+    status: "active",
+    adherence: 96,
+    metrics: { bodyWeight: "126 lb", workouts: 72, streak: 13, lastCheckIn: "Yesterday" },
+  },
+];
+
+export const exercises: Exercise[] = [
+  {
+    id: "goblet-squat",
+    name: "Goblet Squat",
+    category: "Strength",
+    muscleGroups: ["Quads", "Glutes", "Core"],
+    equipment: ["Dumbbell", "Kettlebell"],
+    pattern: "Squat",
+    difficulty: "Beginner",
+    instructions: "Hold the weight high against the chest, sit between the hips, and drive the floor away.",
+    cues: ["Ribs stacked over pelvis", "Knees track over mid-foot", "Exhale through the top"],
+    mistakes: ["Collapsing knees", "Letting elbows drift", "Rushing the bottom"],
+    substitutions: ["Box squat", "Heel-elevated squat", "Front squat"],
+    demoUrl: "https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?auto=format&fit=crop&w=900&q=80",
+    tags: ["lower body", "squat", "home gym"],
+  },
+  {
+    id: "db-row",
+    name: "One-Arm Dumbbell Row",
+    category: "Strength",
+    muscleGroups: ["Lats", "Upper Back", "Biceps"],
+    equipment: ["Dumbbell", "Bench"],
+    pattern: "Pull",
+    difficulty: "Beginner",
+    instructions: "Brace through the supporting side, pull elbow toward hip, pause, and lower with control.",
+    cues: ["Long neck", "Shoulder blade to back pocket", "Quiet torso"],
+    mistakes: ["Rotating open", "Shrugging", "Shortening the range"],
+    substitutions: ["Chest-supported row", "Cable row", "Band row"],
+    demoUrl: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=900&q=80",
+    tags: ["upper body", "pull", "back"],
+  },
+  {
+    id: "rdl",
+    name: "Romanian Deadlift",
+    category: "Strength",
+    muscleGroups: ["Hamstrings", "Glutes", "Back"],
+    equipment: ["Barbell", "Dumbbells"],
+    pattern: "Hinge",
+    difficulty: "Intermediate",
+    instructions: "Soften knees, push hips back, keep load close, and stand tall by squeezing glutes.",
+    cues: ["Reach hips to the wall", "Armpits tight", "Feel hamstrings lengthen"],
+    mistakes: ["Squatting the hinge", "Load drifting forward", "Overextending at lockout"],
+    substitutions: ["Kickstand RDL", "Cable pull-through", "Hip thrust"],
+    demoUrl: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=900&q=80",
+    tags: ["posterior chain", "hinge", "strength"],
+  },
+  {
+    id: "dead-bug",
+    name: "Dead Bug",
+    category: "Core",
+    muscleGroups: ["Core", "Hip Flexors"],
+    equipment: ["Mat"],
+    pattern: "Anti-extension",
+    difficulty: "Beginner",
+    instructions: "Press low back gently down, reach opposite arm and leg away, and return without rib flare.",
+    cues: ["Slow exhale", "Belt buckle to ribs", "Move only as far as control allows"],
+    mistakes: ["Arching back", "Holding breath", "Moving too quickly"],
+    substitutions: ["Heel taps", "Hollow hold", "Bird dog"],
+    demoUrl: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=900&q=80",
+    tags: ["core", "mobility", "warm-up"],
+  },
+];
+
+export const workouts: Workout[] = [
+  {
+    id: "lower-strength-a",
+    name: "Lower Strength A",
+    dayLabel: "Week 5 / Day 1",
+    duration: "54 min",
+    warmup: "6 min incline walk, hip airplanes, dead bug breathing, bodyweight squats.",
+    cooldown: "90/90 breathing, couch stretch, easy walk until heart rate settles.",
+    coachNotes: "Stay two reps shy of failure today. Prioritize tempo and smooth bracing.",
+    blocks: [
+      {
+        id: "main",
+        label: "Main Strength",
+        intent: "Progressive lower-body strength with clean mechanics.",
+        exercises: [
+          { id: "we-1", exerciseId: "goblet-squat", name: "Goblet Squat", sets: 4, reps: "8", tempo: "3-1-1", rest: "90s", rpe: "7", load: "Last week +5 lb if warm-ups feel crisp", notes: "Film set 3 from front angle." },
+          { id: "we-2", exerciseId: "rdl", name: "Romanian Deadlift", sets: 3, reps: "10", tempo: "3-0-1", rest: "2 min", rpe: "7-8", load: "Moderate, straps allowed", notes: "Stop before back position changes." },
+        ],
+      },
+      {
+        id: "accessory",
+        label: "Accessory + Core",
+        intent: "Build single-leg capacity and trunk control.",
+        exercises: [
+          { id: "we-3", exerciseId: "dead-bug", name: "Dead Bug", sets: 3, reps: "8/side", tempo: "Slow", rest: "45s", rpe: "Easy", load: "Bodyweight", duration: "6 min", notes: "Full exhales every rep." },
+        ],
+      },
+    ],
+  },
+];
+
+export const plans: Plan[] = [
+  {
+    id: "strong-calm-12",
+    title: "Strong & Calm 12",
+    description: "A measured strength cycle built around confidence, posture, and aerobic recovery.",
+    duration: "12 weeks",
+    goal: "Strength foundation + consistency",
+    weeklyStructure: "3 strength sessions, 1 mobility session, 2 low-intensity walks",
+    notes: "Designed for busy clients who need precision without overwhelm.",
+    template: true,
+    assignedClients: ["mara-lee", "eli-brooks"],
+    workouts,
+  },
+];
+
+export const checkIns: CheckIn[] = [
+  { id: "ci-1", clientId: "mara-lee", client: "Mara Lee", date: "Today", energy: 8, soreness: 3, sleep: 7, stress: 4, motivation: 9, mood: "Focused", notes: "Legs feel fresh. Long run was easier than expected.", reviewed: false },
+  { id: "ci-2", clientId: "eli-brooks", client: "Eli Brooks", date: "3 days ago", energy: 5, soreness: 6, sleep: 5, stress: 8, motivation: 6, mood: "Flat", notes: "Work travel made workouts inconsistent. Shoulder is okay but tight.", reviewed: false },
+  { id: "ci-3", clientId: "nina-patel", client: "Nina Patel", date: "Yesterday", energy: 9, soreness: 4, sleep: 8, stress: 3, motivation: 9, mood: "Strong", notes: "Hit 3 clean negative pull-ups.", reviewed: true },
+];
+
+export const messages: Message[] = [
+  { id: "m1", from: "trainer", author: "Coach Avery", body: "Keep today crisp. If hip tightness shows up, swap goblet squats for box squats and note depth.", createdAt: "8:10 AM" },
+  { id: "m2", from: "client", author: "Mara", body: "Will do. Warm-up already made the hip feel better.", createdAt: "8:28 AM" },
+  { id: "m3", from: "trainer", author: "Coach Avery", body: "Perfect. Send me set 3 and keep RPE honest.", createdAt: "8:31 AM" },
+];
+
+export const progress: ProgressPoint[] = [
+  { label: "Jan", weight: 148, adherence: 78, sleep: 6.4 },
+  { label: "Feb", weight: 146, adherence: 84, sleep: 6.8 },
+  { label: "Mar", weight: 144, adherence: 89, sleep: 7.1 },
+  { label: "Apr", weight: 142, adherence: 91, sleep: 7.4 },
+];
+
+export const resources = [
+  { title: "Travel Week Strength Menu", type: "Guide", audience: "All active clients", minutes: "7 min read" },
+  { title: "Protein Without Overthinking", type: "Nutrition", audience: "New clients", minutes: "5 min read" },
+  { title: "Hip Reset Flow", type: "Video", audience: "Mara, Eli", minutes: "8 min" },
+];

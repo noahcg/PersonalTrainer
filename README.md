@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aurelian Coach
 
-## Getting Started
+Production-minded MVP for a premium personal trainer client management app.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router
+- React + TypeScript
+- Tailwind CSS
+- shadcn/ui-style Radix primitives
+- Motion
+- Supabase Auth + Postgres
+- Vercel deployable
+
+## Local Setup
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The app runs with seeded in-repo demo data even before Supabase is connected. Use:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Trainer demo: `/trainer/dashboard`
+- Client demo: `/client/home`
+- Login shell: `/login`
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Supabase Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Create a Supabase project.
+2. Copy the project URL and anon key into `.env.local`.
+3. Run `supabase/schema.sql` in the SQL editor.
+4. For local Supabase, run `supabase/seed.sql` after the schema.
+5. For hosted Supabase, create demo auth users first if direct auth inserts are blocked, then adapt ids in `seed.sql`.
 
-## Deploy on Vercel
+Demo credentials in the seed:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `trainer@example.com` / `demo-password`
+- `mara@example.com` / `demo-password`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Vercel Deploy
+
+1. Push the repo to GitHub.
+2. Import in Vercel.
+3. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+4. Deploy.
+
+## Product Areas
+
+- Trainer dashboard
+- Client roster and profile management
+- Exercise library
+- Training plan management
+- Workout builder
+- Client workout logger
+- Progress tracking
+- Check-ins and messaging
+- Resources
+- Settings/profile
+
+## Recommended V2
+
+- Replace demo-data reads with Supabase queries and mutations per route.
+- Add invite flow for client onboarding.
+- Add server actions for plan/workout CRUD.
+- Add media uploads with Supabase Storage.
+- Add calendar scheduling and notifications.
+- Add real analytics queries for adherence and recovery trends.
+- Add Stripe billing for trainer subscriptions.
