@@ -130,3 +130,27 @@ export type ProgressPoint = {
   adherence: number;
   sleep: number;
 };
+
+export type BulletinPost = {
+  id: string;
+  title: string;
+  body: string;
+  author: string;
+  publishedAt: string;
+  pinned: boolean;
+  postType: "announcement" | "session";
+  requiresRsvp: boolean;
+  sessionStartsAt?: string | null;
+  sessionLocation?: string | null;
+  sessionCapacity?: number | null;
+  clientRsvp?: "attending" | "not_attending" | null;
+  rsvpSummary?: {
+    attending: number;
+    notAttending: number;
+  };
+  rsvps?: Array<{
+    clientId: string;
+    clientName: string;
+    status: "attending" | "not_attending";
+  }>;
+};

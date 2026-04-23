@@ -2,14 +2,18 @@ import Link from "next/link";
 import { Activity, ArrowRight, CalendarCheck, MessageCircle, Plus, Users } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { StatCard } from "@/components/product/stat-card";
+import { TrainerSessionOverview } from "@/components/product/trainer-session-overview";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { checkIns, clients } from "@/lib/demo-data";
+import { getTrainerBulletins } from "@/lib/bulletins";
 
-export default function TrainerDashboardPage() {
+export default async function TrainerDashboardPage() {
+  const { bulletins, mode } = await getTrainerBulletins();
+
   return (
     <AppShell
       role="trainer"
@@ -51,6 +55,8 @@ export default function TrainerDashboardPage() {
               ))}
             </CardContent>
           </Card>
+
+          <TrainerSessionOverview initialBulletins={bulletins} mode={mode} />
 
           <div className="grid gap-5 lg:grid-cols-2">
             <Card>

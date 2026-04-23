@@ -1,4 +1,4 @@
-import type { CheckIn, Client, Exercise, Message, Plan, ProgressPoint, Workout } from "./types";
+import type { BulletinPost, CheckIn, Client, Exercise, Message, Plan, ProgressPoint, Workout } from "./types";
 
 export const clients: Client[] = [
   {
@@ -188,4 +188,39 @@ export const resources = [
   { title: "Travel Week Strength Menu", type: "Guide", audience: "All active clients", minutes: "7 min read" },
   { title: "Protein Without Overthinking", type: "Nutrition", audience: "New clients", minutes: "5 min read" },
   { title: "Hip Reset Flow", type: "Video", audience: "Mara, Eli", minutes: "8 min" },
+];
+
+export const bulletins: BulletinPost[] = [
+  {
+    id: "bulletin-1",
+    title: "Saturday Small Group Strength Session",
+    body: "I’m opening the studio on Saturday for a coached small-group lower body session. We’ll move through warm-up prep, hinge mechanics, and controlled strength work together.",
+    author: "Coach Avery",
+    publishedAt: "Today",
+    pinned: true,
+    postType: "session",
+    requiresRsvp: true,
+    sessionStartsAt: "2026-04-25T09:00:00.000Z",
+    sessionLocation: "Aurelian Studio · River North",
+    sessionCapacity: 8,
+    clientRsvp: null,
+    rsvpSummary: { attending: 0, notAttending: 0 },
+    rsvps: [],
+  },
+  {
+    id: "bulletin-2",
+    title: "Deload Week Starts Monday",
+    body: "Next week is a controlled deload for everyone. Keep the movement quality high, cut accessories if your schedule gets tight, and prioritize sleep over chasing volume.",
+    author: "Coach Avery",
+    publishedAt: "Yesterday",
+    pinned: false,
+    postType: "announcement",
+    requiresRsvp: false,
+    sessionStartsAt: null,
+    sessionLocation: null,
+    sessionCapacity: null,
+    clientRsvp: null,
+    rsvpSummary: { attending: 0, notAttending: 0 },
+    rsvps: [],
+  },
 ];

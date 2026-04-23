@@ -220,6 +220,32 @@ create table public.resources (
   updated_at timestamptz not null default now()
 );
 
+create table public.bulletin_posts (
+  id uuid primary key default gen_random_uuid(),
+  trainer_id uuid not null references public.trainers(id) on delete cascade,
+  title text not null,
+  body text not null,
+  pinned boolean not null default false,
+  post_type text not null default 'announcement' check (post_type in ('announcement', 'session')),
+  requires_rsvp boolean not null default false,
+  session_starts_at timestamptz,
+  session_location text,
+  session_capacity int check (session_capacity is null or session_capacity > 0),
+  published_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.bulletin_rsvps (
+  id uuid primary key default gen_random_uuid(),
+  bulletin_post_id uuid not null references public.bulletin_posts(id) on delete cascade,
+  client_id uuid not null references public.clients(id) on delete cascade,
+  status text not null check (status in ('attending', 'not_attending')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (bulletin_post_id, client_id)
+);
+
 create index clients_trainer_idx on public.clients(trainer_id, status);
 create index exercises_trainer_idx on public.exercises(trainer_id, is_global);
 create index workouts_plan_idx on public.workouts(training_plan_id);
@@ -244,6 +270,8 @@ alter table public.progress_entries enable row level security;
 alter table public.check_ins enable row level security;
 alter table public.messages enable row level security;
 alter table public.resources enable row level security;
+alter table public.bulletin_posts enable row level security;
+alter table public.bulletin_rsvps enable row level security;
 
 create or replace function public.current_trainer_id()
 returns uuid
@@ -289,6 +317,18 @@ create policy "messages visible" on public.messages for select using (client_id 
 create policy "messages participants write" on public.messages for insert with check (client_id = public.current_client_id() or trainer_id = public.current_trainer_id());
 create policy "resources visible" on public.resources for select using (trainer_id = public.current_trainer_id() or exists (select 1 from public.clients c where c.trainer_id = resources.trainer_id and c.id = public.current_client_id()));
 create policy "resources trainer writes" on public.resources for all using (trainer_id = public.current_trainer_id()) with check (trainer_id = public.current_trainer_id());
+create policy "bulletins visible" on public.bulletin_posts for select using (trainer_id = public.current_trainer_id() or exists (select 1 from public.clients c where c.trainer_id = bulletin_posts.trainer_id and c.id = public.current_client_id()));
+create policy "bulletins trainer writes" on public.bulletin_posts for all using (trainer_id = public.current_trainer_id()) with check (trainer_id = public.current_trainer_id());
+create policy "bulletin rsvps visible" on public.bulletin_rsvps for select using (
+  client_id = public.current_client_id()
+  or exists (
+    select 1
+    from public.bulletin_posts bp
+    where bp.id = bulletin_post_id
+      and bp.trainer_id = public.current_trainer_id()
+  )
+);
+create policy "bulletin rsvps client writes" on public.bulletin_rsvps for all using (client_id = public.current_client_id()) with check (client_id = public.current_client_id());
 
 -- Demo domain seed with deterministic ids for local Supabase projects.
 insert into public.exercises (id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, is_global)

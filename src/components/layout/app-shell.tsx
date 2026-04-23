@@ -9,6 +9,7 @@ import {
   Dumbbell,
   Home,
   Library,
+  Megaphone,
   MessageCircle,
   Settings,
   Sparkles,
@@ -21,6 +22,7 @@ import { Avatar } from "@/components/ui/avatar";
 
 const trainerNav = [
   { href: "/trainer/dashboard", label: "Dashboard", icon: Home },
+  { href: "/trainer/bulletin", label: "Bulletin Board", icon: Megaphone },
   { href: "/trainer/clients", label: "Clients", icon: Users },
   { href: "/trainer/plans", label: "Training Plans", icon: CalendarCheck },
   { href: "/trainer/workouts", label: "Workouts", icon: Dumbbell },
@@ -33,6 +35,7 @@ const trainerNav = [
 
 const clientNav = [
   { href: "/client/home", label: "Home", icon: Home },
+  { href: "/client/bulletin", label: "Bulletin", icon: Megaphone },
   { href: "/client/plan", label: "My Plan", icon: CalendarCheck },
   { href: "/client/workouts", label: "My Workouts", icon: Dumbbell },
   { href: "/client/progress", label: "Progress", icon: TrendingUp },
@@ -99,14 +102,14 @@ export function AppShell({
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <motion.p
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
                   className="text-xs font-semibold uppercase tracking-[0.32em] text-bronze-600"
                 >
                   {role === "trainer" ? "Trainer command center" : "Client coaching space"}
                 </motion.p>
                 <motion.h1
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.04 }}
                   className="mt-2 font-serif text-4xl font-semibold tracking-tight text-charcoal-950 sm:text-5xl"
@@ -127,7 +130,7 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+          <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
             {children}
           </motion.div>
         </main>

@@ -339,7 +339,20 @@ export function TrainerPlansManager({
         >
           Create plan from scratch
         </Button>
-        <Button variant="secondary">Save current as template</Button>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setDraft({
+              ...emptyDraft,
+              title: "New reusable template",
+              template: true,
+            });
+            setEditingId(null);
+            setOpen(true);
+          }}
+        >
+          Save current as template
+        </Button>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
