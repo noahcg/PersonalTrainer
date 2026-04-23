@@ -1,17 +1,59 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { Check, Eye, MessageSquare, PlayCircle, X } from "lucide-react";
+import { Check, Eye, LoaderCircle, MessageSquare, PlayCircle, Save, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { exercises as exerciseLibrary } from "@/lib/demo-data";
+import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Exercise, Workout, WorkoutExercise } from "@/lib/types";
+
+type SetEntry = {
+  reps: string;
+  weight: string;
+  notes: string;
+  completed: boolean;
+};
+
+type SetState = Record<string, SetEntry>;
+
+const demoStorageKey = (workoutId: string) => `aurelian-demo-workout-log-${workoutId}`;
+
+function isSupabaseReady() {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+      process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://demo.supabase.co" &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== "demo-anon-key",
+  );
+}
+
+function entryKey(exerciseId: string, setNumber: number) {
+  return `${exerciseId}:${setNumber}`;
+}
+
+function buildInitialSetState(workout: Workout) {
+  const state: SetState = {};
+  workout.blocks.forEach((block) => {
+    block.exercises.forEach((exercise) => {
+      for (let setNumber = 1; setNumber <= exercise.sets; setNumber += 1) {
+        state[entryKey(exercise.id, setNumber)] = {
+          reps: "",
+          weight: "",
+          notes: "",
+          completed: false,
+        };
+      }
+    });
+  });
+  return state;
+}
 
 export function WorkoutLogger({ workout }: { workout: Workout }) {
   const total = workout.blocks.reduce((sum, block) => sum + block.exercises.length, 0);
@@ -20,10 +62,347 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
     prescription: WorkoutExercise;
     exercise?: Exercise;
   } | null>(null);
+  const [setState, setSetState] = useState<SetState>(() => buildInitialSetState(workout));
+  const [feedback, setFeedback] = useState("");
+  const [logId, setLogId] = useState<string | null>(null);
+  const [planAssignmentId, setPlanAssignmentId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
-  const toggle = (id: string) => {
-    setCompleted((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
-  };
+  const completionPercent = total ? (completed.length / total) * 100 : 0;
+  const readyForPersistence = isSupabaseReady();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrate() {
+      if (!readyForPersistence) {
+        const stored = window.localStorage.getItem(demoStorageKey(workout.id));
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored) as {
+              completed: string[];
+              setState: SetState;
+              feedback: string;
+            };
+            if (!cancelled) {
+              setCompleted(parsed.completed ?? []);
+              setSetState({ ...buildInitialSetState(workout), ...(parsed.setState ?? {}) });
+              setFeedback(parsed.feedback ?? "");
+            }
+          } catch {
+            window.localStorage.removeItem(demoStorageKey(workout.id));
+          }
+        }
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      try {
+        const supabase = createBrowserClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          if (!cancelled) setLoading(false);
+          return;
+        }
+
+        const { data: client } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("profile_id", user.id)
+          .maybeSingle<{ id: string }>();
+
+        if (!client?.id) {
+          if (!cancelled) setLoading(false);
+          return;
+        }
+
+        let activeAssignmentId: string | null = null;
+        if (workout.trainingPlanId) {
+          const { data: assignment } = await supabase
+            .from("plan_assignments")
+            .select("id")
+            .eq("client_id", client.id)
+            .eq("training_plan_id", workout.trainingPlanId)
+            .eq("status", "active")
+            .order("assigned_at", { ascending: false })
+            .limit(1)
+            .maybeSingle<{ id: string }>();
+          activeAssignmentId = assignment?.id ?? null;
+        }
+
+        const { data: workoutLog } = await supabase
+          .from("workout_logs")
+          .select("id, feedback, status, plan_assignment_id")
+          .eq("client_id", client.id)
+          .eq("workout_id", workout.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle<{ id: string; feedback: string | null; status: string; plan_assignment_id: string | null }>();
+
+        if (cancelled) return;
+        setPlanAssignmentId(workoutLog?.plan_assignment_id ?? activeAssignmentId);
+        setLogId(workoutLog?.id ?? null);
+        setFeedback(workoutLog?.feedback ?? "");
+
+        if (!workoutLog?.id) {
+          setLoading(false);
+          return;
+        }
+
+        const { data: setLogs } = await supabase
+          .from("set_logs")
+          .select("workout_exercise_id, set_number, reps, weight, notes, completed")
+          .eq("workout_log_id", workoutLog.id);
+
+        if (cancelled) return;
+
+        const nextSetState = buildInitialSetState(workout);
+        const completedExercises = new Set<string>();
+
+        (setLogs ?? []).forEach((setLog: {
+          workout_exercise_id: string;
+          set_number: number;
+          reps: number | null;
+          weight: number | null;
+          notes: string | null;
+          completed: boolean;
+        }) => {
+          const key = entryKey(setLog.workout_exercise_id, setLog.set_number);
+          nextSetState[key] = {
+            reps: setLog.reps?.toString() ?? "",
+            weight: setLog.weight?.toString() ?? "",
+            notes: setLog.notes ?? "",
+            completed: Boolean(setLog.completed),
+          };
+        });
+
+        workout.blocks.forEach((block) => {
+          block.exercises.forEach((exercise) => {
+            const allSetsDone = Array.from({ length: exercise.sets }).every((_, index) => {
+              const entry = nextSetState[entryKey(exercise.id, index + 1)];
+              return entry?.completed;
+            });
+            if (allSetsDone) completedExercises.add(exercise.id);
+          });
+        });
+
+        setSetState(nextSetState);
+        setCompleted(Array.from(completedExercises));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void hydrate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [readyForPersistence, workout]);
+
+  useEffect(() => {
+    if (readyForPersistence || loading) return;
+    window.localStorage.setItem(
+      demoStorageKey(workout.id),
+      JSON.stringify({
+        completed,
+        setState,
+        feedback,
+      }),
+    );
+  }, [completed, feedback, loading, readyForPersistence, setState, workout.id]);
+
+  const referenceExercises = useMemo(
+    () =>
+      new Map(
+        exerciseLibrary.map((exercise) => [exercise.id, exercise]),
+      ),
+    [],
+  );
+
+  function updateEntry(exerciseId: string, setNumber: number, patch: Partial<SetEntry>) {
+    setSetState((current) => ({
+      ...current,
+      [entryKey(exerciseId, setNumber)]: {
+        ...(current[entryKey(exerciseId, setNumber)] ?? {
+          reps: "",
+          weight: "",
+          notes: "",
+          completed: false,
+        }),
+        ...patch,
+      },
+    }));
+  }
+
+  async function ensureWorkoutLog() {
+    if (!readyForPersistence) return null;
+    if (logId) return logId;
+
+    const supabase = createBrowserClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("You need to be logged in to save workout progress.");
+
+    const { data: client } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("profile_id", user.id)
+      .maybeSingle<{ id: string }>();
+    if (!client?.id) throw new Error("Client profile not found.");
+
+    let assignmentId = planAssignmentId;
+    if (!assignmentId && workout.trainingPlanId) {
+      const { data: assignment } = await supabase
+        .from("plan_assignments")
+        .select("id")
+        .eq("client_id", client.id)
+        .eq("training_plan_id", workout.trainingPlanId)
+        .eq("status", "active")
+        .order("assigned_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ id: string }>();
+      assignmentId = assignment?.id ?? null;
+      setPlanAssignmentId(assignmentId);
+    }
+
+    const { data: inserted, error } = await supabase
+      .from("workout_logs")
+      .insert({
+        client_id: client.id,
+        workout_id: workout.id,
+        plan_assignment_id: assignmentId,
+        started_at: new Date().toISOString(),
+        status: "in_progress",
+      })
+      .select("id")
+      .single<{ id: string }>();
+
+    if (error || !inserted?.id) throw error ?? new Error("Unable to create workout log.");
+    setLogId(inserted.id);
+    return inserted.id;
+  }
+
+  async function startSession() {
+    setStarting(true);
+    setMessage(null);
+    try {
+      if (readyForPersistence) {
+        await ensureWorkoutLog();
+      }
+      setMessage("Session started.");
+      window.setTimeout(() => setMessage(null), 1800);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to start session.");
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  async function saveExerciseProgress(exercise: WorkoutExercise) {
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const done = completed.includes(exercise.id);
+      const nextCompleted = done
+        ? completed.filter((item) => item !== exercise.id)
+        : [...completed, exercise.id];
+
+      if (readyForPersistence) {
+        const currentLogId = await ensureWorkoutLog();
+        if (!currentLogId) throw new Error("Unable to resolve workout log.");
+
+        const supabase = createBrowserClient();
+        await supabase.from("set_logs").delete().eq("workout_log_id", currentLogId).eq("workout_exercise_id", exercise.id);
+
+        const rows = Array.from({ length: exercise.sets }).map((_, index) => {
+          const setNumber = index + 1;
+          const entry = setState[entryKey(exercise.id, setNumber)];
+          return {
+            workout_log_id: currentLogId,
+            workout_exercise_id: exercise.id,
+            set_number: setNumber,
+            reps: entry?.reps ? Number(entry.reps) : null,
+            weight: entry?.weight ? Number(entry.weight) : null,
+            notes: entry?.notes ?? null,
+            completed: !done,
+          };
+        });
+
+        if (rows.length) {
+          const { error } = await supabase.from("set_logs").insert(rows);
+          if (error) throw error;
+        }
+
+        const { error: logError } = await supabase
+          .from("workout_logs")
+          .update({ status: "in_progress" })
+          .eq("id", currentLogId);
+        if (logError) throw logError;
+      } else {
+        Array.from({ length: exercise.sets }).forEach((_, index) => {
+          updateEntry(exercise.id, index + 1, { completed: !done });
+        });
+      }
+
+      setCompleted(nextCompleted);
+      Array.from({ length: exercise.sets }).forEach((_, index) => {
+        updateEntry(exercise.id, index + 1, { completed: !done });
+      });
+      setMessage(done ? "Exercise reopened." : "Exercise logged.");
+      window.setTimeout(() => setMessage(null), 1800);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to save exercise progress.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function completeWorkout() {
+    setSaving(true);
+    setMessage(null);
+    try {
+      if (readyForPersistence) {
+        const currentLogId = await ensureWorkoutLog();
+        if (!currentLogId) throw new Error("Unable to resolve workout log.");
+        const supabase = createBrowserClient();
+        const { error } = await supabase
+          .from("workout_logs")
+          .update({
+            feedback,
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", currentLogId);
+        if (error) throw error;
+      }
+      setMessage("Workout complete.");
+      window.setTimeout(() => setMessage(null), 2200);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to complete workout.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center gap-3 text-stone-600">
+          <LoaderCircle className="size-5 animate-spin" />
+          Restoring your workout session...
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -35,9 +414,9 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
               <h2 className="mt-4 font-serif text-4xl font-semibold">{workout.name}</h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-ivory-50/65">{workout.coachNotes}</p>
             </div>
-            <Button variant="warm" size="lg">
+            <Button variant="warm" size="lg" onClick={startSession} disabled={starting || saving}>
               <PlayCircle className="size-5" />
-              Start session
+              {starting ? "Starting..." : logId ? "Session active" : "Start session"}
             </Button>
           </div>
           <div className="mt-7">
@@ -45,7 +424,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
               <span>Workout completion</span>
               <span>{completed.length}/{total}</span>
             </div>
-            <Progress value={(completed.length / total) * 100} />
+            <Progress value={completionPercent} />
           </div>
         </div>
       </Card>
@@ -65,7 +444,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
             <div className="space-y-4">
               {block.exercises.map((exercise) => {
                 const done = completed.includes(exercise.id);
-                const reference = exerciseLibrary.find((item) => item.id === exercise.exerciseId);
+                const reference = referenceExercises.get(exercise.exerciseId);
                 return (
                   <div key={exercise.id} className="rounded-[1.75rem] border border-stone-200 bg-stone-50/70 p-4">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -84,7 +463,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                           <Eye className="size-4" />
                           Watch / review form
                         </Button>
-                        <Button variant={done ? "secondary" : "default"} onClick={() => toggle(exercise.id)}>
+                        <Button variant={done ? "secondary" : "default"} onClick={() => void saveExerciseProgress(exercise)} disabled={saving}>
                           <Check className="size-4" />
                           {done ? "Logged" : "Mark done"}
                         </Button>
@@ -120,15 +499,34 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                       </button>
                     ) : null}
                     <div className="mt-4 grid gap-3 sm:grid-cols-5">
-                      {Array.from({ length: exercise.sets }).map((_, setIndex) => (
-                        <div key={setIndex} className="rounded-2xl bg-white/80 p-3">
-                          <p className="mb-2 text-xs font-semibold text-stone-500">Set {setIndex + 1}</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input placeholder={exercise.reps} aria-label="reps" />
-                            <Input placeholder="lbs" aria-label="weight" />
+                      {Array.from({ length: exercise.sets }).map((_, setIndex) => {
+                        const setNumber = setIndex + 1;
+                        const currentEntry = setState[entryKey(exercise.id, setNumber)] ?? {
+                          reps: "",
+                          weight: "",
+                          notes: "",
+                          completed: false,
+                        };
+                        return (
+                          <div key={setNumber} className="rounded-2xl bg-white/80 p-3">
+                            <p className="mb-2 text-xs font-semibold text-stone-500">Set {setNumber}</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input
+                                value={currentEntry.reps}
+                                onChange={(event) => updateEntry(exercise.id, setNumber, { reps: event.target.value })}
+                                placeholder={exercise.reps}
+                                aria-label="reps"
+                              />
+                              <Input
+                                value={currentEntry.weight}
+                                onChange={(event) => updateEntry(exercise.id, setNumber, { weight: event.target.value })}
+                                placeholder="lbs"
+                                aria-label="weight"
+                              />
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                     <div className="mt-4 grid gap-3 text-xs text-stone-500 sm:grid-cols-4">
                       <span>Tempo: {exercise.tempo}</span>
@@ -154,9 +552,17 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
             <p className="text-sm text-stone-500">Send context your trainer can actually coach from.</p>
           </div>
         </div>
-        <Textarea className="mt-4" placeholder="How did the session feel? Any pain, wins, or adjustments?" />
+        <Textarea
+          className="mt-4"
+          value={feedback}
+          onChange={(event) => setFeedback(event.target.value)}
+          placeholder="How did the session feel? Any pain, wins, or adjustments?"
+        />
         <div className="mt-4 flex justify-end">
-          <Button variant="warm">Mark workout complete</Button>
+          <Button variant="warm" onClick={() => void completeWorkout()} disabled={saving}>
+            <Save className="size-4" />
+            {saving ? "Saving..." : "Mark workout complete"}
+          </Button>
         </div>
       </Card>
 
@@ -168,6 +574,12 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
         prescription={referenceExercise?.prescription}
         exercise={referenceExercise?.exercise}
       />
+
+      {message ? (
+        <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">
+          {message}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -3,9 +3,11 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { workouts } from "@/lib/demo-data";
+import { getClientWorkouts } from "@/lib/workouts";
 
-export default function ClientWorkoutsPage() {
+export default async function ClientWorkoutsPage() {
+  const { workouts } = await getClientWorkouts();
+
   return (
     <AppShell role="client" title="My workouts" subtitle="Upcoming and completed workouts with clear guidance and logging.">
       <div className="grid gap-5 md:grid-cols-2">

@@ -78,6 +78,7 @@ export type WorkoutBlock = {
 
 export type Workout = {
   id: string;
+  trainingPlanId?: string;
   name: string;
   dayLabel: string;
   duration: string;

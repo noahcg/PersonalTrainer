@@ -121,6 +121,7 @@ export const exercises: Exercise[] = [
 export const workouts: Workout[] = [
   {
     id: "lower-strength-a",
+    trainingPlanId: "strong-calm-12",
     name: "Lower Strength A",
     dayLabel: "Week 5 / Day 1",
     duration: "54 min",
