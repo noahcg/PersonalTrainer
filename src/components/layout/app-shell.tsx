@@ -12,13 +12,13 @@ import {
   Megaphone,
   MessageCircle,
   Settings,
-  Sparkles,
   TrendingUp,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/types";
 import { Avatar } from "@/components/ui/avatar";
+import { NGLogoLockup } from "@/components/brand/ng-logo";
 
 const trainerNav = [
   { href: "/trainer/dashboard", label: "Dashboard", icon: Home },
@@ -59,18 +59,12 @@ export function AppShell({
 
   return (
     <div className="min-h-screen px-3 py-3 text-charcoal-950 sm:px-5 lg:px-6">
-      <div className="mx-auto grid max-w-[1500px] gap-5 lg:grid-cols-[280px_1fr]">
-        <aside className="sticky top-5 hidden h-[calc(100vh-2.5rem)] rounded-[2.25rem] border border-white/70 bg-charcoal-950/92 p-4 text-ivory-50 shadow-soft backdrop-blur-xl lg:block">
-          <Link href="/" className="flex items-center gap-3 rounded-[1.5rem] px-3 py-4">
-            <div className="grid size-11 place-items-center rounded-2xl bg-bronze-500 shadow-warm">
-              <Sparkles className="size-5" />
-            </div>
-            <div>
-              <p className="font-serif text-2xl font-semibold leading-none">Aurelian</p>
-              <p className="text-xs text-ivory-50/55">Coach studio</p>
-            </div>
+      <div className="mx-auto grid max-w-[1500px] gap-5 lg:grid-cols-[238px_1fr]">
+        <aside className="sticky top-5 hidden h-[calc(100vh-2.5rem)] flex-col overflow-hidden rounded-[2rem] border border-white/8 bg-charcoal-950 px-4 py-5 text-ivory-50 shadow-soft lg:flex">
+          <Link href="/" className="block rounded-[1.25rem] px-3 py-3">
+            <NGLogoLockup tone="light" subtext="Coaching" />
           </Link>
-          <nav suppressHydrationWarning className="mt-6 space-y-1">
+          <nav suppressHydrationWarning className="mt-6 flex-1 space-y-1 overflow-y-auto pr-1">
             {nav.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = item.icon;
@@ -80,7 +74,7 @@ export function AppShell({
                   href={item.href}
                   className={cn(
                     "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-ivory-50/68 transition",
-                    active ? "bg-white/12 text-white shadow-inner-soft" : "hover:bg-white/8 hover:text-white",
+                    active ? "bg-white/10 text-white shadow-inner-soft" : "hover:bg-white/6 hover:text-white",
                   )}
                 >
                   <Icon className={cn("size-4", active ? "text-bronze-200" : "text-ivory-50/40 group-hover:text-bronze-200")} />
@@ -89,24 +83,25 @@ export function AppShell({
               );
             })}
           </nav>
-          <div className="absolute inset-x-4 bottom-4 rounded-[1.7rem] border border-white/10 bg-white/8 p-4">
-            <p className="text-xs uppercase tracking-[0.28em] text-bronze-200">Today</p>
-            <p className="mt-2 text-sm leading-6 text-ivory-50/75">
-              {role === "trainer" ? "3 clients need review. 8 workouts scheduled." : "Lower Strength A is ready when you are."}
+          <div className="mt-4 rounded-[1.7rem] border border-white/10 bg-white/6 p-4">
+            <p className="text-[0.65rem] uppercase tracking-[0.32em] text-bronze-200/88">Focus this week</p>
+            <p className="mt-3 text-sm leading-6 text-ivory-50/75">Clear coaching. Real progress.</p>
+            <p className="mt-3 text-xs leading-5 text-ivory-50/52">
+              {role === "trainer" ? "3 clients need review. 8 workouts are scheduled." : "Your plan is structured so the next step is always clear."}
             </p>
           </div>
         </aside>
 
         <main suppressHydrationWarning className="min-w-0 pb-24 lg:pb-5">
-          <header className="mb-5 rounded-[2.25rem] border border-white/70 bg-white/60 p-4 shadow-soft backdrop-blur-xl sm:p-6">
+          <header className="mb-5 rounded-[2rem] border border-white/70 bg-white/52 p-4 shadow-soft backdrop-blur-xl sm:p-6">
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <motion.p
                   initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-xs font-semibold uppercase tracking-[0.32em] text-bronze-600"
+                  className="text-[0.66rem] font-semibold uppercase tracking-[0.34em] text-bronze-600"
                 >
-                  {role === "trainer" ? "Trainer command center" : "Client coaching space"}
+                  {role === "trainer" ? "Nick Glushien coaching command center" : "Nick Glushien client experience"}
                 </motion.p>
                 <motion.h1
                   initial={false}
@@ -118,14 +113,14 @@ export function AppShell({
                 </motion.h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">{subtitle}</p>
               </div>
-              <div className="flex items-center gap-3 rounded-full border border-stone-200 bg-white/70 p-2 shadow-inner-soft">
+              <div className="flex items-center gap-3 rounded-full border border-stone-200/80 bg-white/72 p-2 shadow-inner-soft">
                 <Avatar
-                  name={role === "trainer" ? "Avery Stone" : "Mara Lee"}
+                  name={role === "trainer" ? "Nick Glushien" : "Mara Lee"}
                   src={role === "trainer" ? undefined : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80"}
                 />
                 <div className="pr-3">
-                  <p className="text-sm font-semibold">{role === "trainer" ? "Avery Stone" : "Mara Lee"}</p>
-                  <p className="text-xs text-stone-500">{role === "trainer" ? "Head trainer" : "Strong & Calm 12"}</p>
+                  <p className="text-sm font-semibold">{role === "trainer" ? "Nick Glushien" : "Mara Lee"}</p>
+                  <p className="text-xs text-stone-500">{role === "trainer" ? "Clear coaching. Real progress." : "Guided by Nick Glushien Coaching"}</p>
                 </div>
               </div>
             </div>

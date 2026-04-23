@@ -232,7 +232,20 @@ export function TrainerWorkoutBuilder({
 
   return (
     <>
-      <div className="grid gap-5 xl:grid-cols-[320px_1fr_360px]">
+      <Card className="mb-5 p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Workout controls</p>
+            <p className="mt-2 text-sm leading-6 text-stone-600">Shape complete sessions with clean structure, readable prescriptions, and mobile-ready clarity for clients.</p>
+          </div>
+          <div className="flex gap-3 text-sm text-stone-500">
+            <div className="rounded-full bg-stone-50 px-4 py-2">{workouts.length} workouts</div>
+            <div className="rounded-full bg-stone-50 px-4 py-2">{exercises.length} exercises</div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-5 xl:grid-cols-[300px_1fr_340px]">
         <Card>
           <CardHeader>
             <CardTitle>Workouts</CardTitle>
@@ -256,8 +269,8 @@ export function TrainerWorkoutBuilder({
                 key={workout.id}
                 type="button"
                 onClick={() => selectWorkout(workout)}
-                className={`w-full rounded-[1.5rem] border px-4 py-4 text-left transition ${
-                  activeWorkoutId === workout.id ? "border-bronze-300 bg-bronze-50" : "border-stone-200 bg-white/75"
+                className={`w-full rounded-[1.35rem] border px-4 py-4 text-left transition ${
+                  activeWorkoutId === workout.id ? "border-bronze-300 bg-bronze-50" : "border-stone-200 bg-white/80"
                 }`}
               >
                 <p className="font-semibold">{workout.name}</p>
@@ -267,7 +280,7 @@ export function TrainerWorkoutBuilder({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>{draft.id ? "Edit workout" : "Create workout"}</CardTitle>
           </CardHeader>
@@ -290,7 +303,7 @@ export function TrainerWorkoutBuilder({
             </select>
             <Textarea value={draft.warmup} onChange={(event) => setDraft((current) => ({ ...current, warmup: event.target.value }))} placeholder="Warm-up" />
             {draft.blocks.map((block) => (
-              <div key={block.id} className="rounded-[1.75rem] border border-stone-200 bg-stone-50/80 p-4">
+              <div key={block.id} className="rounded-[1.5rem] border border-stone-200 bg-stone-50/86 p-4">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div className="flex-1 space-y-3">
                     <Input value={block.label} onChange={(event) => setBlock(block.id, (current) => ({ ...current, label: event.target.value }))} />
@@ -302,7 +315,7 @@ export function TrainerWorkoutBuilder({
                 </div>
                 <div className="space-y-3">
                   {block.exercises.map((exercise) => (
-                    <div key={exercise.id} className="grid gap-3 rounded-[1.5rem] bg-white/80 p-4 md:grid-cols-[1.2fr_repeat(5,90px)] md:items-start">
+                    <div key={exercise.id} className="grid gap-3 rounded-[1.35rem] bg-white/90 p-4 md:grid-cols-[1.2fr_repeat(5,90px)] md:items-start">
                       <div className="space-y-2">
                         <p className="font-semibold">{exercise.name}</p>
                         <Textarea
@@ -349,7 +362,7 @@ export function TrainerWorkoutBuilder({
           <CardContent className="space-y-3">
             {activeBlockId ? <Badge variant="bronze">Adding to selected block</Badge> : null}
             {filteredExercises.map((exercise) => (
-              <div key={exercise.id} className="rounded-2xl bg-stone-50 p-4">
+              <div key={exercise.id} className="rounded-[1.35rem] bg-stone-50/86 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold">{exercise.name}</p>

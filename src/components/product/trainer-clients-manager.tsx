@@ -214,6 +214,19 @@ export function TrainerClientsManager({
 
   return (
     <>
+      <Card className="mb-5 p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Roster controls</p>
+            <p className="mt-2 text-sm leading-6 text-stone-600">Search, select, and manage your active client base without losing the human context of each profile.</p>
+          </div>
+          <div className="flex gap-3 text-sm text-stone-500">
+            <div className="rounded-full bg-stone-50 px-4 py-2">{clients.length} total clients</div>
+            <div className="rounded-full bg-stone-50 px-4 py-2">{selectedIds.length} selected</div>
+          </div>
+        </div>
+      </Card>
+
       <div className="mb-5 flex flex-col gap-3 sm:flex-row">
         <Input
           value={query}

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { HeartPulse, MessageSquareText, NotebookPen } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
@@ -82,7 +84,31 @@ export function ClientMessagesPanel() {
 
   return (
     <AppShell role="client" title="Messages & check-ins" subtitle="Reply to coach notes and submit recovery context so your plan can adapt.">
-      <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
+      <div className="space-y-5">
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 p-7 text-ivory-50">
+            <Badge variant="bronze">Nick Glushien Coaching</Badge>
+            <h2 className="mt-5 max-w-2xl font-serif text-4xl font-semibold leading-tight">A calmer coaching relationship comes from clear notes, fast replies, and honest check-ins.</h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-ivory-50/65">
+              Use this space to keep your coach informed without friction. Clear coaching. Real progress.
+            </p>
+          </Card>
+          <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-1">
+            {[
+              { label: "Messages", value: String(messages.length), icon: MessageSquareText, tone: "text-bronze-500" },
+              { label: "Check-ins", value: "Weekly", icon: HeartPulse, tone: "text-sage-700" },
+              { label: "Coach notes", value: "Visible", icon: NotebookPen, tone: "text-charcoal-950" },
+            ].map(({ label, value, icon: Icon, tone }) => (
+              <Card key={label} className="p-5">
+                <Icon className={`size-5 ${tone}`} />
+                <p className="mt-6 text-[0.66rem] uppercase tracking-[0.28em] text-stone-500">{label}</p>
+                <p className="mt-2 font-serif text-4xl font-semibold text-charcoal-950">{value}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
         <Card className="p-5">
           <div className="space-y-4">
             {messages.map((messageItem) => (
@@ -122,6 +148,7 @@ export function ClientMessagesPanel() {
           <Textarea className="mt-3" value={checkIn.notes} onChange={(event) => setCheckIn((current) => ({ ...current, notes: event.target.value }))} placeholder="Anything your trainer should know?" />
           <Button className="mt-4 w-full" variant="warm" onClick={submitCheckIn}>Submit check-in</Button>
         </Card>
+      </div>
       </div>
       {message ? <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">{message}</div> : null}
     </AppShell>

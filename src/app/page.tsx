@@ -1,82 +1,127 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Dumbbell, MessageCircle, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowRight, CalendarCheck, CheckCircle2, Dumbbell, HeartPulse, MessageCircle, TrendingUp } from "lucide-react";
+import { PublicSiteShell } from "@/components/marketing/public-site-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export default function Home() {
-  return (
-    <main suppressHydrationWarning className="min-h-screen px-5 py-6">
-      <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-7xl overflow-hidden rounded-[2.75rem] border border-white/70 bg-white/55 shadow-soft backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="flex flex-col justify-between p-6 sm:p-10 lg:p-14">
-          <div className="flex items-center gap-3">
-            <div className="grid size-12 place-items-center rounded-2xl bg-charcoal-950 text-ivory-50">
-              <Sparkles className="size-5 text-bronze-200" />
-            </div>
-            <div>
-              <p className="font-serif text-3xl font-semibold leading-none">Aurelian Coach</p>
-              <p className="text-sm text-stone-500">Personal training, refined.</p>
-            </div>
-          </div>
+  const pillars = [
+    { label: "Coaching", icon: Dumbbell, tone: "text-bronze-600" },
+    { label: "Structure", icon: CalendarCheck, tone: "text-sage-700" },
+    { label: "Progress", icon: TrendingUp, tone: "text-bronze-600" },
+    { label: "Wellness", icon: HeartPulse, tone: "text-sage-700" },
+  ];
 
-          <div className="py-16">
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-bronze-600">Premium coaching operations</p>
-            <h1 className="mt-5 max-w-4xl font-serif text-6xl font-semibold leading-[0.92] tracking-tight text-charcoal-950 sm:text-7xl lg:text-8xl">
-              Client management that feels like a private studio.
-            </h1>
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-stone-600">
-              Build plans, guide workouts, track progress, review check-ins, and keep clients supported from a calm,
-              native-quality coaching workspace.
+  return (
+    <PublicSiteShell>
+      <section className="px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
+        <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+          <div>
+            <p className="inline-flex rounded-full border border-bronze-200 bg-bronze-50 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-bronze-700">
+              Clear coaching. Real progress.
             </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <h1 className="mt-6 max-w-4xl font-serif text-5xl font-semibold leading-[0.95] text-charcoal-950 sm:text-6xl lg:text-7xl">
+              Personal training with structure, clarity, and visible momentum.
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
+              This is the public front door for Nick Glushien Coaching. Prospective clients can learn about the coach,
+              understand the process, and review pricing before they ever log in.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" variant="warm">
-                <Link href="/trainer/dashboard">
-                  Open trainer demo <ArrowRight className="size-5" />
+                <Link href="/pricing">
+                  View pricing <ArrowRight className="size-5" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="secondary">
-                <Link href="/client/home">Open client demo</Link>
+                <Link href="/about">Meet the coach</Link>
               </Button>
             </div>
           </div>
 
-          <div className="grid gap-3 text-sm text-stone-600 sm:grid-cols-3">
-            {["Supabase Auth + RLS ready", "Seeded Postgres schema", "Vercel deployable"].map((item) => (
-              <div key={item} className="flex items-center gap-2">
-                <CheckCircle2 className="size-4 text-sage-500" />
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative hidden bg-charcoal-950 p-8 text-ivory-50 lg:block">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_0%,rgba(200,141,74,.28),transparent_28rem)]" />
-          <div className="relative grid h-full content-center gap-5">
-            <Card className="ml-10 bg-white/10 p-5 text-ivory-50 ring-1 ring-white/10">
-              <p className="text-sm text-ivory-50/60">Today’s adherence</p>
-              <p className="mt-4 font-serif text-6xl font-semibold">91%</p>
-              <p className="mt-3 text-sm text-ivory-50/60">Mara completed Lower Strength A with a new controlled RDL best.</p>
-            </Card>
-            <div className="grid grid-cols-2 gap-5">
-              <Card className="bg-white/10 p-5 text-ivory-50 ring-1 ring-white/10">
-                <Dumbbell className="size-5 text-bronze-200" />
-                <p className="mt-8 text-3xl font-semibold">8</p>
-                <p className="text-sm text-ivory-50/55">workouts scheduled</p>
-              </Card>
-              <Card className="bg-white/10 p-5 text-ivory-50 ring-1 ring-white/10">
-                <MessageCircle className="size-5 text-sage-200" />
-                <p className="mt-8 text-3xl font-semibold">3</p>
-                <p className="text-sm text-ivory-50/55">check-ins to review</p>
-              </Card>
+          <Card className="bg-charcoal-950 p-6 text-ivory-50 ring-1 ring-white/10 lg:p-7">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">Who this is for</p>
+            <div className="mt-5 space-y-4">
+              {[
+                "Clients who want expert guidance without confusion.",
+                "Busy professionals who need training that fits real life.",
+                "People who value accountability, communication, and measurable progress.",
+              ].map((item) => (
+                <div key={item} className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-1 size-4 shrink-0 text-bronze-200" />
+                  <p className="text-sm leading-6 text-ivory-50/72">{item}</p>
+                </div>
+              ))}
             </div>
-            <Card className="mr-12 bg-white/10 p-5 text-ivory-50 ring-1 ring-white/10">
-              <TrendingUp className="size-5 text-bronze-200" />
-              <p className="mt-3 text-xl font-semibold">Progress signal</p>
-              <p className="mt-2 text-sm leading-6 text-ivory-50/60">Sleep trending up for 3 clients after habit reminder sequence.</p>
-            </Card>
-          </div>
+          </Card>
         </div>
       </section>
-    </main>
+
+      <section className="px-5 pb-12 sm:px-8 lg:px-10">
+        <div className="grid gap-3 text-sm text-stone-700 sm:grid-cols-2 lg:grid-cols-4">
+          {pillars.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-stone-200/80 bg-white/72 px-4 py-4 shadow-inner-soft">
+                <div className="grid size-10 place-items-center rounded-full bg-stone-100">
+                  <Icon className={`size-4 ${item.tone}`} />
+                </div>
+                <span className="font-medium">{item.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="px-5 pb-12 sm:px-8 lg:px-10">
+        <div className="grid gap-5 lg:grid-cols-3">
+          <Card className="p-6">
+            <CalendarCheck className="size-5 text-bronze-600" />
+            <h2 className="mt-5 text-2xl font-semibold text-charcoal-950">Clear planning</h2>
+            <p className="mt-3 text-sm leading-6 text-stone-600">
+              Every client gets a structured training path instead of improvised week-to-week sessions.
+            </p>
+          </Card>
+          <Card className="p-6">
+            <MessageCircle className="size-5 text-sage-700" />
+            <h2 className="mt-5 text-2xl font-semibold text-charcoal-950">Practical coaching support</h2>
+            <p className="mt-3 text-sm leading-6 text-stone-600">
+              Feedback, check-ins, and communication stay straightforward so clients always know the next priority.
+            </p>
+          </Card>
+          <Card className="p-6">
+            <TrendingUp className="size-5 text-bronze-600" />
+            <h2 className="mt-5 text-2xl font-semibold text-charcoal-950">Visible progress</h2>
+            <p className="mt-3 text-sm leading-6 text-stone-600">
+              Training is designed to produce momentum clients can feel and track over time.
+            </p>
+          </Card>
+        </div>
+      </section>
+
+      <section className="px-5 pb-12 sm:px-8 lg:px-10 lg:pb-16">
+        <Card className="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center lg:p-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">Next steps</p>
+            <h2 className="mt-4 font-serif text-3xl font-semibold text-charcoal-950 sm:text-4xl">
+              Prospective clients can learn about the coach first, then review pricing with context.
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-600">
+              The app still supports current clients after login, but the public website now has a clear path for new visitors.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button asChild size="lg" variant="warm">
+              <Link href="/about">
+                Learn about Nick <ArrowRight className="size-5" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="secondary">
+              <Link href="/pricing">See pricing</Link>
+            </Button>
+          </div>
+        </Card>
+      </section>
+    </PublicSiteShell>
   );
 }

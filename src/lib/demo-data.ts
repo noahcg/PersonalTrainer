@@ -201,7 +201,7 @@ export const bulletins: BulletinPost[] = [
     postType: "session",
     requiresRsvp: true,
     sessionStartsAt: "2026-04-25T09:00:00.000Z",
-    sessionLocation: "Aurelian Studio · River North",
+    sessionLocation: "Nick Glushien Studio · River North",
     sessionCapacity: 8,
     clientRsvp: null,
     rsvpSummary: { attending: 0, notAttending: 0 },

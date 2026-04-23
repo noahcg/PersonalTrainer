@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CalendarRange, ShieldPlus, Target } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
@@ -41,7 +43,31 @@ export function ClientProfileEditor() {
 
   return (
     <AppShell role="client" title="Profile" subtitle="Keep your goals, limitations, schedule, and preferences current for better coaching.">
-      <Card className="max-w-4xl">
+      <div className="space-y-5">
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 p-7 text-ivory-50">
+            <Badge variant="bronze">Client profile</Badge>
+            <h2 className="mt-5 max-w-2xl font-serif text-4xl font-semibold leading-tight">The clearer your context, the better your coaching can adapt.</h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-ivory-50/65">
+              Keep goals, limitations, and schedule updated so each plan adjustment stays relevant and supportive.
+            </p>
+          </Card>
+          <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-1">
+            {[
+              { label: "Goals", value: "Current", icon: Target, tone: "text-bronze-500" },
+              { label: "Availability", value: "Saved", icon: CalendarRange, tone: "text-sage-700" },
+              { label: "Limitations", value: "Visible", icon: ShieldPlus, tone: "text-charcoal-950" },
+            ].map(({ label, value, icon: Icon, tone }) => (
+              <Card key={label} className="p-5">
+                <Icon className={`size-5 ${tone}`} />
+                <p className="mt-6 text-[0.66rem] uppercase tracking-[0.28em] text-stone-500">{label}</p>
+                <p className="mt-2 font-serif text-4xl font-semibold text-charcoal-950">{value}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        <Card className="max-w-4xl">
         <CardHeader>
           <div className="flex items-center gap-4">
             <Avatar name={base.name} src={base.photo} className="size-20" />
@@ -59,6 +85,7 @@ export function ClientProfileEditor() {
           <Button variant="warm" onClick={saveProfile}>Save profile</Button>
         </CardContent>
       </Card>
+      </div>
       {message ? <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">{message}</div> : null}
     </AppShell>
   );
