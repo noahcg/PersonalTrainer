@@ -54,3 +54,28 @@ export async function readImageFileAsDataUrl(file: File) {
 export function dispatchProfileUpdated() {
   window.dispatchEvent(new Event(profileUpdatedEventName));
 }
+
+export async function uploadProfilePhoto(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Please choose an image file.");
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error("Please choose an image under 2MB.");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch("/api/profile-photo", {
+    method: "POST",
+    body: formData,
+  });
+
+  const payload = (await response.json()) as { error?: string; url?: string };
+  if (!response.ok || !payload.url) {
+    throw new Error(payload.error ?? "Unable to upload photo.");
+  }
+
+  return payload.url;
+}

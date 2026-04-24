@@ -12,11 +12,13 @@ import {
   dispatchProfileUpdated,
   readDemoTrainerSettings,
   readImageFileAsDataUrl,
+  uploadProfilePhoto,
   writeDemoTrainerSettings,
 } from "@/lib/profile-identity";
 
 export function TrainerSettingsForm() {
   const [settings, setSettings] = useState(defaultDemoTrainerSettings);
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -59,6 +61,7 @@ export function TrainerSettingsForm() {
     try {
       const photo = await readImageFileAsDataUrl(file);
       setSettings((current) => ({ ...current, photo }));
+      setPendingPhotoFile(file);
       setMessage("Photo ready to save.");
       window.setTimeout(() => setMessage(null), 1800);
     } catch (error) {
@@ -72,34 +75,27 @@ export function TrainerSettingsForm() {
 
     try {
       if (hasSupabaseEnv()) {
-        const supabase = createBrowserClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const photoUrl = pendingPhotoFile ? await uploadProfilePhoto(pendingPhotoFile) : settings.photo;
+        const response = await fetch("/api/trainer/settings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: settings.name,
+            email: settings.email,
+            bio: settings.bio,
+            photo: photoUrl || null,
+          }),
+        });
 
-        if (!user) {
-          throw new Error("You need to be logged in to update trainer settings.");
+        const payload = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Unable to save trainer settings.");
         }
 
-        const [{ error: profileError }, { error: trainerError }] = await Promise.all([
-          supabase
-            .from("profiles")
-            .update({
-              full_name: settings.name,
-              email: settings.email,
-              avatar_url: settings.photo || null,
-            })
-            .eq("id", user.id),
-          supabase
-            .from("trainers")
-            .update({
-              coaching_bio: settings.bio,
-            })
-            .eq("profile_id", user.id),
-        ]);
-
-        if (profileError) throw profileError;
-        if (trainerError) throw trainerError;
+        setSettings((current) => ({ ...current, photo: photoUrl }));
+        setPendingPhotoFile(null);
       } else {
         writeDemoTrainerSettings(settings);
       }
@@ -135,7 +131,13 @@ export function TrainerSettingsForm() {
                 </label>
               </Button>
               {settings.photo ? (
-                <Button variant="ghost" onClick={() => setSettings((current) => ({ ...current, photo: "" }))}>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSettings((current) => ({ ...current, photo: "" }));
+                    setPendingPhotoFile(null);
+                  }}
+                >
                   Remove photo
                 </Button>
               ) : null}

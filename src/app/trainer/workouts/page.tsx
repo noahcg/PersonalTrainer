@@ -24,7 +24,7 @@ export default async function WorkoutsPage() {
               Build warm-ups, main lifts, accessories, and finishers in a sequence that feels clear, coach-led, and immediately actionable.
             </p>
           </Card>
-          <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-1">
             {[
               { label: "Workout library", value: String(workouts.length), icon: Layers3 },
               { label: "Exercise options", value: String(exercises.length), icon: ListChecks },

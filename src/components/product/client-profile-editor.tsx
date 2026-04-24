@@ -10,9 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { clients as demoClients } from "@/lib/demo-data";
 import { readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
-import { dispatchProfileUpdated, readImageFileAsDataUrl } from "@/lib/profile-identity";
+import { dispatchProfileUpdated, readImageFileAsDataUrl, uploadProfilePhoto } from "@/lib/profile-identity";
 import { pricingTierDetail, pricingTierLabel } from "@/lib/pricing";
-import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Client } from "@/lib/types";
 
 export function ClientProfileEditor({
@@ -29,6 +28,7 @@ export function ClientProfileEditor({
     notes: initialClient.notes,
   });
   const [client, setClient] = useState(initialClient);
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -62,19 +62,32 @@ export function ClientProfileEditor({
 
     try {
       if (mode === "supabase") {
-        const supabase = createBrowserClient();
-        const { error } = await supabase
-          .from("clients")
-          .update({
-            goals: nextClient.goals,
-            availability: nextClient.availability,
-            injuries_limitations: nextClient.injuries,
-            notes: nextClient.notes,
-            profile_photo_url: nextClient.photo || null,
-          })
-          .eq("id", nextClient.id);
+        const photoUrl = pendingPhotoFile ? await uploadProfilePhoto(pendingPhotoFile) : nextClient.photo;
+        const resolvedClient = {
+          ...nextClient,
+          photo: photoUrl,
+        };
+        const response = await fetch("/api/client/profile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            goals: resolvedClient.goals,
+            availability: resolvedClient.availability,
+            injuries: resolvedClient.injuries,
+            notes: resolvedClient.notes,
+            photo: resolvedClient.photo || null,
+          }),
+        });
 
-        if (error) throw error;
+        const payload = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Unable to save profile.");
+        }
+
+        setClient(resolvedClient);
+        setPendingPhotoFile(null);
       } else {
         const existing = readStoredDemoClientProfile(initialClient.id);
         writeStoredDemoClientProfile(initialClient.id, {
@@ -84,7 +97,9 @@ export function ClientProfileEditor({
         syncDemoClientRecord(nextClient, demoClients);
       }
 
-      setClient(nextClient);
+      if (mode !== "supabase") {
+        setClient(nextClient);
+      }
       dispatchProfileUpdated();
       setMessage("Profile saved.");
       window.setTimeout(() => setMessage(null), 1800);
@@ -102,6 +117,7 @@ export function ClientProfileEditor({
     try {
       const photo = await readImageFileAsDataUrl(file);
       setClient((current) => ({ ...current, photo }));
+      setPendingPhotoFile(file);
       setMessage("Photo ready to save.");
       window.setTimeout(() => setMessage(null), 1800);
     } catch (error) {
@@ -155,7 +171,13 @@ export function ClientProfileEditor({
                   </label>
                 </Button>
                 {client.photo ? (
-                  <Button variant="ghost" onClick={() => setClient((current) => ({ ...current, photo: "" }))}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setClient((current) => ({ ...current, photo: "" }));
+                      setPendingPhotoFile(null);
+                    }}
+                  >
                     Remove photo
                   </Button>
                 ) : null}

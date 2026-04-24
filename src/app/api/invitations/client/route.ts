@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { hasInviteEmailEnv, sendInviteEmail } from "@/lib/email";
 import { renderInviteEmailHtml, renderInviteEmailText } from "@/lib/invitations";
 import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
@@ -24,7 +25,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Supabase admin invite flow is not configured." }, { status: 500 });
     }
 
-    if (!hasInviteEmailEnv()) {
+    const isLocalInviteFallback = process.env.NODE_ENV !== "production" && !hasInviteEmailEnv();
+
+    if (!hasInviteEmailEnv() && !isLocalInviteFallback) {
       return NextResponse.json(
         { error: "Custom invite email is not configured. Add RESEND_API_KEY and INVITE_FROM_EMAIL." },
         { status: 500 },
@@ -62,6 +65,26 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient();
+    const { data: existingProfile, error: profileLookupError } = await admin
+      .from("profiles")
+      .select("id, role")
+      .eq("email", client.email)
+      .maybeSingle<{ id: string; role: "trainer" | "client" }>();
+
+    if (profileLookupError) {
+      return NextResponse.json({ error: profileLookupError.message }, { status: 500 });
+    }
+
+    if (existingProfile?.role === "trainer") {
+      return NextResponse.json(
+        {
+          error:
+            "This email already belongs to a trainer account. Use a different email address for the client.",
+        },
+        { status: 400 },
+      );
+    }
+
     const origin = new URL(request.url).origin;
     const redirectTo = `${origin}/auth/callback?next=/setup-account`;
 
@@ -82,23 +105,27 @@ export async function POST(request: Request) {
     }
 
     const actionLink = data.properties.action_link;
+    const hashedToken = data.properties.hashed_token;
+    const verificationType = data.properties.verification_type as EmailOtpType | undefined;
     if (!actionLink) {
       return NextResponse.json({ error: "Unable to generate invite link." }, { status: 500 });
     }
 
-    await sendInviteEmail({
-      to: client.email,
-      subject: subject.trim(),
-      html: renderInviteEmailHtml({
+    if (!isLocalInviteFallback) {
+      await sendInviteEmail({
+        to: client.email,
         subject: subject.trim(),
-        message: message.trim(),
-        actionLink,
-      }),
-      text: renderInviteEmailText({
-        message: message.trim(),
-        actionLink,
-      }),
-    });
+        html: renderInviteEmailHtml({
+          subject: subject.trim(),
+          message: message.trim(),
+          actionLink,
+        }),
+        text: renderInviteEmailText({
+          message: message.trim(),
+          actionLink,
+        }),
+      });
+    }
 
     const inviteSentAt = new Date().toISOString();
     const { error: updateError } = await supabase
@@ -110,7 +137,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, inviteSentAt });
+    return NextResponse.json({
+      ok: true,
+      inviteSentAt,
+      actionLink:
+        isLocalInviteFallback && hashedToken && verificationType
+          ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=${encodeURIComponent(verificationType)}&next=${encodeURIComponent("/setup-account")}`
+          : isLocalInviteFallback
+            ? actionLink
+            : undefined,
+      delivery: isLocalInviteFallback ? "local_link" : "email",
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unable to send invite." },

@@ -1,5 +1,5 @@
 import { brand } from "./brand";
-import type { BulletinPost, CheckIn, Client, Exercise, Message, Plan, ProgressPoint, Workout } from "./types";
+import type { BulletinPost, CheckIn, Client, Exercise, Message, Plan, ProgressPoint, Resource, Workout } from "./types";
 
 export const clients: Client[] = [
   {
@@ -194,10 +194,52 @@ export const progress: ProgressPoint[] = [
   { label: "Apr", weight: 142, adherence: 91, sleep: 7.4 },
 ];
 
-export const resources = [
-  { title: "Travel Week Strength Menu", type: "Guide", audience: "All active clients", minutes: "7 min read" },
-  { title: "Protein Without Overthinking", type: "Nutrition", audience: "New clients", minutes: "5 min read" },
-  { title: "Hip Reset Flow", type: "Video", audience: "Mara, Eli", minutes: "8 min" },
+export const resources: Resource[] = [
+  {
+    id: "resource-travel-week-strength-menu",
+    title: "Travel Week Strength Menu",
+    description: "A simplified training option clients can follow when schedules are tight and equipment is limited.",
+    type: "Guide",
+    url: "",
+    content:
+      "Use this when travel disrupts the normal routine. Prioritize one lower-body pattern, one upper-body pattern, one trunk movement, and a short conditioning finisher. Keep the effort around RPE 7 and leave the hotel gym feeling better than when you walked in.",
+    tags: ["travel", "strength", "busy schedule"],
+    audience: "all",
+    assignedClientIds: [],
+    assignedClientNames: [],
+    estimatedTime: "7 min read",
+    updatedAt: "Apr 20",
+  },
+  {
+    id: "resource-protein-without-overthinking",
+    title: "Protein Without Overthinking",
+    description: "A straightforward nutrition explainer for clients who need practical defaults instead of rigid tracking.",
+    type: "Nutrition",
+    url: "",
+    content:
+      "Aim for a protein source at each meal, repeat a few easy staples, and avoid chasing perfection. A simple rhythm beats a detailed spreadsheet if adherence is the real goal.",
+    tags: ["nutrition", "habits", "onboarding"],
+    audience: "all",
+    assignedClientIds: [],
+    assignedClientNames: [],
+    estimatedTime: "5 min read",
+    updatedAt: "Apr 18",
+  },
+  {
+    id: "resource-hip-reset-flow",
+    title: "Hip Reset Flow",
+    description: "A short reset for clients who need a calm mobility sequence before lower-body sessions.",
+    type: "Video",
+    url: "",
+    content:
+      "Move through breathing, hip airplanes, adductor rock-backs, and controlled split squat isometrics. The goal is to reduce stiffness and improve position awareness before loading.",
+    tags: ["mobility", "hips", "warm-up"],
+    audience: "personal",
+    assignedClientIds: ["mara-lee"],
+    assignedClientNames: ["Mara Lee"],
+    estimatedTime: "8 min",
+    updatedAt: "Apr 22",
+  },
 ];
 
 export const bulletins: BulletinPost[] = [

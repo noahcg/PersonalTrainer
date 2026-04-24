@@ -1,8 +1,9 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
+import Link from "next/link";
 import { motion } from "motion/react";
-import { Ban, Mail, PencilLine, Save, StickyNote, X } from "lucide-react";
+import { Ban, Copy, ExternalLink, Mail, PencilLine, Save, StickyNote, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { clientAccessDetail, clientAccessLabel } from "@/lib/client-access";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
@@ -39,6 +40,7 @@ export function TrainerClientProfile({
   const [draftNote, setDraftNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [invitePreviewLink, setInvitePreviewLink] = useState<string | null>(null);
 
   useEffect(() => {
     if (mode !== "demo") return;
@@ -213,7 +215,7 @@ export function TrainerClientProfile({
           }),
         });
 
-        const payload = (await response.json()) as { error?: string; inviteSentAt?: string };
+        const payload = (await response.json()) as { error?: string; inviteSentAt?: string; actionLink?: string };
         if (!response.ok) {
           throw new Error(payload.error ?? "Unable to send invite.");
         }
@@ -231,6 +233,18 @@ export function TrainerClientProfile({
 
         setClient(nextClient);
         setDraftClient(nextClient);
+        const nextInvitePreviewLink = payload.actionLink ?? null;
+        setInvitePreviewLink(nextInvitePreviewLink);
+        setInviteOpen(false);
+        setMessage(
+          nextInvitePreviewLink
+            ? client.accessStatus === "invite_pending"
+              ? "Invite link regenerated for local testing."
+              : "Invite link generated for local testing."
+            : client.accessStatus === "invite_pending"
+              ? "Invite resent."
+              : "Invite sent.",
+        );
       } else {
         const nextClient = {
           ...client,
@@ -243,10 +257,9 @@ export function TrainerClientProfile({
         setClient(nextClient);
         setDraftClient(nextClient);
         persist(nextClient, coachingNotes);
+        setInviteOpen(false);
+        setMessage(client.accessStatus === "invite_pending" ? "Invite resent." : "Invite sent.");
       }
-
-      setInviteOpen(false);
-      setMessage(client.accessStatus === "invite_pending" ? "Invite resent." : "Invite sent.");
       window.setTimeout(() => setMessage(null), 2400);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to send invite.");
@@ -295,6 +308,32 @@ export function TrainerClientProfile({
   return (
     <>
       <div className="space-y-5">
+        {invitePreviewLink ? (
+          <Card className="border-sage-200 bg-sage-50/55 p-5">
+            <p className="text-[0.66rem] uppercase tracking-[0.22em] text-sage-700">Local invite testing</p>
+            <p className="mt-2 text-sm leading-6 text-stone-700">
+              Email is not configured, so this setup link was generated for local testing. Open it in an incognito window to complete this client’s account setup.
+            </p>
+            <p className="mt-3 break-all text-sm leading-6 text-stone-600">{invitePreviewLink}</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void navigator.clipboard.writeText(invitePreviewLink)}
+              >
+                <Copy className="size-4" />
+                Copy link
+              </Button>
+              <Button asChild variant="warm" size="sm">
+                <Link href={invitePreviewLink} target="_blank" rel="noreferrer">
+                  Open link
+                  <ExternalLink className="size-4" />
+                </Link>
+              </Button>
+            </div>
+          </Card>
+        ) : null}
+
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {sections.map(([title, body]) => (
             <Card key={title}>

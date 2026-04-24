@@ -23,6 +23,7 @@ import { demoClientsStorageKey } from "@/lib/demo-client-storage";
 import { profileUpdatedEventName, readDemoTrainerSettings } from "@/lib/profile-identity";
 import { createClient as createBrowserClient, hasSupabaseEnv } from "@/lib/supabase-browser";
 import { cn } from "@/lib/utils";
+import { appVersion } from "@/lib/version";
 import type { Role } from "@/lib/types";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ const clientNav = [
   { href: "/client/plan", label: "My Plan", icon: CalendarCheck },
   { href: "/client/workouts", label: "My Workouts", icon: Dumbbell },
   { href: "/client/progress", label: "Progress", icon: TrendingUp },
+  { href: "/client/resources", label: "Resources", icon: BookOpen },
   { href: "/client/messages", label: "Messages", icon: MessageCircle },
   { href: "/client/profile", label: "Profile", icon: Users },
 ];
@@ -199,6 +201,9 @@ export function AppShell({
               );
             })}
           </nav>
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-[11px] uppercase tracking-[0.22em] text-ivory-50/42">
+            Version {appVersion}
+          </div>
         </aside>
 
         <main suppressHydrationWarning className="min-w-0 pb-24 lg:pb-5">
@@ -242,7 +247,7 @@ export function AppShell({
       </div>
 
       <nav suppressHydrationWarning className="fixed inset-x-3 bottom-3 z-50 flex gap-1 overflow-x-auto rounded-full border border-white/70 bg-charcoal-950/92 p-2 shadow-soft backdrop-blur-xl lg:hidden">
-        {nav.slice(0, 5).map((item) => {
+        {nav.slice(0, role === "trainer" ? 5 : nav.length).map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (

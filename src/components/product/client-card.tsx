@@ -23,7 +23,6 @@ export function ClientCard({
   const needsAttention = client.status === "needs_attention";
   const primaryStatus = clientAccessLabel(client.accessStatus);
   const primaryVariant = client.accessStatus === "account_active" ? "sage" : "default";
-
   const cardBody = (
     <Card
       className={cn(
@@ -83,16 +82,20 @@ export function ClientCard({
   if (selectable) {
     return (
       <div className="min-w-0 space-y-3">
-        <button
-          type="button"
-          onClick={() => onToggleSelect?.(client.id)}
-          className="flex w-full items-center justify-between rounded-2xl border border-stone-200 bg-white/60 px-4 py-2.5 text-sm text-stone-600"
-        >
-          <span>Include in bulk actions</span>
-          <span className={cn("rounded-full px-3 py-1 text-xs font-medium", selected ? "bg-bronze-500 text-white" : "bg-stone-100 text-stone-600")}>
-            {selected ? "Selected" : "Select"}
+        <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-stone-200 bg-white/60 px-4 py-2.5 text-sm text-stone-600">
+          <span className="font-medium text-charcoal-950">Select client</span>
+          <span className="flex items-center gap-3">
+            <span className="text-xs text-stone-500">{selected ? "Included" : "Not selected"}</span>
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelect?.(client.id)}
+              onClick={(event) => event.stopPropagation()}
+              className="size-4 rounded border-stone-300 text-bronze-500 focus:ring-bronze-300"
+              aria-label={`Select ${client.name}`}
+            />
           </span>
-        </button>
+        </label>
         <Link href={`/trainer/clients/${client.id}`} className="block min-w-0">
           {cardBody}
         </Link>

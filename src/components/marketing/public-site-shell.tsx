@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { NGLogoLockup } from "@/components/brand/ng-logo";
 import { brand } from "@/lib/brand";
+import { appVersion } from "@/lib/version";
 import { Button } from "@/components/ui/button";
 
 export function PublicSiteShell({
@@ -53,6 +54,7 @@ export function PublicSiteShell({
               <Link className="transition hover:text-charcoal-950" href="/login">
                 Existing client login
               </Link>
+              <span className="text-stone-400">v{appVersion}</span>
             </div>
           </div>
         </footer>

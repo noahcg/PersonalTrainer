@@ -147,6 +147,23 @@ export type ProgressPoint = {
   sleep: number;
 };
 
+export type ResourceAudience = "all" | "personal";
+
+export type Resource = {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  url: string;
+  content: string;
+  tags: string[];
+  audience: ResourceAudience;
+  assignedClientIds: string[];
+  assignedClientNames: string[];
+  estimatedTime: string;
+  updatedAt: string;
+};
+
 export type BulletinPost = {
   id: string;
   title: string;

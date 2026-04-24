@@ -8,6 +8,19 @@ import { getClientWorkouts } from "@/lib/workouts";
 export default async function ClientWorkoutsPage() {
   const { workouts } = await getClientWorkouts();
 
+  if (!workouts.length) {
+    return (
+      <AppShell role="client" title="My workouts" subtitle="Upcoming and completed workouts with clear guidance and logging.">
+        <Card className="max-w-3xl p-8">
+          <p className="font-serif text-4xl font-semibold text-charcoal-950">No workouts assigned yet.</p>
+          <p className="mt-3 text-sm leading-6 text-stone-600">
+            Your workouts page starts empty for a new client. Sessions will appear here once they are added to your plan.
+          </p>
+        </Card>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell role="client" title="My workouts" subtitle="Upcoming and completed workouts with clear guidance and logging.">
       <div className="grid gap-5 md:grid-cols-2">

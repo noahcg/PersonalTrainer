@@ -41,6 +41,26 @@ export function SetupAccountForm() {
         return;
       }
 
+      if (user.user_metadata?.role && user.user_metadata.role !== "client") {
+        setMessage("This setup link is not attached to a client invite. Open the latest client invite link in a fresh incognito window.");
+        return;
+      }
+
+      const { data: existingProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle<{ role: Role }>();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      if (existingProfile?.role === "trainer") {
+        setMessage("This browser is using a trainer session. Open the client invite link in a fresh incognito window before setting a password.");
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
 

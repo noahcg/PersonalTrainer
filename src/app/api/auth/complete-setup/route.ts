@@ -23,6 +23,26 @@ export async function POST() {
         ? user.user_metadata.full_name.trim()
         : user.email;
 
+    const { data: existingProfile, error: existingProfileError } = await admin
+      .from("profiles")
+      .select("id, role")
+      .eq("id", user.id)
+      .maybeSingle<{ id: string; role: "trainer" | "client" }>();
+
+    if (existingProfileError) {
+      return NextResponse.json({ error: existingProfileError.message }, { status: 500 });
+    }
+
+    if (existingProfile?.role === "trainer") {
+      return NextResponse.json(
+        {
+          error:
+            "This account is already a trainer account and cannot be completed as a client invite.",
+        },
+        { status: 400 },
+      );
+    }
+
     const { error: profileError } = await admin.from("profiles").upsert(
       {
         id: user.id,

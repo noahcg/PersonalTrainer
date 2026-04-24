@@ -19,7 +19,7 @@ export default async function ExercisesPage() {
               A premium exercise library should feel like a coaching reference, not a spreadsheet. Keep cues, mistakes, and substitutions easy to scan and easy to trust.
             </p>
           </Card>
-          <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-1">
             {[
               { label: "Exercise bank", value: String(exercises.length), icon: Dumbbell },
               { label: "Coach cues", value: "Rich", icon: BookOpenText },

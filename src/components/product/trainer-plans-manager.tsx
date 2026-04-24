@@ -1,9 +1,8 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { motion } from "motion/react";
 import { Copy, PencilLine, Save, Send, Users, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { HTMLAttributes, forwardRef, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -294,7 +293,6 @@ export function TrainerPlansManager({
               .from("plan_assignments")
               .update({ status: "inactive", ends_on: today })
               .eq("client_id", clientId)
-              .eq("training_plan_id", assigningPlanId)
               .eq("status", "active");
 
             const { error } = await supabase.from("plan_assignments").insert({
@@ -308,11 +306,13 @@ export function TrainerPlansManager({
         );
       }
 
-      nextPlans = plans.map((plan) =>
-        plan.id === assigningPlanId
-          ? { ...plan, assignedClients: Array.from(new Set([...plan.assignedClients, ...selectedClientIds])) }
-          : plan,
-      );
+      nextPlans = plans.map((plan) => ({
+        ...plan,
+        assignedClients:
+          plan.id === assigningPlanId
+            ? Array.from(new Set([...plan.assignedClients.filter((id) => !selectedClientIds.includes(id)), ...selectedClientIds]))
+            : plan.assignedClients.filter((id) => !selectedClientIds.includes(id)),
+      }));
       setPlans(nextPlans);
       persist(nextPlans);
       setAssignOpen(false);
@@ -524,21 +524,19 @@ export function TrainerPlansManager({
   );
 }
 
-function ModalShell({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
+const ModalShell = forwardRef<
+  HTMLDivElement,
+  HTMLAttributes<HTMLDivElement> & {
+    title: string;
+    description: string;
+    children: React.ReactNode;
+  }
+>(function ModalShell({ title, description, children, ...props }, ref) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.98 }}
-      className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[2rem] border border-white/70 bg-ivory-50 p-5 shadow-soft outline-none sm:p-7"
+    <div
+      ref={ref}
+      className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100vh-2rem)] w-[calc(100vw-1.5rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-ivory-50 p-5 shadow-soft outline-none sm:p-7"
+      {...props}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -551,10 +549,10 @@ function ModalShell({
           </Button>
         </Dialog.Close>
       </div>
-      <div className="mt-6">{children}</div>
-    </motion.div>
+      <div className="mt-6 overflow-y-auto pr-1">{children}</div>
+    </div>
   );
-}
+});
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
