@@ -14,7 +14,7 @@ export function PublicSiteShell({
         <header className="border-b border-stone-200/70 px-5 py-5 sm:px-8 lg:px-10">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <Link href="/" className="block w-fit">
-              <NGLogoLockup tone="ink" subtext="Coaching" />
+              <NGLogoLockup tone="ink" subtext="Training" />
             </Link>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:gap-6">
               <nav className="flex flex-wrap items-center gap-2 text-sm text-stone-600">

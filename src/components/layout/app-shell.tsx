@@ -76,8 +76,8 @@ export function AppShell({
     <div className="min-h-screen px-3 py-3 text-charcoal-950 sm:px-5 lg:px-6">
       <div className="mx-auto grid max-w-[1500px] gap-5 lg:grid-cols-[238px_1fr]">
         <aside className="sticky top-5 hidden h-[calc(100vh-2.5rem)] flex-col overflow-hidden rounded-[2rem] border border-white/8 bg-charcoal-950 px-4 py-5 text-ivory-50 shadow-soft lg:flex">
-          <Link href="/" className="block rounded-[1.25rem] px-3 py-3">
-            <NGLogoLockup tone="light" subtext="Coaching" />
+          <Link href="/" className="block w-full rounded-[1.25rem] px-3 py-3">
+            <NGLogoLockup tone="light" subtext="Training" className="max-w-full" />
           </Link>
           <nav suppressHydrationWarning className="mt-6 flex-1 space-y-1 overflow-y-auto pr-1">
             {nav.map((item) => {
@@ -98,13 +98,6 @@ export function AppShell({
               );
             })}
           </nav>
-          <div className="mt-4 rounded-[1.7rem] border border-white/10 bg-white/6 p-4">
-            <p className="text-[0.65rem] uppercase tracking-[0.32em] text-bronze-200/88">Focus this week</p>
-            <p className="mt-3 text-sm leading-6 text-ivory-50/75">{brand.tagline}</p>
-            <p className="mt-3 text-xs leading-5 text-ivory-50/52">
-              {role === "trainer" ? "3 clients need review. 8 workouts are scheduled." : "Your plan is structured so the next step is always clear."}
-            </p>
-          </div>
         </aside>
 
         <main suppressHydrationWarning className="min-w-0 pb-24 lg:pb-5">

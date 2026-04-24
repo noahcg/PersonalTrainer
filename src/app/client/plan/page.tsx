@@ -22,7 +22,7 @@ export default async function ClientPlanPage() {
   }
 
   return (
-    <AppShell role="client" title="My plan" subtitle="Your current training cycle, weekly rhythm, coach notes, and assigned workouts.">
+    <AppShell role="client" title="My plan" subtitle="Your current training cycle, weekly rhythm, trainer notes, and assigned workouts.">
       <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
         <CardHeader>
           <Badge variant="bronze">{plan.duration}</Badge>
@@ -33,7 +33,7 @@ export default async function ClientPlanPage() {
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-[1.6rem] border border-white/10 bg-white/6 p-5"><Target className="size-5 text-bronze-200" /><p className="mt-5 text-[0.66rem] uppercase tracking-[0.28em] text-ivory-50/50">Goal</p><p className="mt-2 font-semibold text-ivory-50">{plan.goal}</p></div>
             <div className="rounded-[1.6rem] border border-white/10 bg-white/6 p-5"><CalendarDays className="size-5 text-bronze-200" /><p className="mt-5 text-[0.66rem] uppercase tracking-[0.28em] text-ivory-50/50">Structure</p><p className="mt-2 font-semibold text-ivory-50">{plan.weeklyStructure}</p></div>
-            <div className="rounded-[1.6rem] border border-white/10 bg-white/6 p-5"><Waves className="size-5 text-sage-200" /><p className="mt-5 text-[0.66rem] uppercase tracking-[0.28em] text-ivory-50/50">Coach notes</p><p className="mt-2 font-semibold text-ivory-50">{plan.notes}</p></div>
+            <div className="rounded-[1.6rem] border border-white/10 bg-white/6 p-5"><Waves className="size-5 text-sage-200" /><p className="mt-5 text-[0.66rem] uppercase tracking-[0.28em] text-ivory-50/50">Trainer notes</p><p className="mt-2 font-semibold text-ivory-50">{plan.notes}</p></div>
           </div>
         </CardContent>
       </Card>

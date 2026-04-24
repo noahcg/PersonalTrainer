@@ -1,17 +1,34 @@
 import { NextResponse } from "next/server";
+import { hasInviteEmailEnv, sendInviteEmail } from "@/lib/email";
+import { renderInviteEmailHtml, renderInviteEmailText } from "@/lib/invitations";
 import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
 
 export async function POST(request: Request) {
   try {
-    const { clientId } = (await request.json()) as { clientId?: string };
+    const { clientId, subject, message } = (await request.json()) as {
+      clientId?: string;
+      subject?: string;
+      message?: string;
+    };
 
     if (!clientId) {
       return NextResponse.json({ error: "Client id is required." }, { status: 400 });
     }
 
+    if (!subject?.trim() || !message?.trim()) {
+      return NextResponse.json({ error: "Invite subject and message are required." }, { status: 400 });
+    }
+
     if (!hasSupabaseAdminEnv()) {
       return NextResponse.json({ error: "Supabase admin invite flow is not configured." }, { status: 500 });
+    }
+
+    if (!hasInviteEmailEnv()) {
+      return NextResponse.json(
+        { error: "Custom invite email is not configured. Add RESEND_API_KEY and INVITE_FROM_EMAIL." },
+        { status: 500 },
+      );
     }
 
     const supabase = await createClient();
@@ -48,17 +65,40 @@ export async function POST(request: Request) {
     const origin = new URL(request.url).origin;
     const redirectTo = `${origin}/auth/callback?next=/setup-account`;
 
-    const { error } = await admin.auth.admin.inviteUserByEmail(client.email, {
-      redirectTo,
-      data: {
-        full_name: client.full_name,
-        role: "client",
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: "invite",
+      email: client.email,
+      options: {
+        redirectTo,
+        data: {
+          full_name: client.full_name,
+          role: "client",
+        },
       },
     });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+
+    const actionLink = data.properties.action_link;
+    if (!actionLink) {
+      return NextResponse.json({ error: "Unable to generate invite link." }, { status: 500 });
+    }
+
+    await sendInviteEmail({
+      to: client.email,
+      subject: subject.trim(),
+      html: renderInviteEmailHtml({
+        subject: subject.trim(),
+        message: message.trim(),
+        actionLink,
+      }),
+      text: renderInviteEmailText({
+        message: message.trim(),
+        actionLink,
+      }),
+    });
 
     const inviteSentAt = new Date().toISOString();
     const { error: updateError } = await supabase

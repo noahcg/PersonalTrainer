@@ -5,10 +5,12 @@ import { motion } from "motion/react";
 import { Mail, Plus, Save, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ClientCard } from "@/components/product/client-card";
+import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { demoClientsStorageKey } from "@/lib/demo-client-storage";
+import { defaultInviteMessage, defaultInviteSubject } from "@/lib/invitations";
 import { pricingTierOptions } from "@/lib/pricing";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Client, ClientStatus, PricingTier } from "@/lib/types";
@@ -48,6 +50,7 @@ export function TrainerClientsManager({
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [draft, setDraft] = useState<DraftClient>(emptyDraft);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -230,7 +233,7 @@ export function TrainerClientsManager({
     }
   }
 
-  async function inviteSelected() {
+  async function inviteSelected(inviteDraft: { subject: string; message: string }) {
     if (!selectedIds.length) return;
 
     setBusy(true);
@@ -245,7 +248,11 @@ export function TrainerClientsManager({
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ clientId }),
+              body: JSON.stringify({
+                clientId,
+                subject: inviteDraft.subject,
+                message: inviteDraft.message,
+              }),
             });
 
             const payload = (await response.json()) as { error?: string; inviteSentAt?: string };
@@ -295,6 +302,7 @@ export function TrainerClientsManager({
         persist(nextClients);
       }
 
+      setInviteOpen(false);
       setMessage(`${selectedIds.length} client invite${selectedIds.length === 1 ? "" : "s"} sent.`);
       window.setTimeout(() => setMessage(null), 2200);
     } catch (error) {
@@ -344,7 +352,7 @@ export function TrainerClientsManager({
           <Plus className="size-4" />
           Create client
         </Button>
-        <Button variant="secondary" onClick={() => void inviteSelected()} disabled={busy || selectedIds.length === 0}>
+        <Button variant="secondary" onClick={() => setInviteOpen(true)} disabled={busy || selectedIds.length === 0}>
           <Mail className="size-4" />
           Send invites
         </Button>
@@ -463,6 +471,22 @@ export function TrainerClientsManager({
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      <InviteComposeDialog
+        key={selectedIds.join("|") || "empty-selection"}
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        title={selectedIds.length === 1 ? "Send client invite" : "Send client invites"}
+        description={
+          selectedIds.length === 1
+            ? "Write the email your selected client will receive with their setup link."
+            : "Write the email your selected clients will receive with their setup links."
+        }
+        defaultSubject={defaultInviteSubject(selectedIds.length === 1 ? clients.find((client) => client.id === selectedIds[0])?.name : undefined)}
+        defaultMessage={defaultInviteMessage(selectedIds.length === 1 ? clients.find((client) => client.id === selectedIds[0])?.name : undefined)}
+        busy={busy}
+        onSend={inviteSelected}
+      />
 
     </>
   );

@@ -237,14 +237,14 @@ export function ClientMessagesPanel({
             <Badge variant="bronze">{brand.app.communicationsBadge}</Badge>
             <h2 className="mt-5 max-w-2xl font-serif text-4xl font-semibold leading-tight">A calmer coaching relationship comes from clear notes, fast replies, and honest check-ins.</h2>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-ivory-50/65">
-              Use this space to keep your coach informed without friction. {brand.tagline}
+              Use this space to keep your trainer informed without friction. {brand.tagline}
             </p>
           </Card>
           <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-1">
             {[
               { label: "Messages", value: String(messages.length), icon: MessageSquareText, tone: "text-bronze-500" },
               { label: "Check-ins", value: String(checkIns.length), icon: HeartPulse, tone: "text-sage-700" },
-              { label: "Coach replies", value: String(checkIns.filter((item) => item.trainerResponse).length), icon: NotebookPen, tone: "text-charcoal-950" },
+              { label: "Trainer replies", value: String(checkIns.filter((item) => item.trainerResponse).length), icon: NotebookPen, tone: "text-charcoal-950" },
             ].map(({ label, value, icon: Icon, tone }) => (
               <Card key={label} className="p-5">
                 <Icon className={`size-5 ${tone}`} />
@@ -304,7 +304,7 @@ export function ClientMessagesPanel({
                 <p className="mt-3 text-sm leading-6 text-stone-600">{entry.notes || "No notes attached."}</p>
                 {entry.trainerResponse ? (
                   <div className="mt-3 rounded-[1.1rem] bg-bronze-50 p-3">
-                    <p className="text-xs uppercase tracking-[0.18em] text-bronze-700">Coach response</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-bronze-700">Trainer response</p>
                     <p className="mt-2 text-sm leading-6 text-stone-700">{entry.trainerResponse}</p>
                   </div>
                 ) : null}

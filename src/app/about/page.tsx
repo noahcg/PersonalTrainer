@@ -36,7 +36,7 @@ export default function AboutPage() {
       <section className="px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
         <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">About the coach</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">About the trainer</p>
             <h1 className="mt-5 max-w-3xl font-serif text-5xl font-semibold leading-[0.95] text-charcoal-950 sm:text-6xl">
               Calm, precise personal training built around real progress.
             </h1>

@@ -86,12 +86,12 @@ export default function PricingPage() {
           <div>
             <h2 className="font-serif text-3xl font-semibold text-charcoal-950">Already a client?</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
-              Current clients can log in to review plans, workouts, progress, messaging, and coach support.
+              Current clients can log in to review plans, workouts, progress, messaging, and trainer support.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" variant="secondary">
-              <Link href="/about">Meet the coach</Link>
+              <Link href="/about">Meet the trainer</Link>
             </Button>
             <Button asChild size="lg" variant="warm">
               <Link href="/login">Client login</Link>

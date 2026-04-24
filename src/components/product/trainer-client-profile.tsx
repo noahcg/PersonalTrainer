@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { Ban, Mail, PencilLine, Save, StickyNote, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { clientAccessDetail, clientAccessLabel } from "@/lib/client-access";
+import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { clients as demoClients } from "@/lib/demo-data";
 import { readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
+import { defaultInviteMessage, defaultInviteSubject } from "@/lib/invitations";
 import { pricingTierDetail, pricingTierLabel, pricingTierOptions } from "@/lib/pricing";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Client, ClientStatus, CoachingEntry, Plan, PricingTier } from "@/lib/types";
@@ -32,6 +34,7 @@ export function TrainerClientProfile({
   const [coachingNotes, setCoachingNotes] = useState<CoachingEntry[]>(initialCoachingNotes);
   const [editOpen, setEditOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(initialClient);
   const [draftNote, setDraftNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -192,7 +195,7 @@ export function TrainerClientProfile({
     }
   }
 
-  async function sendInvite() {
+  async function sendInvite(inviteDraft: { subject: string; message: string }) {
     setBusy(true);
     setMessage(null);
 
@@ -203,7 +206,11 @@ export function TrainerClientProfile({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ clientId: client.id }),
+          body: JSON.stringify({
+            clientId: client.id,
+            subject: inviteDraft.subject,
+            message: inviteDraft.message,
+          }),
         });
 
         const payload = (await response.json()) as { error?: string; inviteSentAt?: string };
@@ -238,6 +245,7 @@ export function TrainerClientProfile({
         persist(nextClient, coachingNotes);
       }
 
+      setInviteOpen(false);
       setMessage(client.accessStatus === "invite_pending" ? "Invite resent." : "Invite sent.");
       window.setTimeout(() => setMessage(null), 2400);
     } catch (error) {
@@ -315,7 +323,7 @@ export function TrainerClientProfile({
           </div>
           <div className="mt-6 grid gap-3">
             {client.accessStatus !== "account_active" ? (
-              <Button variant="secondary" onClick={() => void sendInvite()} disabled={busy}>
+              <Button variant="secondary" onClick={() => setInviteOpen(true)} disabled={busy}>
                 <Mail className="size-4" />
                 {client.accessStatus === "invite_pending" ? "Resend access invite" : "Send access invite"}
               </Button>
@@ -484,6 +492,18 @@ export function TrainerClientProfile({
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      <InviteComposeDialog
+        key={`${client.id}-${client.accessStatus}`}
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        title={client.accessStatus === "invite_pending" ? "Resend access invite" : "Send access invite"}
+        description={`Write the email ${client.name} will receive with their setup link.`}
+        defaultSubject={defaultInviteSubject(client.name)}
+        defaultMessage={defaultInviteMessage(client.name)}
+        busy={busy}
+        onSend={sendInvite}
+      />
 
       {message ? (
         <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">

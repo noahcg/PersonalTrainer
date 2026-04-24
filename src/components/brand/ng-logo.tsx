@@ -67,7 +67,7 @@ export function NGMonogram({
 
 export function NGLogoLockup({
   tone = "ink",
-  subtext = "Coaching",
+  subtext = "Training",
   className,
 }: {
   tone?: LogoTone;
@@ -77,18 +77,23 @@ export function NGLogoLockup({
   const colors = toneClasses(tone);
 
   return (
-    <div className={cn("flex items-center gap-3.5", className)}>
-      <div className={cn("grid size-14 shrink-0 place-items-center rounded-[1.15rem] border p-1.5 shadow-soft", colors.panel)}>
+    <div className={cn("flex min-w-0 items-center gap-3", className)}>
+      <div className={cn("grid size-13 shrink-0 place-items-center rounded-[1.05rem] border p-1.5 shadow-soft sm:size-14", colors.panel)}>
         <NGMonogram tone={tone} className="size-full" />
       </div>
       <div className="min-w-0">
-        <div className={cn("text-[1.2rem] font-medium uppercase leading-[0.9] tracking-[0.24em] sm:text-[1.45rem]", colors.primary)}>
+        <div
+          className={cn(
+            "text-[1rem] font-medium uppercase leading-[0.92] tracking-[0.18em] sm:text-[1.15rem] sm:tracking-[0.2em]",
+            colors.primary,
+          )}
+        >
           <span className="block">Nick</span>
-          <span className="mt-1 block">Glushien</span>
+          <span className="mt-0.5 block">Glushien</span>
         </div>
         <div
           className={cn(
-            "mt-3 text-[0.62rem] uppercase tracking-[0.52em] sm:text-[0.7rem]",
+            "mt-2 text-[0.56rem] uppercase tracking-[0.38em] sm:text-[0.62rem] sm:tracking-[0.44em]",
             tone === "copper" ? colors.secondary : "text-bronze-500",
           )}
         >

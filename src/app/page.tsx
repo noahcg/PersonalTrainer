@@ -25,7 +25,7 @@ export default function Home() {
               Personal training with structure, clarity, and visible momentum.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
-              This is the public front door for {brand.businessName}. Prospective clients can learn about the coach,
+              This is the public front door for {brand.businessName}. Prospective clients can learn about the trainer,
               understand the process, and review pricing before they ever log in.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -105,7 +105,7 @@ export default function Home() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">Next steps</p>
             <h2 className="mt-4 font-serif text-3xl font-semibold text-charcoal-950 sm:text-4xl">
-              Prospective clients can learn about the coach first, then review pricing with context.
+              Prospective clients can learn about the trainer first, then review pricing with context.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-600">
               The app still supports current clients after login, but the public website now has a clear path for new visitors.
