@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase-browser";
 import { NGLogoLockup } from "@/components/brand/ng-logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/input";
 import type { Role } from "@/lib/types";
 
 export function SetupAccountForm() {
@@ -92,16 +92,14 @@ export function SetupAccountForm() {
         <p className="mt-3 text-sm font-semibold uppercase tracking-[0.24em] text-bronze-600">{brand.tagline}</p>
         <p className="mt-3 text-sm leading-6 text-stone-600">{message}</p>
         <div className="mt-8 space-y-4">
-          <Input
+          <PasswordInput
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            type="password"
             placeholder="Create password"
           />
-          <Input
+          <PasswordInput
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            type="password"
             placeholder="Confirm password"
           />
         </div>

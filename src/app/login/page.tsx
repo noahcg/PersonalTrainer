@@ -8,7 +8,7 @@ import { createClient, hasSupabaseEnv } from "@/lib/supabase-browser";
 import { NGLogoLockup } from "@/components/brand/ng-logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input, PasswordInput } from "@/components/ui/input";
 import type { Profile, Role } from "@/lib/types";
 
 export default function LoginPage() {
@@ -78,7 +78,7 @@ export default function LoginPage() {
         <p className="mt-3 text-sm leading-6 text-stone-600">{message}</p>
         <div className="mt-8 space-y-4">
           <Input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" />
-          <Input value={password} onChange={(event) => setPassword(event.target.value)} type="password" placeholder="Password" />
+          <PasswordInput value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" />
         </div>
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <Button disabled={loading} onClick={() => signIn("trainer")} variant="warm">Trainer login</Button>
