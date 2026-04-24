@@ -1,3 +1,4 @@
+import { brand } from "./brand";
 import type { BulletinPost, CheckIn, Client, Exercise, Message, Plan, ProgressPoint, Workout } from "./types";
 
 export const clients: Client[] = [
@@ -14,6 +15,9 @@ export const clients: Client[] = [
     availability: "Mon/Wed/Fri mornings, Sunday mobility.",
     startDate: "2026-01-12",
     status: "active",
+    accessStatus: "account_active",
+    inviteSentAt: "Jan 12",
+    pricingTier: "ongoing_coaching",
     adherence: 91,
     metrics: { bodyWeight: "142 lb", workouts: 38, streak: 7, lastCheckIn: "Today" },
   },
@@ -30,6 +34,9 @@ export const clients: Client[] = [
     availability: "Tue/Thu evenings, Saturday morning.",
     startDate: "2026-02-03",
     status: "needs_attention",
+    accessStatus: "invite_pending",
+    inviteSentAt: "Feb 3",
+    pricingTier: "intro_session",
     adherence: 68,
     metrics: { bodyWeight: "188 lb", workouts: 19, streak: 1, lastCheckIn: "3 days ago" },
   },
@@ -46,6 +53,9 @@ export const clients: Client[] = [
     availability: "Four flexible lunch sessions weekly.",
     startDate: "2025-11-18",
     status: "active",
+    accessStatus: "not_invited",
+    inviteSentAt: null,
+    pricingTier: "high_touch_coaching",
     adherence: 96,
     metrics: { bodyWeight: "126 lb", workouts: 72, streak: 13, lastCheckIn: "Yesterday" },
   },
@@ -166,15 +176,15 @@ export const plans: Plan[] = [
 ];
 
 export const checkIns: CheckIn[] = [
-  { id: "ci-1", clientId: "mara-lee", client: "Mara Lee", date: "Today", energy: 8, soreness: 3, sleep: 7, stress: 4, motivation: 9, mood: "Focused", notes: "Legs feel fresh. Long run was easier than expected.", reviewed: false },
-  { id: "ci-2", clientId: "eli-brooks", client: "Eli Brooks", date: "3 days ago", energy: 5, soreness: 6, sleep: 5, stress: 8, motivation: 6, mood: "Flat", notes: "Work travel made workouts inconsistent. Shoulder is okay but tight.", reviewed: false },
-  { id: "ci-3", clientId: "nina-patel", client: "Nina Patel", date: "Yesterday", energy: 9, soreness: 4, sleep: 8, stress: 3, motivation: 9, mood: "Strong", notes: "Hit 3 clean negative pull-ups.", reviewed: true },
+  { id: "ci-1", clientId: "mara-lee", client: "Mara Lee", date: "Today", energy: 8, soreness: 3, sleep: 7, stress: 4, motivation: 9, mood: "Focused", notes: "Legs feel fresh. Long run was easier than expected.", reviewed: false, trainerResponse: "" },
+  { id: "ci-2", clientId: "eli-brooks", client: "Eli Brooks", date: "3 days ago", energy: 5, soreness: 6, sleep: 5, stress: 8, motivation: 6, mood: "Flat", notes: "Work travel made workouts inconsistent. Shoulder is okay but tight.", reviewed: false, trainerResponse: "" },
+  { id: "ci-3", clientId: "nina-patel", client: "Nina Patel", date: "Yesterday", energy: 9, soreness: 4, sleep: 8, stress: 3, motivation: 9, mood: "Strong", notes: "Hit 3 clean negative pull-ups.", reviewed: true, trainerResponse: "Excellent week. Keep pull-up work submaximal and stay consistent.", reviewedAt: "Yesterday" },
 ];
 
 export const messages: Message[] = [
-  { id: "m1", from: "trainer", author: "Coach Avery", body: "Keep today crisp. If hip tightness shows up, swap goblet squats for box squats and note depth.", createdAt: "8:10 AM" },
-  { id: "m2", from: "client", author: "Mara", body: "Will do. Warm-up already made the hip feel better.", createdAt: "8:28 AM" },
-  { id: "m3", from: "trainer", author: "Coach Avery", body: "Perfect. Send me set 3 and keep RPE honest.", createdAt: "8:31 AM" },
+  { id: "m1", from: "trainer", author: brand.app.trainerLabel, body: "Keep today crisp. If hip tightness shows up, swap goblet squats for box squats and note depth.", createdAt: "8:10 AM", clientId: "mara-lee", clientName: "Mara Lee" },
+  { id: "m2", from: "client", author: "Mara Lee", body: "Will do. Warm-up already made the hip feel better.", createdAt: "8:28 AM", clientId: "mara-lee", clientName: "Mara Lee" },
+  { id: "m3", from: "trainer", author: brand.app.trainerLabel, body: "Perfect. Send me set 3 and keep RPE honest.", createdAt: "8:31 AM", clientId: "mara-lee", clientName: "Mara Lee" },
 ];
 
 export const progress: ProgressPoint[] = [

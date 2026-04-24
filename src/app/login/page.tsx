@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { brand } from "@/lib/brand";
 import { createClient, hasSupabaseEnv } from "@/lib/supabase-browser";
 import { NGLogoLockup } from "@/components/brand/ng-logo";
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,7 @@ export default function LoginPage() {
           <NGLogoLockup tone="ink" subtext="Coaching" />
         </Link>
         <h1 className="mt-5 font-serif text-5xl font-semibold">Welcome back.</h1>
-        <p className="mt-3 text-sm font-semibold uppercase tracking-[0.24em] text-bronze-600">Clear coaching. Real progress.</p>
+        <p className="mt-3 text-sm font-semibold uppercase tracking-[0.24em] text-bronze-600">{brand.tagline}</p>
         <p className="mt-3 text-sm leading-6 text-stone-600">{message}</p>
         <div className="mt-8 space-y-4">
           <Input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" />

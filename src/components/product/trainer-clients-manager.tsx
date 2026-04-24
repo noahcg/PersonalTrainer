@@ -2,16 +2,16 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { Plus, Save, X } from "lucide-react";
+import { Mail, Plus, Save, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ClientCard } from "@/components/product/client-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
+import { demoClientsStorageKey } from "@/lib/demo-client-storage";
+import { pricingTierOptions } from "@/lib/pricing";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
-import type { Client, ClientStatus } from "@/lib/types";
-
-const storageKey = "aurelian-demo-clients";
+import type { Client, ClientStatus, PricingTier } from "@/lib/types";
 
 type DraftClient = {
   name: string;
@@ -22,6 +22,7 @@ type DraftClient = {
   notes: string;
   style: string;
   availability: string;
+  pricingTier: PricingTier;
 };
 
 const emptyDraft: DraftClient = {
@@ -33,6 +34,7 @@ const emptyDraft: DraftClient = {
   notes: "",
   style: "",
   availability: "",
+  pricingTier: "ongoing_coaching",
 };
 
 export function TrainerClientsManager({
@@ -52,14 +54,14 @@ export function TrainerClientsManager({
 
   useEffect(() => {
     if (mode !== "demo") return;
-    const stored = window.localStorage.getItem(storageKey);
+    const stored = window.localStorage.getItem(demoClientsStorageKey);
     if (!stored) return;
 
     const timeout = window.setTimeout(() => {
       try {
         setClients(JSON.parse(stored) as Client[]);
       } catch {
-        window.localStorage.removeItem(storageKey);
+        window.localStorage.removeItem(demoClientsStorageKey);
       }
     }, 0);
 
@@ -70,16 +72,25 @@ export function TrainerClientsManager({
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) return clients;
     return clients.filter((client) =>
-      [client.name, client.email, client.goals, client.status.replace("_", " ")]
+      [client.name, client.email, client.goals, client.status.replace("_", " "), client.accessStatus.replace("_", " ")]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery),
     );
   }, [clients, query]);
 
+  const accessSummary = useMemo(
+    () => ({
+      active: clients.filter((client) => client.accessStatus === "account_active").length,
+      pending: clients.filter((client) => client.accessStatus === "invite_pending").length,
+      notInvited: clients.filter((client) => client.accessStatus === "not_invited").length,
+    }),
+    [clients],
+  );
+
   function persist(nextClients: Client[]) {
     if (mode === "demo") {
-      window.localStorage.setItem(storageKey, JSON.stringify(nextClients));
+      window.localStorage.setItem(demoClientsStorageKey, JSON.stringify(nextClients));
     }
   }
 
@@ -120,6 +131,7 @@ export function TrainerClientsManager({
             notes: draft.notes.trim(),
             preferred_training_style: draft.style.trim(),
             availability: draft.availability.trim(),
+            pricing_tier: draft.pricingTier,
             start_date: new Date().toISOString().slice(0, 10),
             status: "active",
           })
@@ -140,6 +152,9 @@ export function TrainerClientsManager({
           availability: draft.availability.trim() || "Availability not specified.",
           startDate: new Date().toISOString().slice(0, 10),
           status: "active",
+          accessStatus: "not_invited",
+          inviteSentAt: null,
+          pricingTier: draft.pricingTier,
           adherence: 0,
           metrics: {
             bodyWeight: "—",
@@ -162,6 +177,9 @@ export function TrainerClientsManager({
           availability: draft.availability.trim() || "Availability not specified.",
           startDate: new Date().toISOString().slice(0, 10),
           status: "active",
+          accessStatus: "not_invited",
+          inviteSentAt: null,
+          pricingTier: draft.pricingTier,
           adherence: 0,
           metrics: {
             bodyWeight: "—",
@@ -212,17 +230,105 @@ export function TrainerClientsManager({
     }
   }
 
+  async function inviteSelected() {
+    if (!selectedIds.length) return;
+
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      if (mode === "supabase") {
+        const results = await Promise.all(
+          selectedIds.map(async (clientId) => {
+            const response = await fetch("/api/invitations/client", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ clientId }),
+            });
+
+            const payload = (await response.json()) as { error?: string; inviteSentAt?: string };
+            if (!response.ok) {
+              throw new Error(payload.error ?? "Unable to send invite.");
+            }
+
+            return {
+              clientId,
+              inviteSentAt: payload.inviteSentAt
+                ? new Date(payload.inviteSentAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                : null,
+            };
+          }),
+        );
+
+        const nextClients = clients.map((client) => {
+          const update = results.find((result) => result.clientId === client.id);
+          if (!update) return client;
+
+          return {
+            ...client,
+            accessStatus: "invite_pending" as const,
+            inviteSentAt: update.inviteSentAt ?? client.inviteSentAt,
+          };
+        });
+
+        setClients(nextClients);
+      } else {
+        const inviteSentAt = new Date().toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+        const nextClients = clients.map((client) =>
+          selectedIds.includes(client.id)
+            ? {
+                ...client,
+                accessStatus: "invite_pending" as const,
+                inviteSentAt,
+              }
+            : client,
+        );
+        setClients(nextClients);
+        persist(nextClients);
+      }
+
+      setMessage(`${selectedIds.length} client invite${selectedIds.length === 1 ? "" : "s"} sent.`);
+      window.setTimeout(() => setMessage(null), 2200);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to send invites.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <>
       <Card className="mb-5 p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Roster controls</p>
-            <p className="mt-2 text-sm leading-6 text-stone-600">Search, select, and manage your active client base without losing the human context of each profile.</p>
+            <p className="mt-2 text-sm leading-6 text-stone-600">Search the roster, track access, and handle invite or archive actions without opening every profile.</p>
           </div>
-          <div className="flex gap-3 text-sm text-stone-500">
+          <div className="flex flex-wrap gap-3 text-sm text-stone-500">
             <div className="rounded-full bg-stone-50 px-4 py-2">{clients.length} total clients</div>
             <div className="rounded-full bg-stone-50 px-4 py-2">{selectedIds.length} selected</div>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-[1.25rem] bg-stone-50 px-4 py-3 text-sm text-stone-600">
+            <p className="text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">Account active</p>
+            <p className="mt-2 text-2xl font-semibold text-charcoal-950">{accessSummary.active}</p>
+          </div>
+          <div className="rounded-[1.25rem] bg-stone-50 px-4 py-3 text-sm text-stone-600">
+            <p className="text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">Invite pending</p>
+            <p className="mt-2 text-2xl font-semibold text-charcoal-950">{accessSummary.pending}</p>
+          </div>
+          <div className="rounded-[1.25rem] bg-stone-50 px-4 py-3 text-sm text-stone-600">
+            <p className="text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">Not invited</p>
+            <p className="mt-2 text-2xl font-semibold text-charcoal-950">{accessSummary.notInvited}</p>
           </div>
         </div>
       </Card>
@@ -231,17 +337,27 @@ export function TrainerClientsManager({
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search clients by name, goal, status..."
+          placeholder="Search clients by name, goal, status, or access..."
           className="sm:max-w-md"
         />
         <Button variant="warm" onClick={() => setOpen(true)}>
           <Plus className="size-4" />
           Create client
         </Button>
+        <Button variant="secondary" onClick={() => void inviteSelected()} disabled={busy || selectedIds.length === 0}>
+          <Mail className="size-4" />
+          Send invites
+        </Button>
         <Button variant="secondary" onClick={() => void archiveSelected()} disabled={busy || selectedIds.length === 0}>
           Archive selected
         </Button>
       </div>
+
+      {message ? (
+        <Card className="mb-5 border-bronze-200 bg-bronze-50/70 p-4 text-sm text-stone-700">
+          {message}
+        </Card>
+      ) : null}
 
       {selectedIds.length > 0 ? (
         <Card className="mb-5 flex items-center justify-between p-4 text-sm text-stone-600">
@@ -252,15 +368,11 @@ export function TrainerClientsManager({
         </Card>
       ) : null}
 
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <div className="min-w-0 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {visibleClients.map((client) => (
-          <ClientCard
-            key={client.id}
-            client={client}
-            selectable
-            selected={selectedIds.includes(client.id)}
-            onToggleSelect={toggleSelect}
-          />
+          <div key={client.id} className="min-w-0">
+            <ClientCard client={client} selectable selected={selectedIds.includes(client.id)} onToggleSelect={toggleSelect} />
+          </div>
         ))}
       </div>
 
@@ -310,6 +422,19 @@ export function TrainerClientsManager({
                   <Field label="Availability">
                     <Input value={draft.availability} onChange={(event) => setDraft((current) => ({ ...current, availability: event.target.value }))} />
                   </Field>
+                  <Field label="Pricing package">
+                    <select
+                      value={draft.pricingTier}
+                      onChange={(event) => setDraft((current) => ({ ...current, pricingTier: event.target.value as PricingTier }))}
+                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100"
+                    >
+                      {pricingTierOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
                 </div>
                 <Field label="Goals">
                   <Textarea value={draft.goals} onChange={(event) => setDraft((current) => ({ ...current, goals: event.target.value }))} />
@@ -339,11 +464,6 @@ export function TrainerClientsManager({
         </Dialog.Portal>
       </Dialog.Root>
 
-      {message ? (
-        <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">
-          {message}
-        </div>
-      ) : null}
     </>
   );
 }

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
 import { Check, Eye, LoaderCircle, MessageSquare, PlayCircle, Save, X } from "lucide-react";
+import { brand } from "@/lib/brand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -410,13 +411,13 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
         <div className="p-6 sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <Badge variant="bronze">Nick Glushien Coaching</Badge>
+              <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
               <h2 className="mt-4 font-serif text-4xl font-semibold">{workout.name}</h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-ivory-50/65">{workout.coachNotes}</p>
               <div className="mt-5 flex flex-wrap gap-3 text-sm text-ivory-50/70">
                 <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{workout.dayLabel}</div>
                 <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{total} exercises</div>
-                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">Clear coaching. Real progress.</div>
+                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{brand.tagline}</div>
               </div>
             </div>
             <Button variant="warm" size="lg" onClick={startSession} disabled={starting || saving}>

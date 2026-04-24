@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, CalendarCheck, CheckCircle2, Dumbbell, HeartPulse, MessageCircle, TrendingUp } from "lucide-react";
+import { brand } from "@/lib/brand";
 import { PublicSiteShell } from "@/components/marketing/public-site-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,13 +19,13 @@ export default function Home() {
         <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
           <div>
             <p className="inline-flex rounded-full border border-bronze-200 bg-bronze-50 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-bronze-700">
-              Clear coaching. Real progress.
+              {brand.tagline}
             </p>
             <h1 className="mt-6 max-w-4xl font-serif text-5xl font-semibold leading-[0.95] text-charcoal-950 sm:text-6xl lg:text-7xl">
               Personal training with structure, clarity, and visible momentum.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
-              This is the public front door for Nick Glushien Coaching. Prospective clients can learn about the coach,
+              This is the public front door for {brand.businessName}. Prospective clients can learn about the coach,
               understand the process, and review pricing before they ever log in.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -34,7 +35,7 @@ export default function Home() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="secondary">
-                <Link href="/about">Meet the coach</Link>
+                <Link href="/about">{brand.publicCtaLabel}</Link>
               </Button>
             </div>
           </div>
@@ -113,7 +114,7 @@ export default function Home() {
           <div className="flex flex-col gap-3">
             <Button asChild size="lg" variant="warm">
               <Link href="/about">
-                Learn about Nick <ArrowRight className="size-5" />
+                {brand.publicCtaLabel} <ArrowRight className="size-5" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="secondary">

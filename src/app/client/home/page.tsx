@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, CalendarCheck, CheckCircle2, HeartPulse, NotebookPen } from "lucide-react";
+import { brand } from "@/lib/brand";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProgressChart } from "@/components/product/progress-chart";
 import { Avatar } from "@/components/ui/avatar";
@@ -13,18 +14,18 @@ export default function ClientHomePage() {
   const workout = workouts[0];
 
   return (
-    <AppShell role="client" title="Your next session is clear." subtitle="Clear coaching. Real progress. Everything is organized so you can train with calm structure, log performance, and feel supported.">
+    <AppShell role="client" title="Your next session is clear." subtitle={`${brand.tagline} Everything is organized so you can train with calm structure, log performance, and feel supported.`}>
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <section className="space-y-5">
           <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
             <div className="p-6 sm:p-8">
-              <Badge variant="bronze">Nick Glushien Coaching</Badge>
+              <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
               <h2 className="mt-5 max-w-2xl font-serif text-5xl font-semibold leading-[0.95]">{workout.name}</h2>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-ivory-50/65">{workout.coachNotes}</p>
               <div className="mt-7 flex flex-wrap gap-3 text-sm text-ivory-50/70">
                 <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{workout.dayLabel}</div>
                 <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{workout.duration}</div>
-                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">Clear coaching. Real progress.</div>
+                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{brand.tagline}</div>
               </div>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Button asChild variant="warm" size="lg">

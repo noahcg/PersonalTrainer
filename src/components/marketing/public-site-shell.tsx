@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { NGLogoLockup } from "@/components/brand/ng-logo";
+import { brand } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 
 export function PublicSiteShell({
@@ -41,10 +42,10 @@ export function PublicSiteShell({
         <main>{children}</main>
         <footer className="border-t border-stone-200/70 px-5 py-6 text-sm text-stone-500 sm:px-8 lg:px-10">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p>Nick Glushien Coaching</p>
+            <p>{brand.businessName}</p>
             <div className="flex flex-wrap items-center gap-4">
               <Link className="transition hover:text-charcoal-950" href="/about">
-                Meet the coach
+                {brand.publicCtaLabel}
               </Link>
               <Link className="transition hover:text-charcoal-950" href="/pricing">
                 Pricing

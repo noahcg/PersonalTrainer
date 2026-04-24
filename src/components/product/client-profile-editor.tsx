@@ -8,37 +8,85 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
-import { clients } from "@/lib/demo-data";
+import { clients as demoClients } from "@/lib/demo-data";
+import { readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
+import { pricingTierDetail, pricingTierLabel } from "@/lib/pricing";
+import { createClient as createBrowserClient } from "@/lib/supabase-browser";
+import type { Client } from "@/lib/types";
 
-const storageKey = "aurelian-client-profile";
-
-export function ClientProfileEditor() {
-  const base = clients[0];
+export function ClientProfileEditor({
+  initialClient,
+  mode,
+}: {
+  initialClient: Client;
+  mode: "demo" | "supabase";
+}) {
   const [profile, setProfile] = useState({
-    goals: base.goals,
-    availability: base.availability,
-    injuries: base.injuries,
-    notes: base.notes,
+    goals: initialClient.goals,
+    availability: initialClient.availability,
+    injuries: initialClient.injuries,
+    notes: initialClient.notes,
   });
+  const [client, setClient] = useState(initialClient);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(storageKey);
+    if (mode !== "demo") return;
+
+    const stored = readStoredDemoClientProfile(initialClient.id);
     if (!stored) return;
+
     const timeout = window.setTimeout(() => {
-      try {
-        setProfile(JSON.parse(stored));
-      } catch {
-        window.localStorage.removeItem(storageKey);
-      }
+      setClient(stored.client);
+      setProfile({
+        goals: stored.client.goals,
+        availability: stored.client.availability,
+        injuries: stored.client.injuries,
+        notes: stored.client.notes,
+      });
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [initialClient.id, mode]);
 
-  function saveProfile() {
-    window.localStorage.setItem(storageKey, JSON.stringify(profile));
-    setMessage("Profile saved.");
-    window.setTimeout(() => setMessage(null), 1800);
+  async function saveProfile() {
+    const nextClient = {
+      ...client,
+      goals: profile.goals,
+      availability: profile.availability,
+      injuries: profile.injuries,
+      notes: profile.notes,
+    };
+
+    try {
+      if (mode === "supabase") {
+        const supabase = createBrowserClient();
+        const { error } = await supabase
+          .from("clients")
+          .update({
+            goals: nextClient.goals,
+            availability: nextClient.availability,
+            injuries_limitations: nextClient.injuries,
+            notes: nextClient.notes,
+          })
+          .eq("id", nextClient.id);
+
+        if (error) throw error;
+      } else {
+        const existing = readStoredDemoClientProfile(initialClient.id);
+        writeStoredDemoClientProfile(initialClient.id, {
+          client: nextClient,
+          coachingNotes: existing?.coachingNotes ?? [],
+        });
+        syncDemoClientRecord(nextClient, demoClients);
+      }
+
+      setClient(nextClient);
+      setMessage("Profile saved.");
+      window.setTimeout(() => setMessage(null), 1800);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to save profile.");
+      window.setTimeout(() => setMessage(null), 2200);
+    }
   }
 
   return (
@@ -64,27 +112,32 @@ export function ClientProfileEditor() {
                 <p className="mt-2 font-serif text-4xl font-semibold text-charcoal-950">{value}</p>
               </Card>
             ))}
+            <Card className="p-5">
+              <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
+              <p className="mt-6 text-[0.66rem] uppercase tracking-[0.28em] text-stone-500">Pricing package</p>
+              <p className="mt-2 text-sm leading-6 text-stone-600">{pricingTierDetail(client.pricingTier)}</p>
+            </Card>
           </div>
         </div>
 
         <Card className="max-w-4xl">
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <Avatar name={base.name} src={base.photo} className="size-20" />
-            <div>
-              <CardTitle className="font-serif text-4xl">{base.name}</CardTitle>
-              <p className="text-sm text-stone-500">{base.email}</p>
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <Avatar name={client.name} src={client.photo} className="size-20" />
+              <div>
+                <CardTitle className="font-serif text-4xl">{client.name}</CardTitle>
+                <p className="text-sm text-stone-500">{client.email}</p>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <Input value={profile.goals} onChange={(event) => setProfile((current) => ({ ...current, goals: event.target.value }))} />
-          <Input value={profile.availability} onChange={(event) => setProfile((current) => ({ ...current, availability: event.target.value }))} />
-          <Textarea value={profile.injuries} onChange={(event) => setProfile((current) => ({ ...current, injuries: event.target.value }))} />
-          <Textarea value={profile.notes} onChange={(event) => setProfile((current) => ({ ...current, notes: event.target.value }))} />
-          <Button variant="warm" onClick={saveProfile}>Save profile</Button>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <Input value={profile.goals} onChange={(event) => setProfile((current) => ({ ...current, goals: event.target.value }))} />
+            <Input value={profile.availability} onChange={(event) => setProfile((current) => ({ ...current, availability: event.target.value }))} />
+            <Textarea value={profile.injuries} onChange={(event) => setProfile((current) => ({ ...current, injuries: event.target.value }))} />
+            <Textarea value={profile.notes} onChange={(event) => setProfile((current) => ({ ...current, notes: event.target.value }))} />
+            <Button variant="warm" onClick={saveProfile}>Save profile</Button>
+          </CardContent>
+        </Card>
       </div>
       {message ? <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">{message}</div> : null}
     </AppShell>

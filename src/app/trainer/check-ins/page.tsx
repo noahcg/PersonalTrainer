@@ -1,5 +1,5 @@
-import { TrainerCheckinsManager } from "@/components/product/trainer-checkins-manager";
+import { redirect } from "next/navigation";
 
 export default function CheckInsPage() {
-  return <TrainerCheckinsManager />;
+  redirect("/trainer/messages");
 }

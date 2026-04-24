@@ -17,7 +17,7 @@
   --background: var(--color-offwhite);
   --foreground: var(--color-text-main);
   --font-sans: "Avenir Next", Avenir, "Segoe UI", sans-serif;
-  --font-serif: "Baskerville", "Iowan Old Style", "Palatino Linotype", serif;
+  --font-serif: Georgia, "Palatino Linotype", "Book Antiqua", "Iowan Old Style", serif;
   --font-mono: "SFMono-Regular", Consolas, monospace;
 }
 

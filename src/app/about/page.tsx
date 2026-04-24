@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Dumbbell, HeartPulse, MessageCircle } from "lucide-react";
+import { brand } from "@/lib/brand";
 import { PublicSiteShell } from "@/components/marketing/public-site-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,7 +41,7 @@ export default function AboutPage() {
               Calm, precise personal training built around real progress.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
-              Nick Glushien Coaching is designed for clients who want more than workouts copied from the internet. The focus is
+              {brand.businessName} is designed for clients who want more than workouts copied from the internet. The focus is
               practical strength, clear direction, and a coaching relationship that keeps momentum visible week after week.
             </p>
           </div>

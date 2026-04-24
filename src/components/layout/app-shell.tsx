@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import {
   BookOpen,
@@ -9,25 +9,29 @@ import {
   Dumbbell,
   Home,
   Library,
+  LogOut,
   Megaphone,
   MessageCircle,
   Settings,
   TrendingUp,
   Users,
 } from "lucide-react";
+import { brand } from "@/lib/brand";
+import { createClient as createBrowserClient, hasSupabaseEnv } from "@/lib/supabase-browser";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/types";
 import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { NGLogoLockup } from "@/components/brand/ng-logo";
 
 const trainerNav = [
   { href: "/trainer/dashboard", label: "Dashboard", icon: Home },
   { href: "/trainer/bulletin", label: "Bulletin Board", icon: Megaphone },
   { href: "/trainer/clients", label: "Clients", icon: Users },
+  { href: "/trainer/messages", label: "Communications", icon: MessageCircle },
   { href: "/trainer/plans", label: "Training Plans", icon: CalendarCheck },
   { href: "/trainer/workouts", label: "Workouts", icon: Dumbbell },
   { href: "/trainer/exercises", label: "Exercise Library", icon: Library },
-  { href: "/trainer/check-ins", label: "Check-ins", icon: MessageCircle },
   { href: "/trainer/progress", label: "Progress", icon: TrendingUp },
   { href: "/trainer/resources", label: "Resources", icon: BookOpen },
   { href: "/trainer/settings", label: "Settings", icon: Settings },
@@ -55,7 +59,18 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const nav = role === "trainer" ? trainerNav : clientNav;
+
+  async function handleLogout() {
+    if (hasSupabaseEnv()) {
+      const supabase = createBrowserClient();
+      await supabase.auth.signOut();
+    }
+
+    router.push("/");
+    router.refresh();
+  }
 
   return (
     <div className="min-h-screen px-3 py-3 text-charcoal-950 sm:px-5 lg:px-6">
@@ -85,7 +100,7 @@ export function AppShell({
           </nav>
           <div className="mt-4 rounded-[1.7rem] border border-white/10 bg-white/6 p-4">
             <p className="text-[0.65rem] uppercase tracking-[0.32em] text-bronze-200/88">Focus this week</p>
-            <p className="mt-3 text-sm leading-6 text-ivory-50/75">Clear coaching. Real progress.</p>
+            <p className="mt-3 text-sm leading-6 text-ivory-50/75">{brand.tagline}</p>
             <p className="mt-3 text-xs leading-5 text-ivory-50/52">
               {role === "trainer" ? "3 clients need review. 8 workouts are scheduled." : "Your plan is structured so the next step is always clear."}
             </p>
@@ -101,7 +116,7 @@ export function AppShell({
                   animate={{ opacity: 1, y: 0 }}
                   className="text-[0.66rem] font-semibold uppercase tracking-[0.34em] text-bronze-600"
                 >
-                  {role === "trainer" ? "Nick Glushien coaching command center" : "Nick Glushien client experience"}
+                  {role === "trainer" ? brand.app.trainerHeaderLabel : brand.app.clientHeaderLabel}
                 </motion.p>
                 <motion.h1
                   initial={false}
@@ -115,13 +130,17 @@ export function AppShell({
               </div>
               <div className="flex items-center gap-3 rounded-full border border-stone-200/80 bg-white/72 p-2 shadow-inner-soft">
                 <Avatar
-                  name={role === "trainer" ? "Nick Glushien" : "Mara Lee"}
+                  name={role === "trainer" ? brand.app.trainerLabel : "Mara Lee"}
                   src={role === "trainer" ? undefined : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80"}
                 />
                 <div className="pr-3">
-                  <p className="text-sm font-semibold">{role === "trainer" ? "Nick Glushien" : "Mara Lee"}</p>
-                  <p className="text-xs text-stone-500">{role === "trainer" ? "Clear coaching. Real progress." : "Guided by Nick Glushien Coaching"}</p>
+                  <p className="text-sm font-semibold">{role === "trainer" ? brand.app.trainerViewLabel : "Mara Lee"}</p>
+                  <p className="text-xs text-stone-500">{role === "trainer" ? brand.tagline : brand.app.clientSupportLabel}</p>
                 </div>
+                <Button variant="ghost" size="sm" onClick={() => void handleLogout()}>
+                  <LogOut className="size-4" />
+                  Logout
+                </Button>
               </div>
             </div>
           </header>

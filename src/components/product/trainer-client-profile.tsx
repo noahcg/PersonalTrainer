@@ -2,23 +2,20 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { Ban, PencilLine, Save, StickyNote, X } from "lucide-react";
+import { Ban, Mail, PencilLine, Save, StickyNote, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { clientAccessDetail, clientAccessLabel } from "@/lib/client-access";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { clients as demoClients } from "@/lib/demo-data";
+import { readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
+import { pricingTierDetail, pricingTierLabel, pricingTierOptions } from "@/lib/pricing";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
-import type { Client, ClientStatus, CoachingEntry, Plan } from "@/lib/types";
-
-type StoredState = {
-  client: Client;
-  coachingNotes: CoachingEntry[];
-};
-
-const coachStorageKey = (clientId: string) => `aurelian-client-profile-${clientId}`;
+import type { Client, ClientStatus, CoachingEntry, Plan, PricingTier } from "@/lib/types";
 
 export function TrainerClientProfile({
   initialClient,
@@ -43,31 +40,24 @@ export function TrainerClientProfile({
   useEffect(() => {
     if (mode !== "demo") return;
 
-    const stored = window.localStorage.getItem(coachStorageKey(initialClient.id));
+    const stored = readStoredDemoClientProfile(initialClient.id);
     if (!stored) return;
 
     const timeout = window.setTimeout(() => {
-      try {
-        const parsed = JSON.parse(stored) as StoredState;
-        setClient(parsed.client);
-        setDraftClient(parsed.client);
-        setCoachingNotes(parsed.coachingNotes ?? []);
-      } catch {
-        window.localStorage.removeItem(coachStorageKey(initialClient.id));
-      }
+      setClient(stored.client);
+      setDraftClient(stored.client);
+      setCoachingNotes(stored.coachingNotes ?? []);
     }, 0);
 
     return () => window.clearTimeout(timeout);
   }, [initialClient, mode]);
 
   function persist(nextClient: Client, nextNotes: CoachingEntry[]) {
-    window.localStorage.setItem(
-      coachStorageKey(initialClient.id),
-      JSON.stringify({ client: nextClient, coachingNotes: nextNotes } satisfies StoredState),
-    );
+    writeStoredDemoClientProfile(initialClient.id, { client: nextClient, coachingNotes: nextNotes });
+    syncDemoClientRecord(nextClient, demoClients);
   }
 
-  function updateDraft(field: keyof Client, value: string | ClientStatus) {
+  function updateDraft(field: keyof Client, value: string | ClientStatus | PricingTier) {
     setDraftClient((current) => ({ ...current, [field]: value }));
   }
 
@@ -90,6 +80,7 @@ export function TrainerClientProfile({
             preferred_training_style: draftClient.style,
             availability: draftClient.availability,
             status: draftClient.status,
+            pricing_tier: draftClient.pricingTier,
           })
           .eq("id", draftClient.id);
 
@@ -201,6 +192,61 @@ export function TrainerClientProfile({
     }
   }
 
+  async function sendInvite() {
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      if (mode === "supabase") {
+        const response = await fetch("/api/invitations/client", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ clientId: client.id }),
+        });
+
+        const payload = (await response.json()) as { error?: string; inviteSentAt?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Unable to send invite.");
+        }
+
+        const nextClient = {
+          ...client,
+          accessStatus: "invite_pending" as const,
+          inviteSentAt: payload.inviteSentAt
+            ? new Date(payload.inviteSentAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : client.inviteSentAt,
+        };
+
+        setClient(nextClient);
+        setDraftClient(nextClient);
+      } else {
+        const nextClient = {
+          ...client,
+          accessStatus: "invite_pending" as const,
+          inviteSentAt: new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+        };
+        setClient(nextClient);
+        setDraftClient(nextClient);
+        persist(nextClient, coachingNotes);
+      }
+
+      setMessage(client.accessStatus === "invite_pending" ? "Invite resent." : "Invite sent.");
+      window.setTimeout(() => setMessage(null), 2400);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to send invite.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function deactivateClient() {
     const nextStatus: ClientStatus = client.status === "archived" ? "active" : "archived";
     const nextClient = { ...client, status: nextStatus };
@@ -247,10 +293,14 @@ export function TrainerClientProfile({
           <p className="text-sm text-stone-500">{client.email}</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Badge variant="sage">{client.level}</Badge>
+            <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
+            <Badge variant="default">{clientAccessLabel(client.accessStatus)}</Badge>
             <Badge variant={client.status === "needs_attention" ? "alert" : client.status === "archived" ? "default" : "bronze"}>
               {client.status.replace("_", " ")}
             </Badge>
           </div>
+          <p className="mt-3 text-sm leading-6 text-stone-500">{pricingTierDetail(client.pricingTier)}</p>
+          <p className="mt-2 text-sm leading-6 text-stone-500">{clientAccessDetail(client.accessStatus, client.inviteSentAt)}</p>
           <div className="mt-6">
             <div className="mb-2 flex justify-between text-sm text-stone-500">
               <span>Adherence</span>
@@ -264,6 +314,12 @@ export function TrainerClientProfile({
             <MetricTile label="Weight" value={client.metrics.bodyWeight} />
           </div>
           <div className="mt-6 grid gap-3">
+            {client.accessStatus !== "account_active" ? (
+              <Button variant="secondary" onClick={() => void sendInvite()} disabled={busy}>
+                <Mail className="size-4" />
+                {client.accessStatus === "invite_pending" ? "Resend access invite" : "Send access invite"}
+              </Button>
+            ) : null}
             <Button variant="warm" onClick={() => setNoteOpen(true)}>
               <StickyNote className="size-4" />
               Leave coaching note
@@ -354,6 +410,19 @@ export function TrainerClientProfile({
                       <option value="needs_attention">Needs attention</option>
                       <option value="paused">Paused</option>
                       <option value="archived">Archived</option>
+                    </select>
+                  </Field>
+                  <Field label="Pricing package">
+                    <select
+                      value={draftClient.pricingTier}
+                      onChange={(event) => updateDraft("pricingTier", event.target.value as PricingTier)}
+                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100"
+                    >
+                      {pricingTierOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
                   </Field>
                   <Field label="Fitness level">

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { AlertCircle, CalendarDays } from "lucide-react";
+import { clientAccessLabel } from "@/lib/client-access";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { pricingTierLabel } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import type { Client } from "@/lib/types";
 
@@ -19,19 +21,35 @@ export function ClientCard({
   onToggleSelect?: (id: string) => void;
 }) {
   const needsAttention = client.status === "needs_attention";
+  const primaryStatus = clientAccessLabel(client.accessStatus);
+  const primaryVariant = client.accessStatus === "account_active" ? "sage" : "default";
 
   const cardBody = (
-    <Card className={cn("group h-full p-5 transition hover:-translate-y-1 hover:bg-white/90", selected && "border-bronze-300 bg-bronze-50")}>
+    <Card
+      className={cn(
+        "group h-full min-w-0 overflow-hidden p-5 transition hover:-translate-y-1 hover:bg-white/90",
+        selected && "border-bronze-300 bg-bronze-50",
+      )}
+    >
       <div className="flex items-start gap-4">
         <Avatar name={client.name} src={client.photo} className="size-14" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <h3 className="truncate text-lg font-semibold">{client.name}</h3>
-            <Badge variant={needsAttention ? "alert" : "sage"}>
-              {needsAttention ? "Review" : "Active"}
-            </Badge>
+            <Badge variant={primaryVariant}>{primaryStatus}</Badge>
           </div>
-          <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-500">{client.goals}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs uppercase tracking-[0.18em] text-stone-400">
+            <span>{pricingTierLabel(client.pricingTier)}</span>
+            <span className="h-1 w-1 rounded-full bg-stone-300" />
+            <span>{client.level}</span>
+          </div>
+          {needsAttention ? (
+            <div className="mt-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-rose-500">
+              <AlertCircle className="size-3.5" />
+              Needs review
+            </div>
+          ) : null}
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-stone-500">{client.goals}</p>
         </div>
       </div>
       <div className="mt-5 grid grid-cols-3 gap-2 rounded-[1.5rem] bg-stone-50/80 p-3 text-center">
@@ -64,23 +82,27 @@ export function ClientCard({
 
   if (selectable) {
     return (
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         <button
           type="button"
           onClick={() => onToggleSelect?.(client.id)}
-          className="flex w-full items-center justify-between rounded-2xl border border-stone-200 bg-white/60 px-4 py-3 text-sm text-stone-600"
+          className="flex w-full items-center justify-between rounded-2xl border border-stone-200 bg-white/60 px-4 py-2.5 text-sm text-stone-600"
         >
-          <span>Select for bulk actions</span>
+          <span>Include in bulk actions</span>
           <span className={cn("rounded-full px-3 py-1 text-xs font-medium", selected ? "bg-bronze-500 text-white" : "bg-stone-100 text-stone-600")}>
             {selected ? "Selected" : "Select"}
           </span>
         </button>
-        <Link href={`/trainer/clients/${client.id}`}>{cardBody}</Link>
+        <Link href={`/trainer/clients/${client.id}`} className="block min-w-0">
+          {cardBody}
+        </Link>
       </div>
     );
   }
 
   return (
-    <Link href={`/trainer/clients/${client.id}`}>{cardBody}</Link>
+    <Link href={`/trainer/clients/${client.id}`} className="block min-w-0">
+      {cardBody}
+    </Link>
   );
 }
