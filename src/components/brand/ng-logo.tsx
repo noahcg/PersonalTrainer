@@ -100,7 +100,7 @@ export function NGLogoLockup({
         <div
           className={cn(
             "mt-[4px] text-[0.52rem] font-semibold uppercase tracking-[0.34em] sm:text-[0.58rem] sm:tracking-[0.4em]",
-            tone === "copper" ? colors.secondary : "text-sage-700",
+            tone === "light" ? "text-bronze-200" : tone === "copper" ? colors.secondary : "text-sage-700",
           )}
         >
           {subtext}

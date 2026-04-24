@@ -17,7 +17,8 @@ export default async function TrainerDashboardPage() {
   return (
     <AppShell
       role="trainer"
-      title="Good morning, Nick."
+      title="Welcome back, Nick."
+      dynamicGreetingName="Nick"
       subtitle="Clear coaching. Real progress. A structured read on client momentum, adherence, and the coaching moments that need your attention."
     >
       <div className="grid gap-5 xl:grid-cols-[1fr_340px]">

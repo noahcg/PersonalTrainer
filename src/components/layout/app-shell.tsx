@@ -57,21 +57,40 @@ export function AppShell({
   role,
   title,
   subtitle,
+  dynamicGreetingName,
   children,
 }: {
   role: Role;
   title: string;
   subtitle: string;
+  dynamicGreetingName?: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const nav = role === "trainer" ? trainerNav : clientNav;
+  const [greetingHour, setGreetingHour] = useState<number | null>(null);
   const [identity, setIdentity] = useState({
     name: role === "trainer" ? brand.app.trainerViewLabel : "Mara Lee",
     photo: role === "trainer" ? "" : demoClients[0]?.photo ?? "",
     subtitle: role === "trainer" ? brand.tagline : brand.app.clientSupportLabel,
   });
+
+  function getTimeBasedGreeting(name: string, hour = new Date().getHours()) {
+    if (hour >= 5 && hour < 12) {
+      return `Good morning, ${name}.`;
+    }
+
+    if (hour >= 12 && hour < 17) {
+      return `Still rolling, ${name}.`;
+    }
+
+    if (hour >= 17 && hour < 21) {
+      return `Finish strong, ${name}.`;
+    }
+
+    return `Still going, ${name}.`;
+  }
 
   async function loadIdentity() {
     if (!hasSupabaseEnv()) {
@@ -149,6 +168,9 @@ export function AppShell({
   const syncIdentity = useEffectEvent(() => {
     void loadIdentity();
   });
+  const syncGreetingHour = useEffectEvent(() => {
+    setGreetingHour(new Date().getHours());
+  });
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -164,6 +186,27 @@ export function AppShell({
       window.removeEventListener("storage", syncIdentity);
     };
   }, [role]);
+
+  useEffect(() => {
+    if (!dynamicGreetingName) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      syncGreetingHour();
+    }, 0);
+    const interval = window.setInterval(() => {
+      syncGreetingHour();
+    }, 60_000);
+
+    return () => {
+      window.clearTimeout(timeout);
+      window.clearInterval(interval);
+    };
+  }, [dynamicGreetingName]);
+
+  const displayTitle =
+    dynamicGreetingName && greetingHour !== null ? getTimeBasedGreeting(dynamicGreetingName, greetingHour) : title;
 
   async function handleLogout() {
     if (hasSupabaseEnv()) {
@@ -223,7 +266,7 @@ export function AppShell({
                   transition={{ delay: 0.04 }}
                   className="mt-2 font-serif text-4xl font-semibold tracking-tight text-charcoal-950 sm:text-5xl"
                 >
-                  {title}
+                  {displayTitle}
                 </motion.h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">{subtitle}</p>
               </div>
