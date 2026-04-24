@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { clients as demoClients } from "@/lib/demo-data";
 import { readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
+import { dispatchProfileUpdated, readImageFileAsDataUrl } from "@/lib/profile-identity";
 import { pricingTierDetail, pricingTierLabel } from "@/lib/pricing";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Client } from "@/lib/types";
@@ -29,6 +30,7 @@ export function ClientProfileEditor({
   });
   const [client, setClient] = useState(initialClient);
   const [message, setMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (mode !== "demo") return;
@@ -49,6 +51,7 @@ export function ClientProfileEditor({
   }, [initialClient.id, mode]);
 
   async function saveProfile() {
+    setSaving(true);
     const nextClient = {
       ...client,
       goals: profile.goals,
@@ -67,6 +70,7 @@ export function ClientProfileEditor({
             availability: nextClient.availability,
             injuries_limitations: nextClient.injuries,
             notes: nextClient.notes,
+            profile_photo_url: nextClient.photo || null,
           })
           .eq("id", nextClient.id);
 
@@ -81,10 +85,27 @@ export function ClientProfileEditor({
       }
 
       setClient(nextClient);
+      dispatchProfileUpdated();
       setMessage("Profile saved.");
       window.setTimeout(() => setMessage(null), 1800);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save profile.");
+      window.setTimeout(() => setMessage(null), 2200);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function updatePhoto(file: File | null) {
+    if (!file) return;
+
+    try {
+      const photo = await readImageFileAsDataUrl(file);
+      setClient((current) => ({ ...current, photo }));
+      setMessage("Photo ready to save.");
+      window.setTimeout(() => setMessage(null), 1800);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to load photo.");
       window.setTimeout(() => setMessage(null), 2200);
     }
   }
@@ -113,11 +134,31 @@ export function ClientProfileEditor({
 
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
               <Avatar name={client.name} src={client.photo} className="size-20" />
               <div>
                 <CardTitle className="font-serif text-4xl">{client.name}</CardTitle>
                 <p className="text-sm text-stone-500">{client.email}</p>
+              </div>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button asChild variant="secondary">
+                  <label className="cursor-pointer">
+                    Upload profile photo
+                    <input
+                      hidden
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => void updatePhoto(event.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                </Button>
+                {client.photo ? (
+                  <Button variant="ghost" onClick={() => setClient((current) => ({ ...current, photo: "" }))}>
+                    Remove photo
+                  </Button>
+                ) : null}
               </div>
             </div>
           </CardHeader>
@@ -134,7 +175,7 @@ export function ClientProfileEditor({
             <Field label="Notes">
               <Textarea value={profile.notes} onChange={(event) => setProfile((current) => ({ ...current, notes: event.target.value }))} />
             </Field>
-            <Button variant="warm" onClick={saveProfile}>Save profile</Button>
+            <Button variant="warm" onClick={() => void saveProfile()} disabled={saving}>{saving ? "Saving..." : "Save profile"}</Button>
           </CardContent>
         </Card>
       </div>

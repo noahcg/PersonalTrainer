@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useEffectEvent, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -17,6 +18,9 @@ import {
   Users,
 } from "lucide-react";
 import { brand } from "@/lib/brand";
+import { clients as demoClients } from "@/lib/demo-data";
+import { demoClientsStorageKey } from "@/lib/demo-client-storage";
+import { profileUpdatedEventName, readDemoTrainerSettings } from "@/lib/profile-identity";
 import { createClient as createBrowserClient, hasSupabaseEnv } from "@/lib/supabase-browser";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/types";
@@ -61,6 +65,103 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const nav = role === "trainer" ? trainerNav : clientNav;
+  const [identity, setIdentity] = useState({
+    name: role === "trainer" ? brand.app.trainerViewLabel : "Mara Lee",
+    photo: role === "trainer" ? "" : demoClients[0]?.photo ?? "",
+    subtitle: role === "trainer" ? brand.tagline : brand.app.clientSupportLabel,
+  });
+
+  async function loadIdentity() {
+    if (!hasSupabaseEnv()) {
+      if (role === "trainer") {
+        const trainerSettings = readDemoTrainerSettings();
+        setIdentity({
+          name: trainerSettings.name || brand.app.trainerViewLabel,
+          photo: trainerSettings.photo,
+          subtitle: brand.tagline,
+        });
+        return;
+      }
+
+      const stored = window.localStorage.getItem(demoClientsStorageKey);
+      if (stored) {
+        try {
+          const clients = JSON.parse(stored) as Array<{ name: string; photo?: string }>;
+          const client = clients[0];
+          if (client) {
+            setIdentity({
+              name: client.name,
+              photo: client.photo ?? "",
+              subtitle: brand.app.clientSupportLabel,
+            });
+            return;
+          }
+        } catch {
+          window.localStorage.removeItem(demoClientsStorageKey);
+        }
+      }
+
+      setIdentity({
+        name: demoClients[0]?.name ?? "Client",
+        photo: demoClients[0]?.photo ?? "",
+        subtitle: brand.app.clientSupportLabel,
+      });
+      return;
+    }
+
+    const supabase = createBrowserClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    if (role === "trainer") {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", user.id)
+        .maybeSingle<{ full_name: string; avatar_url: string | null }>();
+
+      setIdentity({
+        name: profile?.full_name ?? brand.app.trainerViewLabel,
+        photo: profile?.avatar_url ?? "",
+        subtitle: brand.tagline,
+      });
+      return;
+    }
+
+    const { data: client } = await supabase
+      .from("clients")
+      .select("full_name, profile_photo_url")
+      .eq("profile_id", user.id)
+      .maybeSingle<{ full_name: string; profile_photo_url: string | null }>();
+
+    setIdentity({
+      name: client?.full_name ?? "Client",
+      photo: client?.profile_photo_url ?? "",
+      subtitle: brand.app.clientSupportLabel,
+    });
+  }
+
+  const syncIdentity = useEffectEvent(() => {
+    void loadIdentity();
+  });
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      syncIdentity();
+    }, 0);
+
+    window.addEventListener(profileUpdatedEventName, syncIdentity);
+    window.addEventListener("storage", syncIdentity);
+
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener(profileUpdatedEventName, syncIdentity);
+      window.removeEventListener("storage", syncIdentity);
+    };
+  }, [role]);
 
   async function handleLogout() {
     if (hasSupabaseEnv()) {
@@ -122,13 +223,10 @@ export function AppShell({
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">{subtitle}</p>
               </div>
               <div className="flex items-center gap-3 rounded-full border border-stone-200/80 bg-white/72 p-2 shadow-inner-soft">
-                <Avatar
-                  name={role === "trainer" ? brand.app.trainerLabel : "Mara Lee"}
-                  src={role === "trainer" ? undefined : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80"}
-                />
+                <Avatar name={identity.name} src={identity.photo} />
                 <div className="pr-3">
-                  <p className="text-sm font-semibold">{role === "trainer" ? brand.app.trainerViewLabel : "Mara Lee"}</p>
-                  <p className="text-xs text-stone-500">{role === "trainer" ? brand.tagline : brand.app.clientSupportLabel}</p>
+                  <p className="text-sm font-semibold">{identity.name}</p>
+                  <p className="text-xs text-stone-500">{identity.subtitle}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => void handleLogout()}>
                   <LogOut className="size-4" />
