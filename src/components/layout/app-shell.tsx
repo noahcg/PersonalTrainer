@@ -76,7 +76,7 @@ export function AppShell({
     <div className="min-h-screen px-3 py-3 text-charcoal-950 sm:px-5 lg:px-6">
       <div className="mx-auto grid max-w-[1500px] gap-5 lg:grid-cols-[238px_1fr]">
         <aside className="sticky top-5 hidden h-[calc(100vh-2.5rem)] flex-col overflow-hidden rounded-[2rem] border border-white/8 bg-charcoal-950 px-4 py-5 text-ivory-50 shadow-soft lg:flex">
-          <Link href="/" className="block w-full rounded-[1.25rem] px-3 py-3">
+          <Link href="/" className="block w-full rounded-[1.25rem]">
             <NGLogoLockup tone="light" subtext="Training" className="max-w-full" />
           </Link>
           <nav suppressHydrationWarning className="mt-6 flex-1 space-y-1 overflow-y-auto pr-1">

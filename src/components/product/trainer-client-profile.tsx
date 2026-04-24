@@ -294,7 +294,30 @@ export function TrainerClientProfile({
 
   return (
     <>
-      <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
+      <div className="space-y-5">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {sections.map(([title, body]) => (
+            <Card key={title}>
+              <CardHeader>
+                <CardTitle>{title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm leading-7 text-stone-600">{body}</p>
+              </CardContent>
+            </Card>
+          ))}
+          <Card>
+            <CardHeader>
+              <CardTitle>Pricing package</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
+              <p className="mt-4 text-sm leading-6 text-stone-600">{pricingTierDetail(client.pricingTier)}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
         <Card className="p-6">
           <Avatar name={client.name} src={client.photo} className="size-24" />
           <h2 className="mt-5 font-serif text-4xl font-semibold">{client.name}</h2>
@@ -307,8 +330,7 @@ export function TrainerClientProfile({
               {client.status.replace("_", " ")}
             </Badge>
           </div>
-          <p className="mt-3 text-sm leading-6 text-stone-500">{pricingTierDetail(client.pricingTier)}</p>
-          <p className="mt-2 text-sm leading-6 text-stone-500">{clientAccessDetail(client.accessStatus, client.inviteSentAt)}</p>
+          <p className="mt-3 text-sm leading-6 text-stone-500">{clientAccessDetail(client.accessStatus, client.inviteSentAt)}</p>
           <div className="mt-6">
             <div className="mb-2 flex justify-between text-sm text-stone-500">
               <span>Adherence</span>
@@ -344,17 +366,6 @@ export function TrainerClientProfile({
         </Card>
 
         <div className="grid gap-5">
-          {sections.map(([title, body]) => (
-            <Card key={title}>
-              <CardHeader>
-                <CardTitle>{title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-7 text-stone-600">{body}</p>
-              </CardContent>
-            </Card>
-          ))}
-
           <Card>
             <CardHeader>
               <CardTitle>Recent coaching notes</CardTitle>
@@ -386,6 +397,7 @@ export function TrainerClientProfile({
               </div>
             </CardContent>
           </Card>
+        </div>
         </div>
       </div>
 

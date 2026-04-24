@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import monogram from "../../../monogram.jpg";
+import monogram from "../../../monogram.svg";
 
 type LogoTone = "ink" | "light" | "copper";
 
@@ -59,7 +59,6 @@ export function NGMonogram({
           tone === "copper" && "sepia-[0.24] saturate-[1.08]",
         )}
         sizes="64px"
-        placeholder="blur"
       />
     </div>
   );
@@ -77,14 +76,12 @@ export function NGLogoLockup({
   const colors = toneClasses(tone);
 
   return (
-    <div className={cn("flex min-w-0 items-center gap-3", className)}>
-      <div className={cn("grid size-13 shrink-0 place-items-center rounded-[1.05rem] border p-1.5 shadow-soft sm:size-14", colors.panel)}>
-        <NGMonogram tone={tone} className="size-full" />
-      </div>
+    <div className={cn("flex min-w-0 items-center gap-3.5", className)}>
+      <NGMonogram tone={tone} className="size-[4.3rem] shrink-0 sm:size-[4.65rem]" />
       <div className="min-w-0">
         <div
           className={cn(
-            "text-[1rem] font-medium uppercase leading-[0.92] tracking-[0.18em] sm:text-[1.15rem] sm:tracking-[0.2em]",
+            "mt-[4px] text-[0.94rem] font-medium uppercase leading-[0.88] tracking-[0.17em] sm:text-[1.08rem] sm:tracking-[0.19em]",
             colors.primary,
           )}
         >
@@ -93,7 +90,7 @@ export function NGLogoLockup({
         </div>
         <div
           className={cn(
-            "mt-2 text-[0.56rem] uppercase tracking-[0.38em] sm:text-[0.62rem] sm:tracking-[0.44em]",
+            "mt-[4px] text-[0.52rem] uppercase tracking-[0.34em] sm:text-[0.58rem] sm:tracking-[0.4em]",
             tone === "copper" ? colors.secondary : "text-bronze-500",
           )}
         >
