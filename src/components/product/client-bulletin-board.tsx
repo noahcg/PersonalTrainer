@@ -274,7 +274,6 @@ export function ClientBulletinBoard({
               </div>
             </motion.div>
           ) : null}
-          <div className="mt-6 text-xs uppercase tracking-[0.22em] text-stone-400">Posted by {post.author}</div>
         </Card>
       ))}
       </div>

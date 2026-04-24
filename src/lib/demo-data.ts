@@ -196,6 +196,21 @@ export const progress: ProgressPoint[] = [
 
 export const resources: Resource[] = [
   {
+    id: "resource-meal-prep-made-simple",
+    title: "Meal Prep Made Simple",
+    description: "A practical weekly meal-prep guide that supports strength, recovery, and steady eating habits without turning food into a second job.",
+    type: "Nutrition",
+    url: "",
+    content:
+      "Meal prep works best when it lowers friction instead of trying to create perfect meals. Build each prep around three anchors: a reliable protein, an easy carbohydrate, and produce you will actually eat. Pick two proteins for the week such as chicken thighs, lean ground turkey, Greek yogurt, eggs, tofu, or salmon. Pair them with one or two easy carbs like rice, potatoes, oats, wraps, or fruit. Add vegetables that reheat well or are easy to grab cold, such as roasted broccoli, green beans, peppers, carrots, salad kits, berries, and cucumbers.\n\nA simple rhythm is enough. Prep two to four lunch or dinner meals, keep a fast breakfast option ready, and stock one or two high-protein snacks. Aim for meals that look balanced, repeatable, and easy to assemble when the day gets busy. A useful default plate is protein first, produce second, carbs adjusted to activity, and fats kept moderate but included.\n\nFor training days, make it easier to eat around the session. Have a meal one to three hours before training with protein and carbs, and eat again after training when practical. That can be as simple as yogurt and fruit before the gym, then a rice bowl with chicken and vegetables afterward. Recovery nutrition does not need to be complicated. Consistency beats precision.\n\nKeep the prep realistic. Use one sheet-pan meal, one pot or rice cooker carb, washed fruit, and a few repeat staples. If a full prep feels heavy, prep components instead of full containers: cooked protein, cooked starch, chopped produce, and one sauce. That still gives structure without making the week feel rigid.\n\nA strong meal-prep week should leave you with fewer decisions, steadier energy, and less reliance on random convenience food. The goal is not clean eating perfection. The goal is making good choices easier to repeat.",
+    tags: ["nutrition", "meal prep", "recovery"],
+    audience: "all",
+    assignedClientIds: [],
+    assignedClientNames: [],
+    estimatedTime: "6 min read",
+    updatedAt: "Apr 24",
+  },
+  {
     id: "resource-travel-week-strength-menu",
     title: "Travel Week Strength Menu",
     description: "A simplified training option clients can follow when schedules are tight and equipment is limited.",
@@ -209,21 +224,6 @@ export const resources: Resource[] = [
     assignedClientNames: [],
     estimatedTime: "7 min read",
     updatedAt: "Apr 20",
-  },
-  {
-    id: "resource-protein-without-overthinking",
-    title: "Protein Without Overthinking",
-    description: "A straightforward nutrition explainer for clients who need practical defaults instead of rigid tracking.",
-    type: "Nutrition",
-    url: "",
-    content:
-      "Aim for a protein source at each meal, repeat a few easy staples, and avoid chasing perfection. A simple rhythm beats a detailed spreadsheet if adherence is the real goal.",
-    tags: ["nutrition", "habits", "onboarding"],
-    audience: "all",
-    assignedClientIds: [],
-    assignedClientNames: [],
-    estimatedTime: "5 min read",
-    updatedAt: "Apr 18",
   },
   {
     id: "resource-hip-reset-flow",
@@ -247,7 +247,7 @@ export const bulletins: BulletinPost[] = [
     id: "bulletin-1",
     title: "Saturday Small Group Strength Session",
     body: "I’m opening the studio on Saturday for a coached small-group lower body session. We’ll move through warm-up prep, hinge mechanics, and controlled strength work together.",
-    author: "Coach Avery",
+    author: "",
     publishedAt: "Today",
     pinned: true,
     postType: "session",
@@ -263,7 +263,7 @@ export const bulletins: BulletinPost[] = [
     id: "bulletin-2",
     title: "Deload Week Starts Monday",
     body: "Next week is a controlled deload for everyone. Keep the movement quality high, cut accessories if your schedule gets tight, and prioritize sleep over chasing volume.",
-    author: "Coach Avery",
+    author: "",
     publishedAt: "Yesterday",
     pinned: false,
     postType: "announcement",

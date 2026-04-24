@@ -364,30 +364,31 @@ export function ClientResourcesGrid({
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {resources.map((resource) => (
-          <Card key={resource.id} className="p-6">
-            <div className="flex items-center justify-between gap-3">
-              <Badge variant="bronze">{resource.type}</Badge>
-              {resource.audience === "personal" ? <Badge variant="sage">Assigned for you</Badge> : null}
-            </div>
-            <h3 className="mt-5 text-xl font-semibold text-charcoal-950">{resource.title}</h3>
-            <p className="mt-3 text-sm leading-6 text-stone-600">{resource.description || resource.content}</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {resource.tags.slice(0, 3).map((tag) => (
-                <span key={tag} className="rounded-full bg-stone-100 px-3 py-1 text-xs text-stone-600">
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div className="mt-6 space-y-2 text-sm text-stone-500">
-              <p>{resource.estimatedTime}</p>
-              {resource.url ? (
-                <Link href={resource.url} className="inline-flex items-center gap-2 font-medium text-bronze-700">
-                  Open resource
-                  <ArrowRight className="size-4" />
-                </Link>
-              ) : null}
-            </div>
-          </Card>
+          <Link key={resource.id} href={`/client/resources/${resource.id}`} className="block">
+            <Card className="h-full p-6 transition hover:-translate-y-1 hover:bg-white/90">
+              <div className="flex items-center justify-between gap-3">
+                <Badge variant="bronze">{resource.type}</Badge>
+                {resource.audience === "personal" ? <Badge variant="sage">Assigned for you</Badge> : null}
+              </div>
+              <h3 className="mt-5 text-xl font-semibold text-charcoal-950">{resource.title}</h3>
+              <p className="mt-3 line-clamp-3 text-sm leading-6 text-stone-600">{resource.description || resource.content}</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {resource.tags.slice(0, 3).map((tag) => (
+                  <span key={tag} className="rounded-full bg-stone-100 px-3 py-1 text-xs text-stone-600">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-6 flex items-center justify-between text-sm text-stone-500">
+                <span>{resource.estimatedTime}</span>
+                <span>{resource.audience === "personal" ? "Assigned for you" : "Available anytime"}</span>
+              </div>
+              <div className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-bronze-700">
+                Open details
+                <ArrowRight className="size-4" />
+              </div>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>

@@ -160,3 +160,35 @@ export async function getClientResources() {
 
   return { mode: "supabase" as const, resources };
 }
+
+export async function getClientResourceById(id: string) {
+  if (!isSupabaseConfigured()) {
+    const resource = demoResources.find((item) => item.id === id) ?? null;
+    if (!resource) return null;
+    return resource.audience === "all" ? resource : null;
+  }
+
+  const { supabase, trainerId, clientId } = await getContext();
+  if (!trainerId || !clientId) return null;
+
+  const [{ data: resourceRow }, { data: clientRows }] = await Promise.all([
+    supabase
+      .from("resources")
+      .select("id, trainer_id, title, description, resource_type, url, content, tags, audience, updated_at")
+      .eq("trainer_id", trainerId)
+      .eq("id", id)
+      .maybeSingle<ResourceRow>(),
+    supabase.from("clients").select("id, full_name").eq("trainer_id", trainerId),
+  ]);
+
+  if (!resourceRow) return null;
+
+  const clientsById = new Map((clientRows ?? []).map((client) => [client.id, client.full_name]));
+  const resource = mapResource(resourceRow, clientsById);
+
+  if (resource.audience === "all" || resource.assignedClientIds.includes(clientId)) {
+    return resource;
+  }
+
+  return null;
+}

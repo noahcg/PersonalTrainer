@@ -209,7 +209,7 @@ export function TrainerBulletinBoard({
           id: inserted.id,
           title: inserted.title,
           body: inserted.body,
-          author: "Coach Avery",
+          author: "",
           publishedAt: new Date(inserted.published_at).toLocaleString("en-US", {
             month: "short",
             day: "numeric",
@@ -231,7 +231,7 @@ export function TrainerBulletinBoard({
           id: editingId ?? `bulletin-${bulletins.length + 1}`,
           title: title.trim(),
           body: body.trim(),
-          author: "Coach Avery",
+          author: "",
           publishedAt:
             bulletins.find((post) => post.id === editingId)?.publishedAt ??
             new Date().toLocaleString("en-US", {
@@ -385,7 +385,6 @@ export function TrainerBulletinBoard({
                 {post.pinned ? "Unpin" : "Pin to top"}
               </Button>
             </div>
-            <div className="mt-6 text-xs uppercase tracking-[0.22em] text-stone-400">Published by {post.author}</div>
           </Card>
         ))}
       </div>

@@ -60,7 +60,7 @@ function mapBulletin(
     id: row.id,
     title: row.title,
     body: row.body,
-    author: "Coach Avery",
+    author: "",
     publishedAt: new Date(row.published_at).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
