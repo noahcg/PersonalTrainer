@@ -2,8 +2,9 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Ban, Copy, ExternalLink, Mail, PencilLine, Save, StickyNote, X } from "lucide-react";
+import { Ban, Copy, ExternalLink, Mail, PencilLine, Save, StickyNote, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { clientAccessDetail, clientAccessLabel } from "@/lib/client-access";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
@@ -14,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { clients as demoClients } from "@/lib/demo-data";
-import { readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
+import { deleteStoredDemoClient, readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
 import { defaultInviteMessage, defaultInviteSubject } from "@/lib/invitations";
 import { pricingTierDetail, pricingTierLabel, pricingTierOptions } from "@/lib/pricing";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
@@ -31,11 +32,13 @@ export function TrainerClientProfile({
   initialCoachingNotes: CoachingEntry[];
   mode: "demo" | "supabase";
 }) {
+  const router = useRouter();
   const [client, setClient] = useState(initialClient);
   const [coachingNotes, setCoachingNotes] = useState<CoachingEntry[]>(initialCoachingNotes);
   const [editOpen, setEditOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(initialClient);
   const [draftNote, setDraftNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -294,6 +297,34 @@ export function TrainerClientProfile({
     }
   }
 
+  async function deleteClient() {
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      if (mode === "supabase") {
+        const response = await fetch(`/api/trainer/clients/${client.id}`, {
+          method: "DELETE",
+        });
+        const payload = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Unable to delete client.");
+        }
+      } else {
+        deleteStoredDemoClient(client.id, demoClients);
+      }
+
+      router.push("/trainer/clients");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to delete client.");
+      window.setTimeout(() => setMessage(null), 2400);
+    } finally {
+      setBusy(false);
+      setDeleteOpen(false);
+    }
+  }
+
   const sections = useMemo(
     () => [
       ["Goals", client.goals],
@@ -400,6 +431,15 @@ export function TrainerClientProfile({
             <Button variant="ghost" onClick={deactivateClient} disabled={busy}>
               <Ban className="size-4" />
               {client.status === "archived" ? "Reactivate client" : "Deactivate client"}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteOpen(true)}
+              disabled={busy}
+              className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+            >
+              <Trash2 className="size-4" />
+              Delete client
             </Button>
           </div>
         </Card>
@@ -555,6 +595,35 @@ export function TrainerClientProfile({
         busy={busy}
         onSend={sendInvite}
       />
+
+      <Dialog.Root open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-charcoal-950/35 backdrop-blur-sm" />
+          <Dialog.Content asChild>
+            <ModalShell
+              title="Delete client"
+              description="This permanently removes the client from the system. If they have login access, their account will be deleted too."
+            >
+              <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-5 text-sm leading-6 text-stone-700">
+                This action is permanent. Client profile data, assignments, messages, logs, check-ins, and related records will be removed.
+              </div>
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <Dialog.Close asChild>
+                  <Button variant="secondary">Cancel</Button>
+                </Dialog.Close>
+                <Button
+                  onClick={() => void deleteClient()}
+                  disabled={busy}
+                  className="bg-rose-600 text-white hover:bg-rose-700"
+                >
+                  <Trash2 className="size-4" />
+                  {busy ? "Deleting..." : "Delete client permanently"}
+                </Button>
+              </div>
+            </ModalShell>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {message ? (
         <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">

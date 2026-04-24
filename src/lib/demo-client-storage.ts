@@ -45,6 +45,14 @@ export function writeStoredDemoClients(nextClients: Client[]) {
   window.localStorage.setItem(demoClientsStorageKey, JSON.stringify(nextClients));
 }
 
+export function deleteStoredDemoClient(clientId: string, fallbackClients: Client[]) {
+  const currentClients = readStoredDemoClients(fallbackClients);
+  const nextClients = currentClients.filter((client) => client.id !== clientId);
+  writeStoredDemoClients(nextClients);
+  window.localStorage.removeItem(demoClientProfileStorageKey(clientId));
+  return nextClients;
+}
+
 export function syncDemoClientRecord(nextClient: Client, fallbackClients: Client[]) {
   const currentClients = readStoredDemoClients(fallbackClients);
   const existingIndex = currentClients.findIndex((client) => client.id === nextClient.id);
