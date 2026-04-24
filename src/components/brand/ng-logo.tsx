@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { NGMonogramMark } from "@/components/brand/ng-monogram-mark";
 import monogram from "../../../monogram.svg";
 
 type LogoTone = "ink" | "light" | "copper";
@@ -37,10 +38,16 @@ function toneClasses(tone: LogoTone) {
 export function NGMonogram({
   className,
   tone = "ink",
+  variant = "boxed",
 }: {
   className?: string;
   tone?: LogoTone;
+  variant?: "boxed" | "mark";
 }) {
+  if (variant === "mark") {
+    return <NGMonogramMark className={cn("text-ink", className)} />;
+  }
+
   return (
     <div
       aria-hidden="true"
@@ -68,16 +75,18 @@ export function NGLogoLockup({
   tone = "ink",
   subtext = "Training",
   className,
+  monogramVariant = "boxed",
 }: {
   tone?: LogoTone;
   subtext?: string;
   className?: string;
+  monogramVariant?: "boxed" | "mark";
 }) {
   const colors = toneClasses(tone);
 
   return (
     <div className={cn("flex min-w-0 items-center gap-3.5", className)}>
-      <NGMonogram tone={tone} className="size-[4.3rem] shrink-0 sm:size-[4.65rem]" />
+      <NGMonogram tone={tone} variant={monogramVariant} className="size-[4.3rem] shrink-0 sm:size-[4.65rem]" />
       <div className="min-w-0">
         <div
           className={cn(
@@ -90,8 +99,8 @@ export function NGLogoLockup({
         </div>
         <div
           className={cn(
-            "mt-[4px] text-[0.52rem] uppercase tracking-[0.34em] sm:text-[0.58rem] sm:tracking-[0.4em]",
-            tone === "copper" ? colors.secondary : "text-bronze-500",
+            "mt-[4px] text-[0.52rem] font-semibold uppercase tracking-[0.34em] sm:text-[0.58rem] sm:tracking-[0.4em]",
+            tone === "copper" ? colors.secondary : "text-sage-700",
           )}
         >
           {subtext}

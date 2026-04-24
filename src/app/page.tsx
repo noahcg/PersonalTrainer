@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarCheck, CheckCircle2, Dumbbell, HeartPulse, MessageCircle, TrendingUp } from "lucide-react";
+import { ArrowRight, CalendarCheck, Dumbbell, HeartPulse, MessageCircle, TrendingUp } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { PublicSiteShell } from "@/components/marketing/public-site-shell";
 import { Button } from "@/components/ui/button";
@@ -7,121 +7,169 @@ import { Card } from "@/components/ui/card";
 
 export default function Home() {
   const pillars = [
-    { label: "Coaching", icon: Dumbbell, tone: "text-bronze-600" },
-    { label: "Structure", icon: CalendarCheck, tone: "text-sage-700" },
-    { label: "Progress", icon: TrendingUp, tone: "text-bronze-600" },
-    { label: "Wellness", icon: HeartPulse, tone: "text-sage-700" },
+    {
+      label: "Structured programming",
+      detail: "Training is planned with progression, not improvised week to week.",
+      icon: CalendarCheck,
+      tone: "text-bronze-600",
+    },
+    {
+      label: "Clear support",
+      detail: "Clients always know what to do next and why it matters.",
+      icon: MessageCircle,
+      tone: "text-sage-700",
+    },
+    {
+      label: "Visible progress",
+      detail: "Momentum is tracked in a way that feels motivating instead of noisy.",
+      icon: TrendingUp,
+      tone: "text-bronze-600",
+    },
+    {
+      label: "Real-life coaching",
+      detail: "The system fits work, travel, energy shifts, and actual human schedules.",
+      icon: HeartPulse,
+      tone: "text-sage-700",
+    },
   ];
 
   return (
     <PublicSiteShell>
       <section className="px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
-        <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+        <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
           <div>
             <p className="inline-flex rounded-full border border-bronze-200 bg-bronze-50 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-bronze-700">
               {brand.tagline}
             </p>
             <h1 className="mt-6 max-w-4xl font-serif text-5xl font-semibold leading-[0.95] text-charcoal-950 sm:text-6xl lg:text-7xl">
-              Personal training with structure, clarity, and visible momentum.
+              Personal training that feels clear, calm, and built to last.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
-              This is the public front door for {brand.businessName}. Prospective clients can learn about the trainer,
-              understand the process, and review pricing before they ever log in.
+              Clear programming, steady support, and a training process that stays usable in real life.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8">
               <Button asChild size="lg" variant="warm">
                 <Link href="/pricing">
-                  View pricing <ArrowRight className="size-5" />
+                  Review coaching options <ArrowRight className="size-5" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="secondary">
-                <Link href="/about">{brand.publicCtaLabel}</Link>
-              </Button>
+            </div>
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              {[
+                "Structured programming.",
+                "Direct coaching support.",
+                "Progress that stays visible.",
+              ].map((item) => (
+                <div key={item} className="rounded-[1.5rem] border border-stone-200/80 bg-white/72 px-4 py-4 text-sm leading-6 text-stone-600 shadow-inner-soft">
+                  {item}
+                </div>
+              ))}
             </div>
           </div>
 
-          <Card className="bg-charcoal-950 p-6 text-ivory-50 ring-1 ring-white/10 lg:p-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">Who this is for</p>
-            <div className="mt-5 space-y-4">
-              {[
-                "Clients who want expert guidance without confusion.",
-                "Busy professionals who need training that fits real life.",
-                "People who value accountability, communication, and measurable progress.",
-              ].map((item) => (
-                <div key={item} className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-1 size-4 shrink-0 text-bronze-200" />
-                  <p className="text-sm leading-6 text-ivory-50/72">{item}</p>
-                </div>
-              ))}
+          <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 p-6 text-ivory-50 ring-1 ring-white/10 lg:p-7">
+            <div className="grid gap-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">Coaching philosophy</p>
+                <p className="mt-4 font-serif text-3xl font-semibold leading-tight">
+                  Good coaching should reduce noise.
+                </p>
+              </div>
+              <div className="grid gap-3">
+                {[
+                  "Sessions are planned with purpose.",
+                  "Adjustments stay clear when life gets busy.",
+                  "Progress is easy to understand.",
+                ].map((item) => (
+                  <div key={item} className="rounded-[1.5rem] border border-white/10 bg-white/6 px-4 py-4 text-sm leading-6 text-ivory-50/72">
+                    {item}
+                  </div>
+                ))}
+              </div>
             </div>
           </Card>
         </div>
       </section>
 
       <section className="px-5 pb-12 sm:px-8 lg:px-10">
-        <div className="grid gap-3 text-sm text-stone-700 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 lg:grid-cols-4">
           {pillars.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-stone-200/80 bg-white/72 px-4 py-4 shadow-inner-soft">
+              <Card key={item.label} className="p-5">
                 <div className="grid size-10 place-items-center rounded-full bg-stone-100">
                   <Icon className={`size-4 ${item.tone}`} />
                 </div>
-                <span className="font-medium">{item.label}</span>
-              </div>
+                <h2 className="mt-5 text-xl font-semibold text-charcoal-950">{item.label}</h2>
+                <p className="mt-3 text-sm leading-6 text-stone-600">{item.detail}</p>
+              </Card>
             );
           })}
         </div>
       </section>
 
       <section className="px-5 pb-12 sm:px-8 lg:px-10">
-        <div className="grid gap-5 lg:grid-cols-3">
-          <Card className="p-6">
-            <CalendarCheck className="size-5 text-bronze-600" />
-            <h2 className="mt-5 text-2xl font-semibold text-charcoal-950">Clear planning</h2>
-            <p className="mt-3 text-sm leading-6 text-stone-600">
-              Every client gets a structured training path instead of improvised week-to-week sessions.
-            </p>
-          </Card>
-          <Card className="p-6">
-            <MessageCircle className="size-5 text-sage-700" />
-            <h2 className="mt-5 text-2xl font-semibold text-charcoal-950">Practical coaching support</h2>
-            <p className="mt-3 text-sm leading-6 text-stone-600">
-              Feedback, check-ins, and communication stay straightforward so clients always know the next priority.
-            </p>
-          </Card>
-          <Card className="p-6">
-            <TrendingUp className="size-5 text-bronze-600" />
-            <h2 className="mt-5 text-2xl font-semibold text-charcoal-950">Visible progress</h2>
-            <p className="mt-3 text-sm leading-6 text-stone-600">
-              Training is designed to produce momentum clients can feel and track over time.
-            </p>
-          </Card>
-        </div>
-      </section>
-
-      <section className="px-5 pb-12 sm:px-8 lg:px-10 lg:pb-16">
-        <Card className="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center lg:p-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">Next steps</p>
-            <h2 className="mt-4 font-serif text-3xl font-semibold text-charcoal-950 sm:text-4xl">
-              Prospective clients can learn about the trainer first, then review pricing with context.
-            </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-600">
-              The app still supports current clients after login, but the public website now has a clear path for new visitors.
-            </p>
-          </div>
-          <div className="flex flex-col gap-3">
-            <Button asChild size="lg" variant="warm">
-              <Link href="/about">
-                {brand.publicCtaLabel} <ArrowRight className="size-5" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="secondary">
-              <Link href="/pricing">See pricing</Link>
-            </Button>
+        <Card className="overflow-hidden p-6 lg:p-8">
+          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">How it works</p>
+              <h2 className="mt-4 font-serif text-3xl font-semibold text-charcoal-950 sm:text-4xl">
+                Better coaching comes down to a few basics.
+              </h2>
+              <p className="mt-4 text-sm leading-6 text-stone-600">
+                The plan should be clear, the support should be useful, and the work should stay sustainable.
+              </p>
+            </div>
+            <div className="grid gap-4">
+              {[
+                {
+                  title: "Plan with purpose",
+                  body: "Every phase should have a job, so the client knows what they are building toward.",
+                },
+                {
+                  title: "Support outside the session",
+                  body: "Check-ins and communication should answer questions quickly instead of adding friction.",
+                },
+                {
+                  title: "Keep momentum visible",
+                  body: "Progress should stay visible enough that the next priority is obvious.",
+                },
+              ].map((item, index) => (
+                <div key={item.title} className="rounded-[1.6rem] bg-stone-50/88 p-5">
+                  <p className="text-[0.66rem] uppercase tracking-[0.24em] text-stone-400">0{index + 1}</p>
+                  <h3 className="mt-3 text-xl font-semibold text-charcoal-950">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-stone-600">{item.body}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </Card>
+      </section>
+
+      <section className="px-5 pb-12 sm:px-8 lg:px-10">
+        <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+          <Card className="p-6 lg:p-8">
+            <Dumbbell className="size-5 text-bronze-600" />
+            <h2 className="mt-5 font-serif text-3xl font-semibold text-charcoal-950">Training should fit real life and still feel serious.</h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-600">
+              The goal is a structure a client can trust on busy weeks, low-energy weeks, and normal weeks.
+            </p>
+          </Card>
+          <Card className="p-6 lg:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">Client experience</p>
+            <div className="mt-5 space-y-4">
+              {[
+                "A clear plan instead of random sessions.",
+                "Support that feels direct and usable.",
+                "Progress that stays visible over time.",
+              ].map((item) => (
+                <div key={item} className="rounded-[1.4rem] border border-stone-200/80 bg-white/72 px-4 py-4 text-sm leading-6 text-stone-600">
+                  {item}
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
       </section>
     </PublicSiteShell>
   );

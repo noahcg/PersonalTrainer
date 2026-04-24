@@ -41,8 +41,8 @@ export default function AboutPage() {
               Calm, precise personal training built around real progress.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
-              {brand.businessName} is designed for clients who want more than workouts copied from the internet. The focus is
-              practical strength, clear direction, and a coaching relationship that keeps momentum visible week after week.
+              {brand.businessName} is built for clients who want practical strength work, clear direction, and a plan
+              they can actually follow.
             </p>
           </div>
           <Card className="bg-charcoal-950 p-6 text-ivory-50 ring-1 ring-white/10">
@@ -98,9 +98,6 @@ export default function AboutPage() {
               <Link href="/pricing">
                 View pricing <ArrowRight className="size-5" />
               </Link>
-            </Button>
-            <Button asChild variant="secondary" size="lg">
-              <Link href="/login">Existing client login</Link>
             </Button>
           </div>
         </Card>

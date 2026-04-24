@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { PublicSiteShell } from "@/components/marketing/public-site-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,7 +38,7 @@ export default function PricingPage() {
             Coaching options for clients who want clarity, consistency, and measurable progress.
           </h1>
           <p className="mt-6 text-lg leading-8 text-stone-600">
-            These tiers give prospective clients a clear way to understand how support is structured before they enter the app.
+            Simple pricing, clear support levels, and no extra explanation needed.
           </p>
         </div>
       </section>
@@ -57,7 +57,7 @@ export default function PricingPage() {
                   <p className="mt-1 text-sm text-stone-500">{tier.cadence}</p>
                 </div>
                 {index === 1 ? (
-                  <span className="rounded-full bg-charcoal-950 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-ivory-50">
+                  <span className="inline-flex items-center justify-center rounded-full bg-charcoal-950 px-3 py-2 text-center text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-ivory-50">
                     Most popular
                   </span>
                 ) : null}
@@ -71,11 +71,6 @@ export default function PricingPage() {
                   </div>
                 ))}
               </div>
-              <Button asChild className="mt-8 w-full" variant={index === 1 ? "warm" : "default"}>
-                <Link href="/about">
-                  Learn more <ArrowRight className="size-4" />
-                </Link>
-              </Button>
             </Card>
           ))}
         </div>
@@ -86,13 +81,10 @@ export default function PricingPage() {
           <div>
             <h2 className="font-serif text-3xl font-semibold text-charcoal-950">Already a client?</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
-              Current clients can log in to review plans, workouts, progress, messaging, and trainer support.
+              Log in to review plans, workouts, progress, and communication.
             </p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" variant="secondary">
-              <Link href="/about">Meet the trainer</Link>
-            </Button>
+          <div>
             <Button asChild size="lg" variant="warm">
               <Link href="/login">Client login</Link>
             </Button>
