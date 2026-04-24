@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
 import { Check, Eye, LoaderCircle, MessageSquare, PlayCircle, Save, X } from "lucide-react";
+import { brand } from "@/lib/brand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -406,13 +407,18 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
 
   return (
     <div className="space-y-5">
-      <Card className="overflow-hidden bg-charcoal-950 text-ivory-50">
+      <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
         <div className="p-6 sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <Badge variant="bronze">{workout.dayLabel}</Badge>
+              <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
               <h2 className="mt-4 font-serif text-4xl font-semibold">{workout.name}</h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-ivory-50/65">{workout.coachNotes}</p>
+              <div className="mt-5 flex flex-wrap gap-3 text-sm text-ivory-50/70">
+                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{workout.dayLabel}</div>
+                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{total} exercises</div>
+                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{brand.tagline}</div>
+              </div>
             </div>
             <Button variant="warm" size="lg" onClick={startSession} disabled={starting || saving}>
               <PlayCircle className="size-5" />
@@ -446,7 +452,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                 const done = completed.includes(exercise.id);
                 const reference = referenceExercises.get(exercise.exerciseId);
                 return (
-                  <div key={exercise.id} className="rounded-[1.75rem] border border-stone-200 bg-stone-50/70 p-4">
+                  <div key={exercise.id} className="rounded-[1.5rem] border border-stone-200 bg-stone-50/78 p-4">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -473,7 +479,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                       <button
                         type="button"
                         onClick={() => setReferenceExercise({ prescription: exercise, exercise: reference })}
-                        className="mt-4 flex w-full flex-col overflow-hidden rounded-[1.5rem] border border-white bg-white/75 text-left shadow-inner-soft transition hover:bg-white sm:flex-row"
+                        className="mt-4 flex w-full flex-col overflow-hidden rounded-[1.35rem] border border-white bg-white/82 text-left shadow-inner-soft transition hover:bg-white sm:flex-row"
                       >
                         <div className="relative h-36 sm:h-auto sm:w-44">
                           <Image
@@ -508,7 +514,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                           completed: false,
                         };
                         return (
-                          <div key={setNumber} className="rounded-2xl bg-white/80 p-3">
+                          <div key={setNumber} className="rounded-[1.15rem] bg-white/86 p-3">
                             <p className="mb-2 text-xs font-semibold text-stone-500">Set {setNumber}</p>
                             <div className="grid grid-cols-2 gap-2">
                               <Input

@@ -15,6 +15,9 @@ export type CoachingEntry = {
 };
 
 export type ClientStatus = "active" | "needs_attention" | "paused" | "archived";
+export type ClientAccessStatus = "account_active" | "invite_pending" | "not_invited";
+
+export type PricingTier = "intro_session" | "ongoing_coaching" | "high_touch_coaching";
 
 export type Client = {
   id: string;
@@ -29,6 +32,9 @@ export type Client = {
   availability: string;
   startDate: string;
   status: ClientStatus;
+  accessStatus: ClientAccessStatus;
+  inviteSentAt: string | null;
+  pricingTier: PricingTier;
   adherence: number;
   metrics: {
     bodyWeight: string;
@@ -114,6 +120,8 @@ export type CheckIn = {
   mood: string;
   notes: string;
   reviewed: boolean;
+  trainerResponse?: string;
+  reviewedAt?: string;
 };
 
 export type Message = {
@@ -122,6 +130,14 @@ export type Message = {
   author: string;
   body: string;
   createdAt: string;
+  clientId?: string;
+  clientName?: string;
+};
+
+export type ConversationParticipant = {
+  id: string;
+  name: string;
+  photo: string;
 };
 
 export type ProgressPoint = {

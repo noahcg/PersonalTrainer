@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { clients as demoClients, plans } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/auth-server";
+import { normalizePricingTier } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase-server";
 import type { Client, CoachingEntry, Plan } from "@/lib/types";
 
@@ -17,6 +18,9 @@ type ClientRow = {
   availability: string | null;
   start_date: string | null;
   status: Client["status"];
+  pricing_tier: string | null;
+  profile_id: string | null;
+  invite_sent_at: string | null;
 };
 
 type MessageRow = {
@@ -105,6 +109,14 @@ async function hydrateClient(row: ClientRow, supabase: Awaited<ReturnType<typeof
     availability: row.availability ?? "Availability not specified.",
     startDate: row.start_date ?? "",
     status: row.status,
+    accessStatus: row.profile_id ? "account_active" : row.invite_sent_at ? "invite_pending" : "not_invited",
+    inviteSentAt: row.invite_sent_at
+      ? new Date(row.invite_sent_at).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })
+      : null,
+    pricingTier: normalizePricingTier(row.pricing_tier),
     adherence: Math.round(latestProgress?.adherence_percent ?? 0),
     metrics: {
       bodyWeight: latestProgress?.body_weight ? `${latestProgress.body_weight} lb` : "—",
@@ -127,7 +139,7 @@ export async function getTrainerClients() {
 
   const { data } = await supabase
     .from("clients")
-    .select("id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status")
+    .select("id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status, pricing_tier, invite_sent_at")
     .eq("trainer_id", trainerId)
     .order("created_at", { ascending: false });
 
@@ -152,7 +164,7 @@ export async function getTrainerClientProfile(id: string) {
 
   const { data: row } = await supabase
     .from("clients")
-    .select("id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status")
+    .select("id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status, pricing_tier, invite_sent_at")
     .eq("trainer_id", trainerId)
     .eq("id", id)
     .maybeSingle<ClientRow>();
@@ -212,5 +224,35 @@ export async function getTrainerClientProfile(id: string) {
     client,
     coachingNotes,
     assignedPlan,
+  };
+}
+
+export async function getClientSelfProfile() {
+  if (!isSupabaseConfigured()) {
+    return { mode: "demo" as const, client: demoClients[0] };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { mode: "supabase" as const, client: null as Client | null };
+  }
+
+  const { data: row } = await supabase
+    .from("clients")
+    .select("id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status, pricing_tier, invite_sent_at")
+    .eq("profile_id", user.id)
+    .maybeSingle<ClientRow>();
+
+  if (!row) {
+    return { mode: "supabase" as const, client: null as Client | null };
+  }
+
+  return {
+    mode: "supabase" as const,
+    client: await hydrateClient(row, supabase),
   };
 }

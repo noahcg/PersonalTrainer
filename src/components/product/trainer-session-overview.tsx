@@ -142,7 +142,7 @@ export function TrainerSessionOverview({
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-[1.5rem] bg-stone-50/80 p-4">
+        <div className="rounded-[1.4rem] bg-stone-50/86 p-4">
           <p className="text-sm leading-6 text-stone-700">{session.body}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Badge variant="bronze">
@@ -174,13 +174,13 @@ export function TrainerSessionOverview({
           <div className="space-y-2">
             {attending.length ? (
               attending.map((entry) => (
-                <div key={`${session.id}-${entry.clientId}`} className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-soft">
+                <div key={`${session.id}-${entry.clientId}`} className="flex items-center justify-between rounded-[1.2rem] bg-white px-4 py-3 shadow-soft">
                   <span className="text-sm font-medium text-charcoal-950">{entry.clientName}</span>
                   <span className="text-sm text-sage-700">Reserved</span>
                 </div>
               ))
             ) : (
-              <div className="rounded-2xl bg-stone-50/80 px-4 py-4 text-sm text-stone-500">
+              <div className="rounded-[1.2rem] bg-stone-50/80 px-4 py-4 text-sm text-stone-500">
                 No clients have reserved a spot yet.
               </div>
             )}

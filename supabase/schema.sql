@@ -39,6 +39,8 @@ create table public.clients (
   notes text,
   preferred_training_style text,
   availability text,
+  pricing_tier text,
+  invite_sent_at timestamptz,
   start_date date,
   status client_status not null default 'active',
   created_at timestamptz not null default now(),

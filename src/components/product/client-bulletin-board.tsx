@@ -168,7 +168,7 @@ export function ClientBulletinBoard({
             : post,
         ),
       );
-      setMessage(status === "attending" ? "RSVP saved. Coach knows you’re in." : "RSVP saved. Coach has your update.");
+      setMessage(status === "attending" ? "RSVP saved. Your trainer knows you’re in." : "RSVP saved. Your trainer has your update.");
       window.setTimeout(() => setMessage(null), 2200);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save RSVP.");
@@ -242,11 +242,11 @@ export function ClientBulletinBoard({
                         : "You’re marked as attending."
                       : post.clientRsvp === "not_attending"
                         ? post.postType === "session"
-                          ? "Your coach can see that you can’t make this session."
-                          : "You’ve let your coach know you can’t make it."
+                          ? "Your trainer can see that you can’t make this session."
+                          : "You’ve let your trainer know you can’t make it."
                         : post.postType === "session"
-                          ? "Reserve your spot so your coach can plan the session."
-                          : "Let your coach know if you’re attending this session."}
+                          ? "Reserve your spot so your trainer can plan the session."
+                          : "Let your trainer know if you’re attending this session."}
                   </div>
                 </div>
                 <div className="text-right text-xs uppercase tracking-[0.22em] text-stone-400">

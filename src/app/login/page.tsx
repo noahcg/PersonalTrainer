@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase-browser";
+import { brand } from "@/lib/brand";
+import { createClient, hasSupabaseEnv } from "@/lib/supabase-browser";
+import { NGLogoLockup } from "@/components/brand/ng-logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,42 +19,62 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("Use Supabase credentials when connected, or jump into demo mode.");
 
+  function openDemo(role: "trainer" | "client") {
+    setMessage("Supabase is not connected yet. Opening the seeded demo workspace instead.");
+    router.push(role === "trainer" ? "/trainer/dashboard" : "/client/home");
+    router.refresh();
+  }
+
   async function signIn(role: "trainer" | "client") {
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setMessage("Supabase is not connected yet. Opening the seeded demo workspace instead.");
-      router.push(role === "trainer" ? "/trainer/dashboard" : "/client/home");
+
+    if (!hasSupabaseEnv()) {
+      openDemo(role);
       return;
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        openDemo(role);
+        return;
+      }
 
-    let destination = searchParams.get("next");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!destination && user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle<Pick<Profile, "role">>();
+      let destination = searchParams.get("next");
 
-      const resolvedRole: Role = profile?.role ?? role;
-      destination = resolvedRole === "trainer" ? "/trainer/dashboard" : "/client/home";
+      if (!destination && user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle<Pick<Profile, "role">>();
+
+        const resolvedRole: Role = profile?.role ?? role;
+        destination = resolvedRole === "trainer" ? "/trainer/dashboard" : "/client/home";
+      }
+
+      router.push(destination ?? (role === "trainer" ? "/trainer/dashboard" : "/client/home"));
+      router.refresh();
+    } catch {
+      openDemo(role);
+    } finally {
+      setLoading(false);
     }
-
-    router.push(destination ?? (role === "trainer" ? "/trainer/dashboard" : "/client/home"));
-    router.refresh();
   }
 
   return (
     <main suppressHydrationWarning className="grid min-h-screen place-items-center px-5 py-10">
       <Card className="w-full max-w-xl p-6 sm:p-8">
-        <Link href="/" className="text-sm font-semibold text-bronze-600">Aurelian Coach</Link>
+        <Link href="/" className="block">
+          <NGLogoLockup tone="ink" subtext="Training" />
+        </Link>
         <h1 className="mt-5 font-serif text-5xl font-semibold">Welcome back.</h1>
+        <p className="mt-3 text-sm font-semibold uppercase tracking-[0.24em] text-bronze-600">{brand.tagline}</p>
         <p className="mt-3 text-sm leading-6 text-stone-600">{message}</p>
         <div className="mt-8 space-y-4">
           <Input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" />

@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { brand } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Aurelian Coach",
-  description: "Premium personal trainer client management for plans, workouts, progress, and coaching.",
+  title: brand.businessName,
+  description: `${brand.tagline} Premium personal training management for plans, workouts, progress, and client support.`,
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

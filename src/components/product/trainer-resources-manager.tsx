@@ -2,6 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
+import { BookOpenText, LibraryBig, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +44,31 @@ export function TrainerResourcesManager() {
 
   return (
     <AppShell role="trainer" title="Coaching resources" subtitle="Curate helpful guides, videos, reminders, and education clients can revisit between sessions.">
-      <div className="mb-5"><Button variant="warm" onClick={() => setOpen(true)}>Create resource</Button></div>
+      <div className="space-y-5">
+        <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+          <Card className="p-7">
+            <Badge variant="bronze">Resource library</Badge>
+            <h2 className="mt-5 max-w-2xl font-serif text-4xl font-semibold leading-tight text-charcoal-950">Give clients guidance they can return to between sessions.</h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-600">
+              Keep education, reminders, and support materials in one polished place so the coaching experience remains clear outside the gym too.
+            </p>
+          </Card>
+          <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-3">
+            {[
+              { label: "Resources", value: String(resources.length), icon: LibraryBig },
+              { label: "Education", value: "Guided", icon: BookOpenText },
+              { label: "Client support", value: "Ongoing", icon: Sparkles },
+            ].map(({ label, value, icon: Icon }) => (
+              <Card key={label} className="p-5">
+                <Icon className="size-5 text-bronze-500" />
+                <p className="mt-6 text-[0.66rem] uppercase tracking-[0.28em] text-stone-500">{label}</p>
+                <p className="mt-2 font-serif text-4xl font-semibold text-charcoal-950">{value}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-5 flex items-center justify-between gap-4"><Button variant="warm" onClick={() => setOpen(true)}>Create resource</Button></div>
       <div className="grid gap-5 md:grid-cols-3">
         {resources.map((resource) => (
           <Card key={`${resource.title}-${resource.minutes}`} className="p-6">
@@ -53,6 +78,7 @@ export function TrainerResourcesManager() {
             <p className="mt-8 text-xs uppercase tracking-[0.28em] text-stone-400">{resource.minutes}</p>
           </Card>
         ))}
+      </div>
       </div>
 
       <Dialog.Root open={open} onOpenChange={setOpen}>

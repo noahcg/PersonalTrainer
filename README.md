@@ -1,18 +1,88 @@
-# Aurelian Coach
+# Nick Glushien Training
 
-Production-minded MVP for a premium personal trainer client management app.
+Next.js application for a personal training business with:
 
-## Stack
+- a public-facing marketing site
+- a trainer workspace
+- a client workspace
+- demo mode with seeded local data
+- Supabase-backed auth and data when configured
 
-- Next.js App Router
-- React + TypeScript
-- Tailwind CSS
-- shadcn/ui-style Radix primitives
+## What The App Currently Includes
+
+### Public site
+
+- Landing page
+- About page
+- Pricing page
+- Login page
+- Invite-based account setup page
+
+### Trainer workspace
+
+- Dashboard
+- Client roster
+- Individual client profiles
+- Client package visibility and editing
+- Bulk and single-client access invites
+- Custom invite composer for client onboarding
+- Communications center for messages and check-ins
+- Bulletin board
+- Training plans
+- Workout builder
+- Exercise library
+- Progress page with real roster/check-in signals
+- Resources
+- Settings
+
+### Client workspace
+
+- Home
+- Bulletin board
+- Plan view
+- Workouts
+- Progress
+- Messages and check-ins
+- Profile
+
+## Modes
+
+### Demo mode
+
+If Supabase is not configured, the app runs against seeded in-repo demo data and local browser storage.
+
+Useful routes:
+
+- Trainer: `/trainer/dashboard`
+- Client: `/client/home`
+- Login: `/login`
+
+Demo mode is useful for UI/product development, but it does not send real auth emails.
+
+### Supabase mode
+
+When the required environment variables are present, the app uses Supabase Auth and Postgres-backed data.
+
+This enables:
+
+- authenticated trainer and client sessions
+- trainer/client messaging
+- check-ins
+- client access invites
+- client account setup via invite link
+
+## Tech Stack
+
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Radix UI primitives
 - Motion
-- Supabase Auth + Postgres
-- Vercel deployable
+- Recharts
+- Supabase SSR + `@supabase/supabase-js`
 
-## Local Setup
+## Local Development
 
 ```bash
 npm install
@@ -22,58 +92,67 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-The app runs with seeded in-repo demo data even before Supabase is connected. Use:
-
-- Trainer demo: `/trainer/dashboard`
-- Client demo: `/client/home`
-- Login shell: `/login`
-
 ## Environment Variables
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+RESEND_API_KEY=
+INVITE_FROM_EMAIL=
+INVITE_REPLY_TO_EMAIL=
 ```
+
+Notes:
+
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` enable Supabase mode.
+- `SUPABASE_SERVICE_ROLE_KEY` is required for server-side invite generation.
+- `RESEND_API_KEY`, `INVITE_FROM_EMAIL`, and optional `INVITE_REPLY_TO_EMAIL` are required for custom invite emails.
 
 ## Supabase Setup
 
 1. Create a Supabase project.
 2. Copy the project URL and anon key into `.env.local`.
-3. Run `supabase/schema.sql` in the SQL editor.
-4. For local Supabase, run `supabase/seed.sql` after the schema.
-5. For hosted Supabase, create demo auth users first if direct auth inserts are blocked, then adapt ids in `seed.sql`.
+3. Add the service role key to `.env.local`.
+4. Run `supabase/schema.sql` in the Supabase SQL editor.
+5. Run `supabase/seed.sql` if you want starter data.
+6. Configure auth redirect URLs so invite/setup flows can return to your app.
 
-Demo credentials in the seed:
+## Invite Flow
 
-- `trainer@example.com` / `demo-password`
-- `mara@example.com` / `demo-password`
+The current client onboarding flow is trainer-invite based:
 
-## Vercel Deploy
+1. Trainer selects a client or opens a client profile.
+2. Trainer clicks `Send invite`.
+3. Trainer writes the invite email subject and message.
+4. The server generates a Supabase invite/setup link.
+5. The app sends the email through Resend.
+6. The client opens the invite link and sets their password on `/setup-account`.
 
-1. Push the repo to GitHub.
-2. Import in Vercel.
-3. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-4. Deploy.
+## Scripts
 
-## Product Areas
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+```
 
-- Trainer dashboard
-- Client roster and profile management
-- Exercise library
-- Training plan management
-- Workout builder
-- Client workout logger
-- Progress tracking
-- Check-ins and messaging
-- Resources
-- Settings/profile
+## Repo Notes
 
-## Recommended V2
+- `src/app` contains the public site plus trainer/client route groups.
+- `src/components` contains shared UI, marketing components, and product surfaces.
+- `src/lib` contains demo data, data loaders, auth helpers, invite/email helpers, and shared config.
+- `supabase/schema.sql` and `supabase/seed.sql` describe the current backend model.
 
-- Replace demo-data reads with Supabase queries and mutations per route.
-- Add invite flow for client onboarding.
-- Add server actions for plan/workout CRUD.
-- Add media uploads with Supabase Storage.
-- Add calendar scheduling and notifications.
-- Add real analytics queries for adherence and recovery trends.
-- Add Stripe billing for trainer subscriptions.
+## Current Position
+
+This is no longer just an MVP shell. It is currently a working product prototype with:
+
+- a public brand/marketing surface
+- a trainer operating area
+- a client experience area
+- demo fallback behavior
+- real invite-based onboarding infrastructure when backend services are configured
+
+The remaining work is mostly product polish, stronger production data coverage, and deployment/config hardening.

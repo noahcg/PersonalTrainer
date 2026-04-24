@@ -329,6 +329,19 @@ export function TrainerPlansManager({
 
   return (
     <>
+      <Card className="mb-5 p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Plan controls</p>
+            <p className="mt-2 text-sm leading-6 text-stone-600">Create, duplicate, and assign polished training cycles while keeping the plan library easy to trust and easy to scan.</p>
+          </div>
+          <div className="flex gap-3 text-sm text-stone-500">
+            <div className="rounded-full bg-stone-50 px-4 py-2">{plans.length} plans</div>
+            <div className="rounded-full bg-stone-50 px-4 py-2">{plans.filter((plan) => plan.template).length} templates</div>
+          </div>
+        </div>
+      </Card>
+
       <div className="mb-5 flex gap-3">
         <Button
           variant="warm"
@@ -357,7 +370,7 @@ export function TrainerPlansManager({
 
       <div className="grid gap-5 lg:grid-cols-2">
         {plans.map((plan) => (
-          <Card key={plan.id}>
+          <Card key={plan.id} className="overflow-hidden">
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -369,7 +382,7 @@ export function TrainerPlansManager({
             </CardHeader>
             <CardContent>
               <p className="text-sm leading-7 text-stone-600">{plan.description}</p>
-              <div className="mt-5 grid gap-3 rounded-[1.75rem] bg-stone-50 p-5">
+              <div className="mt-5 grid gap-3 rounded-[1.5rem] bg-stone-50/88 p-5">
                 <p><span className="font-semibold">Goal:</span> {plan.goal || "Not specified"}</p>
                 <p><span className="font-semibold">Weekly structure:</span> {plan.weeklyStructure || "Not specified"}</p>
                 <p><span className="font-semibold">Notes:</span> {plan.notes || "No notes yet."}</p>
@@ -470,7 +483,7 @@ export function TrainerPlansManager({
                           selected ? current.filter((id) => id !== client.id) : [...current, client.id],
                         )
                       }
-                      className={`flex w-full items-center justify-between rounded-[1.5rem] border px-4 py-4 text-left transition ${
+                      className={`flex w-full items-center justify-between rounded-[1.35rem] border px-4 py-4 text-left transition ${
                         selected ? "border-bronze-300 bg-bronze-50" : "border-stone-200 bg-white/80"
                       }`}
                     >

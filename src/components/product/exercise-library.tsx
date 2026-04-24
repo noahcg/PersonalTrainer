@@ -266,7 +266,19 @@ export function ExerciseLibrary({
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-3">
+      <div className="mb-6 space-y-4">
+        <Card className="p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Exercise workspace</p>
+              <p className="mt-2 text-sm leading-6 text-stone-600">Search, filter, and maintain the movement references clients rely on when they need clarity mid-session.</p>
+            </div>
+            <div className="flex gap-3 text-sm text-stone-500">
+              <div className="rounded-full bg-stone-50 px-4 py-2">{visibleExercises.length} visible</div>
+              <div className="rounded-full bg-stone-50 px-4 py-2">{exercises.length} total</div>
+            </div>
+          </div>
+        </Card>
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative sm:max-w-xl sm:flex-1">
             <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-stone-400" />

@@ -3,8 +3,13 @@
 import { useSyncExternalStore } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { progress } from "@/lib/demo-data";
+import type { ProgressPoint } from "@/lib/types";
 
-export function ProgressChart() {
+export function ProgressChart({
+  data = progress,
+}: {
+  data?: ProgressPoint[];
+}) {
   const mounted = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -18,7 +23,7 @@ export function ProgressChart() {
   return (
     <div className="h-72 min-w-0 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={progress} margin={{ left: -18, right: 8, top: 10, bottom: 0 }}>
+        <AreaChart data={data} margin={{ left: -18, right: 8, top: 10, bottom: 0 }}>
           <defs>
             <linearGradient id="adherence" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0%" stopColor="#788d63" stopOpacity={0.45} />

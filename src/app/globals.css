@@ -1,10 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4efe7;
-  --foreground: #201d18;
+  --color-ink: #0d0d0d;
+  --color-sand: #eae3d9;
+  --color-offwhite: #f7f4ef;
+  --color-soft-stone: #d8d0c4;
+  --color-sage: #6f7d6a;
+  --color-sage-soft: #c7d1c2;
+  --color-copper: #c89b6d;
+  --color-copper-deep: #b07a45;
+  --color-text-main: #181614;
+  --color-text-muted: #7c7368;
+  --color-border: rgba(24, 22, 20, 0.1);
+  --color-panel: rgba(255, 255, 255, 0.58);
+  --color-shadow: rgba(15, 10, 5, 0.08);
+  --background: var(--color-offwhite);
+  --foreground: var(--color-text-main);
   --font-sans: "Avenir Next", Avenir, "Segoe UI", sans-serif;
-  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  --font-serif: Georgia, "Palatino Linotype", "Book Antiqua", "Iowan Old Style", serif;
   --font-mono: "SFMono-Regular", Consolas, monospace;
 }
 
@@ -14,34 +27,42 @@
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif);
   --font-mono: var(--font-mono);
-  --color-ivory-50: #fffaf1;
-  --color-ivory-100: #f8f1e6;
-  --color-stone-50: #faf8f4;
-  --color-stone-100: #eee8de;
-  --color-stone-200: #ded4c6;
-  --color-stone-300: #c8bba8;
-  --color-stone-400: #aa9a86;
-  --color-stone-500: #817463;
-  --color-stone-600: #655a4e;
-  --color-stone-700: #4a4239;
-  --color-charcoal-900: #28241f;
-  --color-charcoal-950: #171411;
-  --color-bronze-50: #fbf3e8;
-  --color-bronze-100: #f4dfbf;
-  --color-bronze-200: #e8c28b;
-  --color-bronze-400: #c88d4a;
-  --color-bronze-500: #a96f35;
-  --color-bronze-600: #875527;
-  --color-bronze-800: #523117;
-  --color-sage-50: #f0f4ed;
-  --color-sage-100: #dfe8d8;
-  --color-sage-200: #c3d0b8;
-  --color-sage-500: #788d63;
-  --color-sage-700: #4a5d3d;
-  --color-sage-800: #35442d;
-  --shadow-soft: 0 24px 70px -36px rgba(32, 29, 24, 0.35), 0 1px 0 rgba(255, 255, 255, 0.7) inset;
-  --shadow-warm: 0 22px 45px -28px rgba(135, 85, 39, 0.75);
-  --shadow-inner-soft: inset 0 1px 2px rgba(32, 29, 24, 0.04);
+  --color-ink: var(--color-ink);
+  --color-sand: var(--color-sand);
+  --color-offwhite: var(--color-offwhite);
+  --color-soft-stone: var(--color-soft-stone);
+  --color-text-main: var(--color-text-main);
+  --color-text-muted: var(--color-text-muted);
+  --color-border: var(--color-border);
+  --color-panel: var(--color-panel);
+  --color-ivory-50: #faf8f4;
+  --color-ivory-100: #f3ede4;
+  --color-stone-50: #f8f4ed;
+  --color-stone-100: #ece4d8;
+  --color-stone-200: #d8d0c4;
+  --color-stone-300: #bfb5a8;
+  --color-stone-400: #9f9488;
+  --color-stone-500: #7c7368;
+  --color-stone-600: #625a51;
+  --color-stone-700: #3f3933;
+  --color-charcoal-900: #181614;
+  --color-charcoal-950: #0d0d0d;
+  --color-bronze-50: #f8efe4;
+  --color-bronze-100: #eed9bd;
+  --color-bronze-200: #dbbc91;
+  --color-bronze-400: var(--color-copper);
+  --color-bronze-500: var(--color-copper-deep);
+  --color-bronze-600: #94643b;
+  --color-bronze-800: #5e3f24;
+  --color-sage-50: #eff2ee;
+  --color-sage-100: #dde4da;
+  --color-sage-200: var(--color-sage-soft);
+  --color-sage-500: var(--color-sage);
+  --color-sage-700: #556150;
+  --color-sage-800: #3c4638;
+  --shadow-soft: 0 24px 60px -34px var(--color-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  --shadow-warm: 0 24px 48px -30px rgba(176, 122, 69, 0.42);
+  --shadow-inner-soft: inset 0 1px 2px rgba(24, 22, 20, 0.04);
 }
 
 * {
@@ -61,9 +82,9 @@ body::before {
   z-index: -2;
   content: "";
   background:
-    radial-gradient(circle at top left, rgba(200, 141, 74, 0.2), transparent 30rem),
-    radial-gradient(circle at 85% 15%, rgba(120, 141, 99, 0.18), transparent 28rem),
-    linear-gradient(135deg, #fbf7ef 0%, #eee6d8 52%, #e8ddcd 100%);
+    radial-gradient(circle at 8% 12%, rgba(200, 155, 109, 0.1), transparent 24rem),
+    radial-gradient(circle at 84% 18%, rgba(111, 125, 106, 0.08), transparent 24rem),
+    linear-gradient(180deg, #faf7f1 0%, #f3ede5 100%);
 }
 
 body::after {
@@ -72,16 +93,16 @@ body::after {
   z-index: -1;
   pointer-events: none;
   content: "";
-  opacity: 0.38;
+  opacity: 0.2;
   background-image:
-    linear-gradient(rgba(32, 29, 24, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(32, 29, 24, 0.035) 1px, transparent 1px);
-  background-size: 44px 44px;
+    linear-gradient(rgba(24, 22, 20, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 22, 20, 0.028) 1px, transparent 1px);
+  background-size: 72px 72px;
   mask-image: linear-gradient(to bottom, black, transparent 75%);
 }
 
 ::selection {
-  background: #c88d4a;
+  background: var(--color-copper);
   color: white;
 }
 
