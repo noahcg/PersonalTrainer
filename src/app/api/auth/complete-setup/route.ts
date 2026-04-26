@@ -43,6 +43,40 @@ export async function POST() {
       );
     }
 
+    const { data: existingTrainer, error: trainerLookupError } = await admin
+      .from("trainers")
+      .select("id")
+      .eq("profile_id", user.id)
+      .maybeSingle<{ id: string }>();
+
+    if (trainerLookupError) {
+      return NextResponse.json({ error: trainerLookupError.message }, { status: 500 });
+    }
+
+    if (existingTrainer?.id) {
+      const { error: trainerProfileError } = await admin.from("profiles").upsert(
+        {
+          id: user.id,
+          role: "trainer",
+          full_name: fullName,
+          email: user.email,
+        },
+        { onConflict: "id" },
+      );
+
+      if (trainerProfileError) {
+        return NextResponse.json({ error: trainerProfileError.message }, { status: 500 });
+      }
+
+      return NextResponse.json(
+        {
+          error:
+            "This browser is using a trainer session. Open the client invite link in a fresh incognito window before setting a password.",
+        },
+        { status: 400 },
+      );
+    }
+
     const { error: profileError } = await admin.from("profiles").upsert(
       {
         id: user.id,
