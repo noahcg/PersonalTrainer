@@ -47,16 +47,17 @@ export async function DELETE(
       return NextResponse.json({ error: "Client not found." }, { status: 404 });
     }
 
+    if (client.profile_id) {
+      const { error: deleteAuthError } = await admin.auth.admin.deleteUser(client.profile_id);
+      const authUserMissing = deleteAuthError?.message.toLowerCase().includes("not found");
+      if (deleteAuthError && !authUserMissing) {
+        return NextResponse.json({ error: deleteAuthError.message }, { status: 500 });
+      }
+    }
+
     const { error: deleteClientError } = await admin.from("clients").delete().eq("id", client.id);
     if (deleteClientError) {
       return NextResponse.json({ error: deleteClientError.message }, { status: 500 });
-    }
-
-    if (client.profile_id) {
-      const { error: deleteAuthError } = await admin.auth.admin.deleteUser(client.profile_id);
-      if (deleteAuthError) {
-        return NextResponse.json({ error: deleteAuthError.message }, { status: 500 });
-      }
     }
 
     return NextResponse.json({ ok: true });

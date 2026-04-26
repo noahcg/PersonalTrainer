@@ -12,6 +12,10 @@ export async function GET(request: Request) {
   const supabase = await createClient();
   let authError: Error | null = null;
 
+  if (next.startsWith("/setup-account")) {
+    await supabase.auth.signOut();
+  }
+
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     authError = error;
