@@ -107,9 +107,10 @@ export async function POST(request: Request) {
     const actionLink = data.properties.action_link;
     const hashedToken = data.properties.hashed_token;
     const verificationType = data.properties.verification_type as EmailOtpType | undefined;
-    if (!actionLink) {
+    if (!actionLink || !hashedToken || !verificationType) {
       return NextResponse.json({ error: "Unable to generate invite link." }, { status: 500 });
     }
+    const setupLink = `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=${encodeURIComponent(verificationType)}&next=${encodeURIComponent("/setup-account")}`;
 
     if (!isLocalInviteFallback) {
       await sendInviteEmail({
@@ -118,11 +119,11 @@ export async function POST(request: Request) {
         html: renderInviteEmailHtml({
           subject: subject.trim(),
           message: message.trim(),
-          actionLink,
+          actionLink: setupLink,
         }),
         text: renderInviteEmailText({
           message: message.trim(),
-          actionLink,
+          actionLink: setupLink,
         }),
       });
     }
@@ -140,12 +141,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       inviteSentAt,
-      actionLink:
-        isLocalInviteFallback && hashedToken && verificationType
-          ? `${origin}/auth/callback?token_hash=${encodeURIComponent(hashedToken)}&type=${encodeURIComponent(verificationType)}&next=${encodeURIComponent("/setup-account")}`
-          : isLocalInviteFallback
-            ? actionLink
-            : undefined,
+      actionLink: isLocalInviteFallback ? setupLink : undefined,
       delivery: isLocalInviteFallback ? "local_link" : "email",
     });
   } catch (error) {
