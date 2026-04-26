@@ -8,11 +8,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { checkIns, clients } from "@/lib/demo-data";
 import { getTrainerBulletins } from "@/lib/bulletins";
+import { getTrainerCheckInData } from "@/lib/checkins";
+import { getTrainerClients } from "@/lib/clients";
 
 export default async function TrainerDashboardPage() {
-  const { bulletins, mode } = await getTrainerBulletins();
+  const [{ bulletins, mode }, { clients }, { checkIns }] = await Promise.all([
+    getTrainerBulletins(),
+    getTrainerClients(),
+    getTrainerCheckInData(),
+  ]);
+  const activeClients = clients.filter((client) => client.status !== "archived");
+  const clientsNeedingAttention = activeClients
+    .filter((client) => client.status === "needs_attention" || client.adherence < 75)
+    .slice(0, 4);
+  const averageAdherence = activeClients.length
+    ? Math.round(activeClients.reduce((total, client) => total + client.adherence, 0) / activeClients.length)
+    : 0;
+  const completedWorkouts = activeClients.reduce((total, client) => total + client.metrics.workouts, 0);
+  const pendingCheckIns = checkIns.filter((checkIn) => !checkIn.reviewed);
+  const focusClient = clientsNeedingAttention[0] ?? activeClients[0] ?? null;
+  const recentCompletionSignals = activeClients
+    .filter((client) => client.metrics.workouts > 0)
+    .slice(0, 3);
 
   return (
     <AppShell
@@ -24,10 +42,10 @@ export default async function TrainerDashboardPage() {
       <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
         <section className="space-y-5">
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Active clients" value="24" detail="+3 this month" tone="dark" />
-            <StatCard label="Weekly adherence" value="87%" detail="Across assigned plans" tone="sage" />
-            <StatCard label="Completed workouts" value="118" detail="Last 7 days" />
-            <StatCard label="Check-ins waiting" value="3" detail="2 flagged by recovery score" />
+            <StatCard label="Active clients" value={String(activeClients.length)} detail="Current roster" tone="dark" />
+            <StatCard label="Weekly adherence" value={`${averageAdherence}%`} detail="Across active clients" tone="sage" />
+            <StatCard label="Completed workouts" value={String(completedWorkouts)} detail="Logged by clients" />
+            <StatCard label="Check-ins waiting" value={String(pendingCheckIns.length)} detail="Awaiting review" />
           </div>
 
           <Card className="overflow-hidden">
@@ -41,19 +59,25 @@ export default async function TrainerDashboardPage() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
-              {clients.map((client) => (
-                <Link key={client.id} href={`/trainer/clients/${client.id}`} className="flex items-center gap-4 rounded-[1.35rem] bg-stone-50/88 px-4 py-3 transition hover:bg-white">
-                  <Avatar name={client.name} src={client.photo} />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-charcoal-950">{client.name}</p>
-                    <p className="truncate text-sm text-stone-500">{client.goals}</p>
-                  </div>
-                  <div className="hidden w-28 sm:block">
-                    <Progress value={client.adherence} />
-                  </div>
-                  <Badge variant={client.status === "needs_attention" ? "alert" : "sage"}>{client.adherence}%</Badge>
-                </Link>
-              ))}
+              {clientsNeedingAttention.length ? (
+                clientsNeedingAttention.map((client) => (
+                  <Link key={client.id} href={`/trainer/clients/${client.id}`} className="flex items-center gap-4 rounded-[1.35rem] bg-stone-50/88 px-4 py-3 transition hover:bg-white">
+                    <Avatar name={client.name} src={client.photo} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-charcoal-950">{client.name}</p>
+                      <p className="truncate text-sm text-stone-500">{client.goals}</p>
+                    </div>
+                    <div className="hidden w-28 sm:block">
+                      <Progress value={client.adherence} />
+                    </div>
+                    <Badge variant={client.status === "needs_attention" ? "alert" : "sage"}>{client.adherence}%</Badge>
+                  </Link>
+                ))
+              ) : (
+                <div className="rounded-[1.35rem] bg-stone-50/88 px-4 py-5 text-sm text-stone-600">
+                  No clients need attention right now. New roster activity will appear here once clients are added.
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -66,12 +90,20 @@ export default async function TrainerDashboardPage() {
                 <CardDescription>Workout logs with useful coaching signal.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {["Mara finished Lower Strength A and added RDL video.", "Nina hit assisted pull-up PR.", "Eli completed shoulder reset flow."].map((item) => (
-                  <div key={item} className="flex gap-3 rounded-[1.35rem] bg-stone-50/82 p-4">
-                    <Activity className="mt-0.5 size-5 text-sage-500" />
-                    <p className="text-sm leading-6 text-stone-700">{item}</p>
+                {recentCompletionSignals.length ? (
+                  recentCompletionSignals.map((client) => (
+                    <div key={client.id} className="flex gap-3 rounded-[1.35rem] bg-stone-50/82 p-4">
+                      <Activity className="mt-0.5 size-5 text-sage-500" />
+                      <p className="text-sm leading-6 text-stone-700">
+                        {client.name} has {client.metrics.workouts} completed workouts logged.
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[1.35rem] bg-stone-50/82 p-4 text-sm leading-6 text-stone-600">
+                    Completed client workouts will appear here once clients begin logging sessions.
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
 
@@ -102,10 +134,18 @@ export default async function TrainerDashboardPage() {
         <aside className="space-y-5">
           <Card className="rounded-[1.9rem] border-charcoal-950 bg-charcoal-950 p-6 text-ivory-50">
             <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-200">Focus this week</p>
-            <p className="mt-5 font-serif text-[2.4rem] font-semibold leading-[1.02]">Nina is 1 rep from her first pull-up.</p>
-            <p className="mt-4 text-sm leading-6 text-ivory-50/65">Add a note of encouragement and keep the momentum visible.</p>
+            <p className="mt-5 font-serif text-[2.4rem] font-semibold leading-[1.02]">
+              {focusClient ? `${focusClient.name} is your next coaching focus.` : "Build your first client roster."}
+            </p>
+            <p className="mt-4 text-sm leading-6 text-ivory-50/65">
+              {focusClient
+                ? "Review their profile, recent adherence, and notes before your next coaching touchpoint."
+                : "Create a client, send an invite, and their coaching signals will start appearing here."}
+            </p>
             <Button asChild className="mt-6" variant="warm">
-              <Link href="/trainer/progress">Open trend</Link>
+              <Link href={focusClient ? `/trainer/clients/${focusClient.id}` : "/trainer/clients"}>
+                {focusClient ? "Open profile" : "Open roster"}
+              </Link>
             </Button>
           </Card>
           <Card>
@@ -114,15 +154,21 @@ export default async function TrainerDashboardPage() {
               <CardDescription>Recovery, readiness, and client sentiment.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {checkIns.map((checkIn) => (
-                <div key={checkIn.id} className="rounded-[1.35rem] bg-stone-50/80 p-4">
-                  <div className="flex justify-between">
-                    <p className="font-medium">{checkIn.client}</p>
-                    <Badge variant={checkIn.reviewed ? "sage" : "bronze"}>{checkIn.date}</Badge>
+              {checkIns.slice(0, 3).length ? (
+                checkIns.slice(0, 3).map((checkIn) => (
+                  <div key={checkIn.id} className="rounded-[1.35rem] bg-stone-50/80 p-4">
+                    <div className="flex justify-between">
+                      <p className="font-medium">{checkIn.client}</p>
+                      <Badge variant={checkIn.reviewed ? "sage" : "bronze"}>{checkIn.date}</Badge>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-stone-600">{checkIn.notes || "No notes submitted."}</p>
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-stone-600">{checkIn.notes}</p>
+                ))
+              ) : (
+                <div className="rounded-[1.35rem] bg-stone-50/80 p-4 text-sm leading-6 text-stone-600">
+                  Client check-ins will appear here after invited clients start submitting updates.
                 </div>
-              ))}
+              )}
             </CardContent>
           </Card>
         </aside>
