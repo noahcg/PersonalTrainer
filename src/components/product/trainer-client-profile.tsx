@@ -2,7 +2,6 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Ban, Copy, ExternalLink, Mail, PencilLine, Save, StickyNote, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -32,7 +31,6 @@ export function TrainerClientProfile({
   initialCoachingNotes: CoachingEntry[];
   mode: "demo" | "supabase";
 }) {
-  const router = useRouter();
   const [client, setClient] = useState(initialClient);
   const [coachingNotes, setCoachingNotes] = useState<CoachingEntry[]>(initialCoachingNotes);
   const [editOpen, setEditOpen] = useState(false);
@@ -311,15 +309,18 @@ export function TrainerClientProfile({
         });
         const payload = (await response.json().catch(() => ({}))) as { error?: string };
         if (!response.ok) {
-          throw new Error(payload.error ?? "Unable to delete client.");
+          const supabase = createBrowserClient();
+          const { error } = await supabase.from("clients").delete().eq("id", client.id);
+          if (error) {
+            throw new Error(payload.error ?? error.message ?? "Unable to delete client.");
+          }
         }
       } else {
         deleteStoredDemoClient(client.id, demoClients);
       }
 
       setDeleteOpen(false);
-      router.replace("/trainer/clients");
-      router.refresh();
+      window.location.assign("/trainer/clients");
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : "Unable to delete client.");
     } finally {
