@@ -96,6 +96,9 @@ export async function POST() {
       .from("clients")
       .select("id")
       .eq("email", user.email)
+      .is("profile_id", null)
+      .order("invite_sent_at", { ascending: false, nullsFirst: false })
+      .limit(1)
       .maybeSingle<{ id: string }>();
 
     if (clientLookupError) {

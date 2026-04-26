@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { createClient } from "@/lib/supabase-browser";
@@ -13,9 +13,15 @@ import type { Role } from "@/lib/types";
 
 export function SetupAccountForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteError = searchParams.get("error");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState("Use the invite link from your email to set your password.");
+  const [message, setMessage] = useState(
+    inviteError === "invite_expired"
+      ? "This invite link is expired or was already used. Ask your trainer to send a fresh invite, then open it in a fresh incognito window."
+      : "Use the invite link from your email to set your password.",
+  );
   const [saving, setSaving] = useState(false);
 
   async function submit() {
@@ -41,8 +47,13 @@ export function SetupAccountForm() {
         return;
       }
 
+      if (user.user_metadata?.role === "trainer") {
+        setMessage("This browser is using a trainer session. Open the client invite link in a fresh incognito window before setting a password.");
+        return;
+      }
+
       if (user.user_metadata?.role && user.user_metadata.role !== "client") {
-        setMessage("This setup link is not attached to a client invite. Open the latest client invite link in a fresh incognito window.");
+        setMessage("This setup link is not attached to a client invite. Ask your trainer to send a fresh invite.");
         return;
       }
 

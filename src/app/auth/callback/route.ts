@@ -10,14 +10,24 @@ export async function GET(request: Request) {
   const next = url.searchParams.get("next") ?? "/";
 
   const supabase = await createClient();
+  let authError: Error | null = null;
 
   if (code) {
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    authError = error;
   } else if (tokenHash && type) {
-    await supabase.auth.verifyOtp({
+    const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
       type: type as EmailOtpType,
     });
+    authError = error;
+  }
+
+  if (authError) {
+    await supabase.auth.signOut();
+    const setupUrl = new URL("/setup-account", url.origin);
+    setupUrl.searchParams.set("error", "invite_expired");
+    return NextResponse.redirect(setupUrl);
   }
 
   return NextResponse.redirect(new URL(next, url.origin));
