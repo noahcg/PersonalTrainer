@@ -42,6 +42,8 @@ export function TrainerClientProfile({
   const [draftClient, setDraftClient] = useState(initialClient);
   const [draftNote, setDraftNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [invitePreviewLink, setInvitePreviewLink] = useState<string | null>(null);
 
@@ -298,7 +300,8 @@ export function TrainerClientProfile({
   }
 
   async function deleteClient() {
-    setBusy(true);
+    setDeleteBusy(true);
+    setDeleteError(null);
     setMessage(null);
 
     try {
@@ -306,7 +309,7 @@ export function TrainerClientProfile({
         const response = await fetch(`/api/trainer/clients/${client.id}`, {
           method: "DELETE",
         });
-        const payload = (await response.json()) as { error?: string };
+        const payload = (await response.json().catch(() => ({}))) as { error?: string };
         if (!response.ok) {
           throw new Error(payload.error ?? "Unable to delete client.");
         }
@@ -314,14 +317,13 @@ export function TrainerClientProfile({
         deleteStoredDemoClient(client.id, demoClients);
       }
 
-      router.push("/trainer/clients");
+      setDeleteOpen(false);
+      router.replace("/trainer/clients");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to delete client.");
-      window.setTimeout(() => setMessage(null), 2400);
+      setDeleteError(error instanceof Error ? error.message : "Unable to delete client.");
     } finally {
-      setBusy(false);
-      setDeleteOpen(false);
+      setDeleteBusy(false);
     }
   }
 
@@ -596,7 +598,14 @@ export function TrainerClientProfile({
         onSend={sendInvite}
       />
 
-      <Dialog.Root open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <Dialog.Root
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          if (deleteBusy) return;
+          setDeleteOpen(open);
+          if (!open) setDeleteError(null);
+        }}
+      >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-charcoal-950/35 backdrop-blur-sm" />
           <Dialog.Content asChild>
@@ -607,17 +616,25 @@ export function TrainerClientProfile({
               <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-5 text-sm leading-6 text-stone-700">
                 This action is permanent. Client profile data, assignments, messages, logs, check-ins, and related records will be removed.
               </div>
+              {deleteError ? (
+                <div className="mt-4 rounded-[1.25rem] border border-rose-200 bg-white px-4 py-3 text-sm font-medium text-rose-700">
+                  {deleteError}
+                </div>
+              ) : null}
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <Dialog.Close asChild>
-                  <Button variant="secondary">Cancel</Button>
+                  <Button type="button" variant="secondary" disabled={deleteBusy}>
+                    Cancel
+                  </Button>
                 </Dialog.Close>
                 <Button
+                  type="button"
                   onClick={() => void deleteClient()}
-                  disabled={busy}
+                  disabled={deleteBusy}
                   className="bg-rose-600 text-white hover:bg-rose-700"
                 >
                   <Trash2 className="size-4" />
-                  {busy ? "Deleting..." : "Delete client permanently"}
+                  {deleteBusy ? "Deleting..." : "Delete client permanently"}
                 </Button>
               </div>
             </ModalShell>
