@@ -238,7 +238,7 @@ export function TrainerWorkoutBuilder({
             <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Workout controls</p>
             <p className="mt-2 text-sm leading-6 text-stone-600">Shape complete sessions with clean structure, readable prescriptions, and mobile-ready clarity for clients.</p>
           </div>
-          <div className="flex gap-3 text-sm text-stone-500">
+          <div className="flex flex-wrap gap-3 text-sm text-stone-500">
             <div className="rounded-full bg-stone-50 px-4 py-2">{workouts.length} workouts</div>
             <div className="rounded-full bg-stone-50 px-4 py-2">{exercises.length} exercises</div>
           </div>
@@ -292,7 +292,7 @@ export function TrainerWorkoutBuilder({
             <select
               value={draft.trainingPlanId}
               onChange={(event) => setDraft((current) => ({ ...current, trainingPlanId: event.target.value }))}
-              className="h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100"
+              className="h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
             >
               <option value="">Unassigned workout</option>
               {plans.map((plan) => (
@@ -304,7 +304,7 @@ export function TrainerWorkoutBuilder({
             <Textarea value={draft.warmup} onChange={(event) => setDraft((current) => ({ ...current, warmup: event.target.value }))} placeholder="Warm-up" />
             {draft.blocks.map((block) => (
               <div key={block.id} className="rounded-[1.5rem] border border-stone-200 bg-stone-50/86 p-4">
-                <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex-1 space-y-3">
                     <Input value={block.label} onChange={(event) => setBlock(block.id, (current) => ({ ...current, label: event.target.value }))} />
                     <Input value={block.intent} onChange={(event) => setBlock(block.id, (current) => ({ ...current, intent: event.target.value }))} placeholder="Block intent" />

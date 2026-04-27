@@ -11,13 +11,16 @@ export function PublicSiteShell({
 }) {
   return (
     <div className="min-h-screen px-4 py-4 sm:px-6">
-      <div className="mx-auto max-w-7xl overflow-hidden rounded-[2.75rem] border border-white/70 bg-white/45 shadow-soft backdrop-blur-xl">
+      <a href="#main-content" className="skip-link">
+        Skip to main
+      </a>
+      <div className="mx-auto max-w-7xl overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/45 shadow-soft backdrop-blur-xl sm:rounded-[2.75rem]">
         <header className="border-b border-stone-200/70 px-5 py-5 sm:px-8 lg:px-10">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <Link href="/" className="block w-fit">
               <NGLogoLockup tone="ink" subtext="Training" monogramVariant="mark" />
             </Link>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <Link
                 className="rounded-full px-4 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-charcoal-950"
                 href="/about"
@@ -33,7 +36,7 @@ export function PublicSiteShell({
             </div>
           </div>
         </header>
-        <main>{children}</main>
+        <main id="main-content" className="scroll-mt-4">{children}</main>
         <footer className="border-t border-stone-200/70 px-5 py-6 text-sm text-stone-500 sm:px-8 lg:px-10">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p>{brand.businessName}</p>

@@ -339,7 +339,7 @@ export function TrainerMessagesManager({
                   activeMessages.map((message) => (
                     <div key={message.id} className={`flex gap-3 ${message.from === "trainer" ? "justify-end" : ""}`}>
                       {message.from === "client" ? <Avatar name={message.author} src={selectedClient.photo} className="size-9" /> : null}
-                      <div className={`max-w-[78%] rounded-[1.5rem] p-4 ${message.from === "trainer" ? "bg-charcoal-950 text-ivory-50" : "bg-stone-50"}`}>
+                      <div className={`max-w-[86%] rounded-[1.5rem] p-4 sm:max-w-[78%] ${message.from === "trainer" ? "bg-charcoal-950 text-ivory-50" : "bg-stone-50"}`}>
                         <p className="text-sm leading-6">{message.body}</p>
                         <p className={`mt-2 text-xs ${message.from === "trainer" ? "text-ivory-50/50" : "text-stone-500"}`}>{message.createdAt}</p>
                       </div>
@@ -352,7 +352,7 @@ export function TrainerMessagesManager({
                 )}
               </div>
 
-              <div className="mt-5 flex gap-3">
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                 <Input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`Message ${selectedClient.name}...`} />
                 <Button variant="warm" onClick={sendMessage} disabled={busy}>
                   <Send className="size-4" />
@@ -443,7 +443,7 @@ export function TrainerMessagesManager({
             <motion.div
               initial={{ opacity: 0, y: 24, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border border-white/70 bg-ivory-50 p-6 shadow-soft"
+              className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border border-white/70 bg-ivory-50 p-5 sm:p-6 shadow-soft"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>

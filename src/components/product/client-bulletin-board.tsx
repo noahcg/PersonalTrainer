@@ -184,7 +184,7 @@ export function ClientBulletinBoard({
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
       {bulletins.map((post) => (
-        <Card key={post.id} className="p-6">
+        <Card key={post.id} className="p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p suppressHydrationWarning className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">{post.publishedAt}</p>

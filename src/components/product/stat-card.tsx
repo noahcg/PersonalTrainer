@@ -16,17 +16,17 @@ export function StatCard({
   return (
     <Card
       className={cn(
-        "group rounded-[1.6rem] p-5 transition hover:-translate-y-1",
+        "group rounded-[1.35rem] p-4 transition hover:-translate-y-1 sm:rounded-[1.6rem] sm:p-5",
         tone === "dark" && "border-charcoal-900 bg-charcoal-950 text-ivory-50",
         tone === "sage" && "bg-sage-100/62",
         tone === "light" && "bg-white/52",
       )}
     >
-      <div className="flex items-start justify-between">
-        <p className={cn("text-[0.66rem] uppercase tracking-[0.26em] text-stone-500", tone === "dark" && "text-ivory-50/55")}>{label}</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className={cn("min-w-0 text-[0.64rem] uppercase tracking-[0.18em] text-stone-500 sm:text-[0.66rem] sm:tracking-[0.26em]", tone === "dark" && "text-ivory-50/55")}>{label}</p>
         <ArrowUpRight className={cn("size-4 text-stone-400 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5", tone === "dark" && "text-bronze-200")} />
       </div>
-      <p className="mt-6 font-serif text-[2.55rem] font-semibold leading-none">{value}</p>
+      <p className="mt-5 font-serif text-[2.15rem] font-semibold leading-none sm:mt-6 sm:text-[2.55rem]">{value}</p>
       <p className={cn("mt-2 text-sm text-stone-500", tone === "dark" && "text-ivory-50/65")}>{detail}</p>
     </Card>
   );

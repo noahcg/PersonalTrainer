@@ -391,7 +391,7 @@ export function TrainerClientProfile({
         </div>
 
         <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
-        <Card className="p-6">
+        <Card className="p-5 sm:p-6">
           <Avatar name={client.name} src={client.photo} className="size-24" />
           <h2 className="mt-5 font-serif text-4xl font-semibold">{client.name}</h2>
           <p className="text-sm text-stone-500">{client.email}</p>
@@ -506,7 +506,7 @@ export function TrainerClientProfile({
                     <select
                       value={draftClient.status}
                       onChange={(event) => updateDraft("status", event.target.value as ClientStatus)}
-                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100"
+                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
                     >
                       <option value="active">Active</option>
                       <option value="needs_attention">Needs attention</option>
@@ -518,7 +518,7 @@ export function TrainerClientProfile({
                     <select
                       value={draftClient.pricingTier}
                       onChange={(event) => updateDraft("pricingTier", event.target.value as PricingTier)}
-                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100"
+                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
                     >
                       {pricingTierOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -531,7 +531,7 @@ export function TrainerClientProfile({
                     <select
                       value={draftClient.level}
                       onChange={(event) => updateDraft("level", event.target.value as Client["level"])}
-                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100"
+                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
                     >
                       <option value="Foundation">Foundation</option>
                       <option value="Intermediate">Intermediate</option>

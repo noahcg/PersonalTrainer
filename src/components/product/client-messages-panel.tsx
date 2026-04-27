@@ -261,7 +261,7 @@ export function ClientMessagesPanel({
             {messages.map((messageItem) => (
               <div key={messageItem.id} className={`flex gap-3 ${messageItem.from === "client" ? "justify-end" : ""}`}>
                 {messageItem.from === "trainer" && <Avatar name={messageItem.author} className="size-9" />}
-                <div className={`max-w-[78%] rounded-[1.5rem] p-4 ${messageItem.from === "client" ? "bg-charcoal-950 text-ivory-50" : "bg-stone-50"}`}>
+                <div className={`max-w-[86%] rounded-[1.5rem] p-4 sm:max-w-[78%] ${messageItem.from === "client" ? "bg-charcoal-950 text-ivory-50" : "bg-stone-50"}`}>
                   <p className="text-sm leading-6">{messageItem.body}</p>
                   <p className={`mt-2 text-xs ${messageItem.from === "client" ? "text-ivory-50/50" : "text-stone-500"}`}>{messageItem.createdAt}</p>
                 </div>
@@ -273,7 +273,7 @@ export function ClientMessagesPanel({
             <Button variant="warm" onClick={() => void sendReply()}>Send</Button>
           </div>
         </Card>
-        <Card className="p-6">
+        <Card className="p-5 sm:p-6">
           <h3 className="text-xl font-semibold">Submit check-in</h3>
           <div className="mt-5 grid grid-cols-2 gap-3">
             {[

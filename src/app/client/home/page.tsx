@@ -61,7 +61,7 @@ export default async function ClientHomePage() {
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <section className="space-y-5">
           <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
-            <div className="p-6 sm:p-8">
+            <div className="p-5 sm:p-8">
               <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
               <h2 className="mt-5 max-w-2xl font-serif text-5xl font-semibold leading-[0.95]">{workout?.name ?? "No workout assigned yet"}</h2>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-ivory-50/65">
@@ -118,7 +118,7 @@ export default async function ClientHomePage() {
           </Card>
         </section>
         <aside className="space-y-5">
-          <Card className="p-6">
+          <Card className="p-5 sm:p-6">
             <div className="flex items-center gap-3">
               <HeartPulse className="size-5 text-bronze-600" />
               <h3 className="font-semibold">Today’s check-in</h3>
@@ -145,7 +145,7 @@ export default async function ClientHomePage() {
               )}
             </CardContent>
           </Card>
-          <Card className="border-charcoal-950 bg-charcoal-950 p-6 text-ivory-50">
+          <Card className="border-charcoal-950 bg-charcoal-950 p-5 sm:p-6 text-ivory-50">
             <CheckCircle2 className="size-5 text-sage-500" />
             <p className="mt-4 text-[0.66rem] uppercase tracking-[0.28em] text-bronze-200">Current plan</p>
             <p className="mt-2 font-serif text-3xl font-semibold">{plan?.title ?? "No plan assigned"}</p>

@@ -220,13 +220,16 @@ export function AppShell({
   }
 
   return (
-    <div className="min-h-screen px-3 py-3 text-charcoal-950 sm:px-5 lg:px-6">
+    <div className="min-h-screen px-4 py-4 text-charcoal-950 sm:px-5 lg:px-6">
+      <a href="#main-content" className="skip-link">
+        Skip to main
+      </a>
       <div className="mx-auto grid max-w-[1500px] gap-5 lg:grid-cols-[238px_1fr]">
         <aside className="sticky top-5 hidden h-[calc(100vh-2.5rem)] flex-col overflow-hidden rounded-[2rem] border border-white/8 bg-charcoal-950 px-4 py-5 text-ivory-50 shadow-soft lg:flex">
           <Link href={homeHref} className="block w-full rounded-[1.25rem]">
             <NGLogoLockup tone="light" subtext="Training" className="max-w-full" />
           </Link>
-          <nav suppressHydrationWarning className="mt-6 flex-1 space-y-1 overflow-y-auto pr-1">
+          <nav suppressHydrationWarning className="no-scrollbar mt-6 flex-1 space-y-2 overflow-y-auto px-2 py-2">
             {nav.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = item.icon;
@@ -235,7 +238,7 @@ export function AppShell({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-ivory-50/68 transition",
+                    "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-ivory-50/68 transition focus-visible:outline-offset-2",
                     active ? "bg-white/10 text-white shadow-inner-soft" : "hover:bg-white/6 hover:text-white",
                   )}
                 >
@@ -250,10 +253,10 @@ export function AppShell({
           </div>
         </aside>
 
-        <main suppressHydrationWarning className="min-w-0 pb-24 lg:pb-5">
-          <header className="mb-5 rounded-[2rem] border border-white/70 bg-white/52 p-4 shadow-soft backdrop-blur-xl sm:p-6">
+        <main id="main-content" suppressHydrationWarning className="min-w-0 scroll-mt-4 pb-28 lg:pb-5">
+          <header className="mb-5 min-w-0 rounded-[1.5rem] border border-white/70 bg-white/52 p-5 shadow-soft backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-              <div>
+              <div className="min-w-0">
                 <motion.p
                   initial={false}
                   animate={{ opacity: 1, y: 0 }}
@@ -265,17 +268,17 @@ export function AppShell({
                   initial={false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.04 }}
-                  className="mt-2 font-serif text-4xl font-semibold tracking-tight text-charcoal-950 sm:text-5xl"
+                  className="mt-2 text-wrap font-serif text-[2rem] font-semibold leading-[1.05] tracking-tight text-charcoal-950 sm:text-5xl"
                 >
                   {displayTitle}
                 </motion.h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">{subtitle}</p>
               </div>
-              <div className="flex items-center gap-3 rounded-full border border-stone-200/80 bg-white/72 p-2 shadow-inner-soft">
+              <div className="flex min-w-0 flex-wrap items-center gap-3 rounded-[1.5rem] border border-stone-200/80 bg-white/72 p-2 shadow-inner-soft sm:rounded-full">
                 <Avatar name={identity.name} src={identity.photo} />
-                <div className="pr-3">
-                  <p className="text-sm font-semibold">{identity.name}</p>
-                  <p className="text-xs text-stone-500">{identity.subtitle}</p>
+                <div className="min-w-0 flex-1 pr-1 sm:pr-3">
+                  <p className="truncate text-sm font-semibold">{identity.name}</p>
+                  <p className="truncate text-xs text-stone-500">{identity.subtitle}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => void handleLogout()}>
                   <LogOut className="size-4" />
@@ -290,8 +293,12 @@ export function AppShell({
         </main>
       </div>
 
-      <nav suppressHydrationWarning className="fixed inset-x-3 bottom-3 z-50 flex gap-1 overflow-x-auto rounded-full border border-white/70 bg-charcoal-950/92 p-2 shadow-soft backdrop-blur-xl lg:hidden">
-        {nav.slice(0, role === "trainer" ? 5 : nav.length).map((item) => {
+      <nav
+        suppressHydrationWarning
+        aria-label={`${role} navigation`}
+        className="no-scrollbar fixed inset-x-3 bottom-3 z-50 flex gap-1 overflow-x-auto overscroll-x-contain rounded-full border border-white/70 bg-charcoal-950/92 p-2 shadow-soft backdrop-blur-xl lg:hidden"
+      >
+        {nav.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
@@ -299,7 +306,7 @@ export function AppShell({
               key={item.href}
               href={item.href}
               className={cn(
-                "flex min-w-16 flex-1 flex-col items-center gap-1 rounded-full px-3 py-2 text-[10px] text-ivory-50/55",
+                "flex min-w-[4.75rem] flex-none flex-col items-center gap-1 rounded-full px-3 py-2 text-center text-[10px] text-ivory-50/55",
                 active && "bg-white/12 text-white",
               )}
             >

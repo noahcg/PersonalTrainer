@@ -106,6 +106,48 @@ body::after {
   color: white;
 }
 
+:where(a[href], button, [role="button"], summary, label[for], select, input[type="checkbox"], input[type="radio"], input[type="file"]) {
+  cursor: pointer;
+}
+
+:where(input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea) {
+  cursor: text;
+}
+
+:where(button:disabled, input:disabled, select:disabled, textarea:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+}
+
+:where(a[href], button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"]), summary):focus {
+  outline: none;
+}
+
+:where(a[href], button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"]), summary):focus-visible {
+  outline: 2px solid var(--color-copper-deep);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(200, 155, 109, 0.2);
+}
+
+.skip-link {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  z-index: 100;
+  transform: translate(-50%, calc(-100% - 2rem));
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: white;
+  padding: 0.7rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus-visible {
+  transform: translate(-50%, 0);
+}
+
 .text-balance {
   text-wrap: balance;
 }

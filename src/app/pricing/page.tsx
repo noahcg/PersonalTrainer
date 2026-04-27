@@ -48,9 +48,9 @@ export default function PricingPage() {
           {tiers.map((tier, index) => (
             <Card
               key={tier.name}
-              className={index === 1 ? "border-bronze-300 bg-bronze-50/55 p-6" : "p-6"}
+              className={index === 1 ? "border-bronze-300 bg-bronze-50/55 p-5 sm:p-6" : "p-5 sm:p-6"}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-bronze-600">{tier.name}</p>
                   <p className="mt-4 text-4xl font-semibold text-charcoal-950">{tier.price}</p>
@@ -77,7 +77,7 @@ export default function PricingPage() {
       </section>
 
       <section className="px-5 pb-12 sm:px-8 lg:px-10 lg:pb-16">
-        <Card className="grid gap-5 p-6 lg:grid-cols-[1fr_auto] lg:items-center lg:p-8">
+        <Card className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center lg:p-8">
           <div>
             <h2 className="font-serif text-3xl font-semibold text-charcoal-950">Already a client?</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">

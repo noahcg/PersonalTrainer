@@ -361,7 +361,7 @@ export function ExerciseLibrary({
                         <select
                           value={draft.difficulty}
                           onChange={(event) => updateDraft("difficulty", event.target.value as Exercise["difficulty"])}
-                          className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100"
+                          className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
                         >
                           <option>Beginner</option>
                           <option>Intermediate</option>

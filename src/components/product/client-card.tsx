@@ -30,10 +30,10 @@ export function ClientCard({
         selected && "border-bronze-300 bg-bronze-50",
       )}
     >
-      <div className="flex items-start gap-4">
-        <Avatar name={client.name} src={client.photo} className="size-14" />
+      <div className="flex items-start gap-3 sm:gap-4">
+        <Avatar name={client.name} src={client.photo} className="size-12 sm:size-14" />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="truncate text-lg font-semibold">{client.name}</h3>
             <Badge variant={primaryVariant}>{primaryStatus}</Badge>
           </div>
@@ -51,7 +51,7 @@ export function ClientCard({
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-stone-500">{client.goals}</p>
         </div>
       </div>
-      <div className="mt-5 grid grid-cols-3 gap-2 rounded-[1.5rem] bg-stone-50/80 p-3 text-center">
+      <div className="mt-5 grid grid-cols-3 gap-2 rounded-[1.25rem] bg-stone-50/80 p-3 text-center sm:rounded-[1.5rem]">
         <div>
           <p className="text-lg font-semibold">{client.metrics.workouts}</p>
           <p className="text-[11px] text-stone-500">Workouts</p>
@@ -91,7 +91,7 @@ export function ClientCard({
               checked={selected}
               onChange={() => onToggleSelect?.(client.id)}
               onClick={(event) => event.stopPropagation()}
-              className="size-4 rounded border-stone-300 text-bronze-500 focus:ring-bronze-300"
+              className="size-4 rounded border-stone-300 text-bronze-500 focus-visible:ring-bronze-300"
               aria-label={`Select ${client.name}`}
             />
           </span>

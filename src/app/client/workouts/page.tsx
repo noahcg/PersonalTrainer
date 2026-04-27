@@ -25,7 +25,7 @@ export default async function ClientWorkoutsPage() {
     <AppShell role="client" title="My workouts" subtitle="Upcoming and completed workouts with clear guidance and logging.">
       <div className="grid gap-5 md:grid-cols-2">
         {workouts.map((workout) => (
-          <Card key={workout.id} className="p-6">
+          <Card key={workout.id} className="p-5 sm:p-6">
             <Badge variant="bronze">Upcoming</Badge>
             <h2 className="mt-5 font-serif text-4xl font-semibold">{workout.name}</h2>
             <p className="mt-3 text-sm leading-6 text-stone-600">{workout.coachNotes}</p>

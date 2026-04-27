@@ -304,7 +304,7 @@ export function TrainerBulletinBoard({
 
       <div className="grid gap-5 lg:grid-cols-2">
         {bulletins.map((post) => (
-          <Card key={post.id} className="p-6">
+          <Card key={post.id} className="p-5 sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p suppressHydrationWarning className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">{post.publishedAt}</p>
@@ -393,7 +393,7 @@ export function TrainerBulletinBoard({
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-charcoal-950/35 backdrop-blur-sm" />
           <Dialog.Content asChild>
-            <motion.div initial={{ opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border border-white/70 bg-ivory-50 p-6 shadow-soft">
+            <motion.div initial={{ opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border border-white/70 bg-ivory-50 p-5 sm:p-6 shadow-soft">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <Dialog.Title className="font-serif text-4xl font-semibold text-charcoal-950">{editingId ? "Edit bulletin" : "Post bulletin"}</Dialog.Title>

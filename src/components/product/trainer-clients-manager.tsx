@@ -436,7 +436,7 @@ export function TrainerClientsManager({
       ) : null}
 
       {selectedIds.length > 0 ? (
-        <Card className="mb-5 flex items-center justify-between p-4 text-sm text-stone-600">
+        <Card className="mb-5 flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-stone-600">
           <span>{selectedIds.length} client{selectedIds.length === 1 ? "" : "s"} selected for bulk actions.</span>
           <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
             Clear
@@ -488,7 +488,7 @@ export function TrainerClientsManager({
                     <select
                       value={draft.level}
                       onChange={(event) => setDraft((current) => ({ ...current, level: event.target.value as Client["level"] }))}
-                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100"
+                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
                     >
                       <option value="Foundation">Foundation</option>
                       <option value="Intermediate">Intermediate</option>
@@ -502,7 +502,7 @@ export function TrainerClientsManager({
                     <select
                       value={draft.pricingTier}
                       onChange={(event) => setDraft((current) => ({ ...current, pricingTier: event.target.value as PricingTier }))}
-                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100"
+                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
                     >
                       {pricingTierOptions.map((option) => (
                         <option key={option.value} value={option.value}>

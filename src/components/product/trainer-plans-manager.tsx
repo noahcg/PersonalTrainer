@@ -335,16 +335,17 @@ export function TrainerPlansManager({
             <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Plan controls</p>
             <p className="mt-2 text-sm leading-6 text-stone-600">Create, duplicate, and assign polished training cycles while keeping the plan library easy to trust and easy to scan.</p>
           </div>
-          <div className="flex gap-3 text-sm text-stone-500">
+          <div className="flex flex-wrap gap-3 text-sm text-stone-500">
             <div className="rounded-full bg-stone-50 px-4 py-2">{plans.length} plans</div>
             <div className="rounded-full bg-stone-50 px-4 py-2">{plans.filter((plan) => plan.template).length} templates</div>
           </div>
         </div>
       </Card>
 
-      <div className="mb-5 flex gap-3">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Button
           variant="warm"
+          className="w-full sm:w-auto"
           onClick={() => {
             resetDraft();
             setOpen(true);
@@ -354,6 +355,7 @@ export function TrainerPlansManager({
         </Button>
         <Button
           variant="secondary"
+          className="w-full sm:w-auto"
           onClick={() => {
             setDraft({
               ...emptyDraft,

@@ -39,8 +39,8 @@ export default async function TrainerDashboardPage() {
       dynamicGreetingName="Nick"
       subtitle="Clear coaching. Real progress. A structured read on client momentum, adherence, and the coaching moments that need your attention."
     >
-      <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
-        <section className="space-y-5">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="min-w-0 space-y-5">
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             <StatCard label="Active clients" value={String(activeClients.length)} detail="Current roster" tone="dark" />
             <StatCard label="Weekly adherence" value={`${averageAdherence}%`} detail="Across active clients" tone="sage" />
@@ -49,8 +49,8 @@ export default async function TrainerDashboardPage() {
           </div>
 
           <Card className="overflow-hidden">
-            <CardHeader className="flex flex-row items-start justify-between gap-4">
-              <div>
+            <CardHeader className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+              <div className="min-w-0">
                 <CardTitle>Clients needing attention</CardTitle>
                 <CardDescription>Prioritized by adherence dips, check-ins, and trainer notes.</CardDescription>
               </div>
@@ -61,7 +61,7 @@ export default async function TrainerDashboardPage() {
             <CardContent className="space-y-3">
               {clientsNeedingAttention.length ? (
                 clientsNeedingAttention.map((client) => (
-                  <Link key={client.id} href={`/trainer/clients/${client.id}`} className="flex items-center gap-4 rounded-[1.35rem] bg-stone-50/88 px-4 py-3 transition hover:bg-white">
+                  <Link key={client.id} href={`/trainer/clients/${client.id}`} className="flex flex-wrap items-center gap-3 rounded-[1.35rem] bg-stone-50/88 px-4 py-3 transition hover:bg-white sm:gap-4">
                     <Avatar name={client.name} src={client.photo} />
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-charcoal-950">{client.name}</p>
@@ -70,7 +70,7 @@ export default async function TrainerDashboardPage() {
                     <div className="hidden w-28 sm:block">
                       <Progress value={client.adherence} />
                     </div>
-                    <Badge variant={client.status === "needs_attention" ? "alert" : "sage"}>{client.adherence}%</Badge>
+                    <Badge className="shrink-0" variant={client.status === "needs_attention" ? "alert" : "sage"}>{client.adherence}%</Badge>
                   </Link>
                 ))
               ) : (
@@ -119,9 +119,9 @@ export default async function TrainerDashboardPage() {
                   ["Assign plan", "/trainer/plans", CalendarCheck],
                   ["Review check-ins", "/trainer/check-ins", MessageCircle],
                 ].map(([label, href, Icon]) => (
-                  <Button key={label as string} asChild variant="secondary" className="justify-between rounded-[1.25rem]">
+                  <Button key={label as string} asChild variant="secondary" className="w-full justify-between rounded-[1.25rem]">
                     <Link href={href as string}>
-                      <span className="flex items-center gap-2"><Icon className="size-4" />{label as string}</span>
+                      <span className="flex min-w-0 items-center gap-2"><Icon className="size-4 shrink-0" />{label as string}</span>
                       <ArrowRight className="size-4" />
                     </Link>
                   </Button>
@@ -131,10 +131,10 @@ export default async function TrainerDashboardPage() {
           </div>
         </section>
 
-        <aside className="space-y-5">
-          <Card className="rounded-[1.9rem] border-charcoal-950 bg-charcoal-950 p-6 text-ivory-50">
+        <aside className="min-w-0 space-y-5">
+          <Card className="rounded-[1.9rem] border-charcoal-950 bg-charcoal-950 p-5 sm:p-6 text-ivory-50">
             <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-200">Focus this week</p>
-            <p className="mt-5 font-serif text-[2.4rem] font-semibold leading-[1.02]">
+            <p className="mt-5 text-wrap font-serif text-[2rem] font-semibold leading-[1.04] sm:text-[2.4rem] sm:leading-[1.02]">
               {focusClient ? `${focusClient.name} is your next coaching focus.` : "Build your first client roster."}
             </p>
             <p className="mt-4 text-sm leading-6 text-ivory-50/65">
@@ -157,7 +157,7 @@ export default async function TrainerDashboardPage() {
               {checkIns.slice(0, 3).length ? (
                 checkIns.slice(0, 3).map((checkIn) => (
                   <div key={checkIn.id} className="rounded-[1.35rem] bg-stone-50/80 p-4">
-                    <div className="flex justify-between">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className="font-medium">{checkIn.client}</p>
                       <Badge variant={checkIn.reviewed ? "sage" : "bronze"}>{checkIn.date}</Badge>
                     </div>

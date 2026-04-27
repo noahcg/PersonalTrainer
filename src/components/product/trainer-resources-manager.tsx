@@ -207,7 +207,7 @@ export function TrainerResourcesManager({
           <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {resources.map((resource) => (
               <Link key={resource.id} href={`/trainer/resources/${resource.id}`} className="block">
-                <Card className="h-full p-6 transition hover:-translate-y-1 hover:bg-white/90">
+                <Card className="h-full p-5 sm:p-6 transition hover:-translate-y-1 hover:bg-white/90">
                   <div className="flex items-center justify-between gap-3">
                     <Badge variant="bronze">{resource.type}</Badge>
                     <Badge variant={resource.audience === "all" ? "sage" : "default"}>
@@ -289,7 +289,7 @@ export function TrainerResourcesManager({
                           assignedClientId: event.target.value === "all" ? "" : current.assignedClientId,
                         }))
                       }
-                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100"
+                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
                     >
                       <option value="all">All clients</option>
                       <option value="personal">Specific client</option>
@@ -301,7 +301,7 @@ export function TrainerResourcesManager({
                       value={draft.assignedClientId}
                       onChange={(event) => setDraft((current) => ({ ...current, assignedClientId: event.target.value }))}
                       disabled={draft.audience !== "personal"}
-                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100 disabled:opacity-50"
+                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100 disabled:opacity-50"
                     >
                       <option value="">Select client</option>
                       {clients.map((client) => (
@@ -365,7 +365,7 @@ export function ClientResourcesGrid({
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {resources.map((resource) => (
           <Link key={resource.id} href={`/client/resources/${resource.id}`} className="block">
-            <Card className="h-full p-6 transition hover:-translate-y-1 hover:bg-white/90">
+            <Card className="h-full p-5 sm:p-6 transition hover:-translate-y-1 hover:bg-white/90">
               <div className="flex items-center justify-between gap-3">
                 <Badge variant="bronze">{resource.type}</Badge>
                 {resource.audience === "personal" ? <Badge variant="sage">Assigned for you</Badge> : null}

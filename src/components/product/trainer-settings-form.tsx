@@ -120,10 +120,10 @@ export function TrainerSettingsForm() {
             <Avatar name={settings.name} src={settings.photo} className="size-20" />
             <div className="flex flex-wrap gap-3">
               <Button asChild variant="secondary">
-                <label className="cursor-pointer">
+                <label className="cursor-pointer focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-bronze-500 focus-within:ring-4 focus-within:ring-bronze-100">
                   Upload profile photo
                   <input
-                    hidden
+                    className="sr-only"
                     type="file"
                     accept="image/*"
                     onChange={(event) => void updatePhoto(event.target.files?.[0] ?? null)}

@@ -39,7 +39,7 @@ export default async function ClientPlanPage() {
       </Card>
       <div className="mt-5 grid gap-5 md:grid-cols-2">
         {plan.workouts.map((workout) => (
-          <Card key={workout.id} className="p-6">
+          <Card key={workout.id} className="p-5 sm:p-6">
             <Badge variant="sage">{workout.dayLabel}</Badge>
             <h3 className="mt-4 font-serif text-3xl font-semibold">{workout.name}</h3>
             <p className="mt-3 text-sm leading-6 text-stone-600">{workout.coachNotes}</p>

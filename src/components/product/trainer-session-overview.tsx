@@ -107,8 +107,8 @@ export function TrainerSessionOverview({
   if (!session) {
     return (
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
-          <div>
+        <CardHeader className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+          <div className="min-w-0">
             <CardTitle>Upcoming training session</CardTitle>
             <CardDescription>Event invites and attendee visibility live here.</CardDescription>
           </div>
@@ -129,8 +129,8 @@ export function TrainerSessionOverview({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4">
-        <div>
+      <CardHeader className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+        <div className="min-w-0">
           <CardTitle>{session.title}</CardTitle>
           <CardDescription>Upcoming training session and live RSVP list.</CardDescription>
         </div>
@@ -163,7 +163,7 @@ export function TrainerSessionOverview({
         </div>
 
         <div>
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-medium text-charcoal-950">Attendees</p>
             {session.sessionCapacity ? (
               <p className="text-xs uppercase tracking-[0.22em] text-stone-400">
@@ -174,7 +174,7 @@ export function TrainerSessionOverview({
           <div className="space-y-2">
             {attending.length ? (
               attending.map((entry) => (
-                <div key={`${session.id}-${entry.clientId}`} className="flex items-center justify-between rounded-[1.2rem] bg-white px-4 py-3 shadow-soft">
+                <div key={`${session.id}-${entry.clientId}`} className="flex flex-wrap items-center justify-between gap-2 rounded-[1.2rem] bg-white px-4 py-3 shadow-soft">
                   <span className="text-sm font-medium text-charcoal-950">{entry.clientName}</span>
                   <span className="text-sm text-sage-700">Reserved</span>
                 </div>

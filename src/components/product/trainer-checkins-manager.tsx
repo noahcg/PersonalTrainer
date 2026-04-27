@@ -87,7 +87,7 @@ export function TrainerCheckinsManager() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-charcoal-950/35 backdrop-blur-sm" />
           <Dialog.Content asChild>
-            <motion.div initial={{ opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border border-white/70 bg-ivory-50 p-6 shadow-soft">
+            <motion.div initial={{ opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border border-white/70 bg-ivory-50 p-5 sm:p-6 shadow-soft">
               <Dialog.Title className="font-serif text-4xl font-semibold text-charcoal-950">{active?.client}</Dialog.Title>
               <Dialog.Description className="mt-2 text-sm text-stone-600">Mark this check-in reviewed and append your coaching reply.</Dialog.Description>
               <Textarea className="mt-5" value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Recovery looks decent. Reduce hinge load 5% today and keep tempo strict." />

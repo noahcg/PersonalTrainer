@@ -45,7 +45,7 @@ export default function AboutPage() {
               they can actually follow.
             </p>
           </div>
-          <Card className="bg-charcoal-950 p-6 text-ivory-50 ring-1 ring-white/10">
+          <Card className="bg-charcoal-950 p-5 sm:p-6 text-ivory-50 ring-1 ring-white/10">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">What clients can expect</p>
             <div className="mt-5 space-y-4">
               {outcomes.map((item) => (
@@ -64,7 +64,7 @@ export default function AboutPage() {
           {principles.map((item) => {
             const Icon = item.icon;
             return (
-              <Card key={item.title} className="p-6">
+              <Card key={item.title} className="p-5 sm:p-6">
                 <div className="grid size-11 place-items-center rounded-full bg-bronze-50">
                   <Icon className="size-5 text-bronze-600" />
                 </div>
@@ -77,7 +77,7 @@ export default function AboutPage() {
       </section>
 
       <section className="px-5 pb-12 sm:px-8 lg:px-10 lg:pb-16">
-        <Card className="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-center lg:p-8">
+        <Card className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center lg:p-8">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">How coaching works</p>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">

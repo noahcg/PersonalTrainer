@@ -95,7 +95,7 @@ export function SetupAccountForm() {
 
   return (
     <main suppressHydrationWarning className="grid min-h-screen place-items-center px-5 py-10">
-      <Card className="w-full max-w-xl p-6 sm:p-8">
+      <Card className="w-full max-w-xl p-5 sm:p-8">
         <Link href="/" className="block">
           <NGLogoLockup tone="ink" subtext="Training" />
         </Link>

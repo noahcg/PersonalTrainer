@@ -67,7 +67,7 @@ export default function Home() {
             </div>
           </div>
 
-          <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 p-6 text-ivory-50 ring-1 ring-white/10 lg:p-7">
+          <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 p-5 sm:p-6 text-ivory-50 ring-1 ring-white/10 lg:p-7">
             <div className="grid gap-6">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">Coaching philosophy</p>
@@ -109,7 +109,7 @@ export default function Home() {
       </section>
 
       <section className="px-5 pb-12 sm:px-8 lg:px-10">
-        <Card className="overflow-hidden p-6 lg:p-8">
+        <Card className="overflow-hidden p-5 sm:p-6 lg:p-8">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">How it works</p>
@@ -148,14 +148,14 @@ export default function Home() {
 
       <section className="px-5 pb-12 sm:px-8 lg:px-10">
         <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-          <Card className="p-6 lg:p-8">
+          <Card className="p-5 sm:p-6 lg:p-8">
             <Dumbbell className="size-5 text-bronze-600" />
             <h2 className="mt-5 font-serif text-3xl font-semibold text-charcoal-950">Training should fit real life and still feel serious.</h2>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-600">
               The goal is a structure a client can trust on busy weeks, low-energy weeks, and normal weeks.
             </p>
           </Card>
-          <Card className="p-6 lg:p-8">
+          <Card className="p-5 sm:p-6 lg:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">Client experience</p>
             <div className="mt-5 space-y-4">
               {[

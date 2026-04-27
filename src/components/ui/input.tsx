@@ -7,7 +7,7 @@ export function Input({ className, type, ...props }: React.InputHTMLAttributes<H
     <input
       type={type}
       className={cn(
-        "h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm text-charcoal-950 shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100",
+        "h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm text-charcoal-950 shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100",
         className,
       )}
       {...props}
@@ -23,7 +23,7 @@ export function PasswordInput({ className, ...props }: React.InputHTMLAttributes
       <input
         type={visible ? "text" : "password"}
         className={cn(
-          "h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 pr-12 text-sm text-charcoal-950 shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100",
+          "h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 pr-12 text-sm text-charcoal-950 shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100",
           className,
         )}
         {...props}
@@ -44,7 +44,7 @@ export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<H
   return (
     <textarea
       className={cn(
-        "min-h-28 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm text-charcoal-950 shadow-inner-soft outline-none transition focus:border-bronze-300 focus:ring-4 focus:ring-bronze-100",
+        "min-h-28 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm text-charcoal-950 shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100",
         className,
       )}
       {...props}

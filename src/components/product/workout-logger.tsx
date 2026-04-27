@@ -396,7 +396,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
 
   if (loading) {
     return (
-      <Card className="p-6">
+      <Card className="p-5 sm:p-6">
         <div className="flex items-center gap-3 text-stone-600">
           <LoaderCircle className="size-5 animate-spin" />
           Restoring your workout session...
@@ -408,7 +408,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
   return (
     <div className="space-y-5">
       <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
-        <div className="p-6 sm:p-8">
+        <div className="p-5 sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
