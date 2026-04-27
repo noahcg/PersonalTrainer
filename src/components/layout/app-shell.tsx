@@ -53,6 +53,14 @@ const clientNav = [
   { href: "/client/profile", label: "Profile", icon: Users },
 ];
 
+function getMobileNavLabel(label: string) {
+  if (label.startsWith("My ")) {
+    return label.replace("My ", "");
+  }
+
+  return label.split(" ")[0];
+}
+
 export function AppShell({
   role,
   title,
@@ -311,7 +319,7 @@ export function AppShell({
               )}
             >
               <Icon className="size-4" />
-              {item.label.split(" ")[0]}
+              {getMobileNavLabel(item.label)}
             </Link>
           );
         })}
