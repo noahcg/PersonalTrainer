@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Dumbbell, HeartPulse, MessageCircle } from "lucide-react";
-import { brand } from "@/lib/brand";
 import { PublicSiteShell } from "@/components/marketing/public-site-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -24,13 +23,6 @@ const principles = [
   },
 ];
 
-const outcomes = [
-  "Build strength and confidence in the gym",
-  "Improve movement quality and reduce guesswork",
-  "Train with a plan that matches your lifestyle",
-  "See progress through measurable weekly structure",
-];
-
 export default function AboutPage() {
   return (
     <PublicSiteShell>
@@ -42,8 +34,18 @@ export default function AboutPage() {
               Calm, precise personal training built around real progress.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
-              {brand.businessName} is built for clients who want practical strength work, clear direction, and a plan
-              they can actually follow.
+              Nick works with people who want to feel stronger, steadier, and more capable without being forced into
+              a gym routine that does not fit their life. Most sessions happen in the client&apos;s home, with training
+              shaped around the space, equipment, energy, and starting point they actually have.
+            </p>
+            <p className="mt-5 max-w-2xl text-base leading-8 text-stone-600">
+              He often works with adults who want to feel more capable in everyday life, including clients navigating
+              stiffness, changing mobility, previous aches, or the simple reality that training needs to respect where
+              their body is right now. Sessions are designed to build strength with patience and intent, not pressure.
+            </p>
+            <p className="mt-5 max-w-2xl text-base leading-8 text-stone-600">
+              The goal is not to chase a one-size-fits-all workout. It is to create a plan that helps someone move
+              better, trust their body more, and make progress at a pace that actually fits their life.
             </p>
           </div>
           <div className="grid min-w-0 gap-5 md:w-full md:max-w-[420px] md:justify-self-end">
@@ -62,17 +64,6 @@ export default function AboutPage() {
                 <p className="mt-2 max-w-sm text-sm leading-6 text-ivory-50/72">Personal training built around clear movement, practical strength, and steady accountability.</p>
               </div>
             </div>
-            <Card className="bg-charcoal-950 p-5 text-ivory-50 ring-1 ring-white/10 sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">What clients can expect</p>
-              <div className="mt-5 space-y-4">
-                {outcomes.map((item) => (
-                  <div key={item} className="flex items-start gap-3">
-                    <div className="mt-2 h-2 w-2 rounded-full bg-bronze-300" />
-                    <p className="text-sm leading-6 text-ivory-50/72">{item}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
           </div>
         </div>
       </section>
@@ -95,30 +86,54 @@ export default function AboutPage() {
       </section>
 
       <section className="px-5 pb-12 sm:px-8 lg:px-10 lg:pb-16">
-        <Card className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center lg:p-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">How coaching works</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div className="relative overflow-hidden rounded-[1.75rem] border border-bronze-300 bg-charcoal-950 p-5 text-ivory-50 shadow-soft sm:p-6 lg:p-8">
+          <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-bronze-400 via-bronze-200 to-sage-200" />
+          <div className="grid gap-8 lg:grid-cols-[0.72fr_1fr] lg:items-start">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">How coaching works</p>
+              <h2 className="mt-4 font-serif text-4xl font-semibold leading-tight">A process that starts where you are.</h2>
+              <p className="mt-4 max-w-xl text-sm leading-7 text-ivory-50/70">
+                Training begins with the client&apos;s real life: home setup, schedule, movement comfort, and what they
+                want to feel more confident doing day to day.
+              </p>
+              <div className="mt-6">
+                <Button asChild variant="warm" size="lg">
+                  <Link href="/pricing">
+                    View pricing <ArrowRight className="size-5" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-4">
               {[
-                "Start with goals, schedule, history, and current training level.",
-                "Receive a structured plan with clear sessions, progress markers, and support.",
-                "Adjust over time based on performance, recovery, and consistency.",
+                {
+                  title: "Understand the starting point",
+                  body: "Talk through goals, schedule, health history, mobility concerns, available space, and what feels realistic right now.",
+                },
+                {
+                  title: "Build the right first plan",
+                  body: "Create sessions that match the client&apos;s current ability, equipment, confidence, and preferred training environment.",
+                },
+                {
+                  title: "Adjust with real feedback",
+                  body: "Progress the plan over time based on comfort, recovery, consistency, and the practical wins that matter outside the session.",
+                },
               ].map((item, index) => (
-                <div key={item} className="rounded-[1.6rem] border border-stone-200 bg-white/70 p-4">
-                  <div className="text-sm font-semibold text-bronze-600">0{index + 1}</div>
-                  <p className="mt-3 text-sm leading-6 text-stone-600">{item}</p>
+                <div key={item.title} className="rounded-[1.35rem] border border-white/12 bg-white/8 p-4 sm:p-5">
+                  <div className="flex items-start gap-4">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full border border-bronze-200/50 text-sm font-semibold text-bronze-200">
+                      0{index + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-lg font-semibold text-ivory-50">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-ivory-50/68">{item.body}</p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="flex flex-col gap-3">
-            <Button asChild variant="warm" size="lg">
-              <Link href="/pricing">
-                View pricing <ArrowRight className="size-5" />
-              </Link>
-            </Button>
-          </div>
-        </Card>
+        </div>
       </section>
     </PublicSiteShell>
   );
