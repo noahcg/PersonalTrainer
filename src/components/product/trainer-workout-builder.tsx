@@ -45,7 +45,7 @@ function toDraft(workout?: Workout): DraftWorkout {
 
   return {
     id: workout.id,
-    trainingPlanId: "",
+    trainingPlanId: workout.trainingPlanId ?? "",
     name: workout.name,
     dayLabel: workout.dayLabel,
     warmup: workout.warmup,

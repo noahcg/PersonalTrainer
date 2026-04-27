@@ -288,40 +288,27 @@ export function TrainerPlansManager({
   }
 
   async function assignPlan() {
-    if (!assigningPlanId || !selectedClientIds.length) return;
+    if (!assigningPlanId) return;
 
     setBusy(true);
     setMessage(null);
     try {
       let nextPlans = plans;
       if (mode === "supabase") {
-        const { supabase } = await getTrainerContext();
-        const today = new Date().toISOString().slice(0, 10);
-        await Promise.all(
-          selectedClientIds.map(async (clientId) => {
-            await supabase
-              .from("plan_assignments")
-              .update({ status: "inactive", ends_on: today })
-              .eq("client_id", clientId)
-              .eq("status", "active");
-
-            const { error } = await supabase.from("plan_assignments").insert({
-              training_plan_id: assigningPlanId,
-              client_id: clientId,
-              starts_on: today,
-              status: "active",
-            });
-            if (error) throw error;
-          }),
-        );
+        const response = await fetch("/api/trainer/plans/assign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planId: assigningPlanId, clientIds: selectedClientIds }),
+        });
+        const result = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          throw new Error(result.error ?? "Unable to assign plan.");
+        }
       }
 
       nextPlans = plans.map((plan) => ({
         ...plan,
-        assignedClients:
-          plan.id === assigningPlanId
-            ? Array.from(new Set([...plan.assignedClients.filter((id) => !selectedClientIds.includes(id)), ...selectedClientIds]))
-            : plan.assignedClients.filter((id) => !selectedClientIds.includes(id)),
+        assignedClients: plan.id === assigningPlanId ? selectedClientIds : plan.assignedClients.filter((id) => !selectedClientIds.includes(id)),
       }));
       setPlans(nextPlans);
       persist(nextPlans);
@@ -585,7 +572,7 @@ export function TrainerPlansManager({
                 <Dialog.Close asChild>
                   <Button variant="secondary">Cancel</Button>
                 </Dialog.Close>
-                <Button variant="warm" onClick={assignPlan} disabled={busy || selectedClientIds.length === 0}>
+                <Button variant="warm" onClick={assignPlan} disabled={busy}>
                   <Send className="size-4" />
                   {busy ? "Assigning..." : "Assign plan"}
                 </Button>
