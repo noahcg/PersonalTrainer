@@ -83,3 +83,37 @@ export async function getTrainerExercises() {
     exercises: (data ?? []).map((row) => fromExerciseRow(row as ExerciseRow)),
   };
 }
+
+export async function getTrainerExerciseById(id: string) {
+  if (!isSupabaseConfigured()) {
+    return demoExercises.find((exercise) => exercise.id === id) ?? null;
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const { data: trainer } = await supabase
+    .from("trainers")
+    .select("id")
+    .eq("profile_id", user.id)
+    .maybeSingle<{ id: string }>();
+
+  const trainerId = trainer?.id ?? null;
+
+  const { data } = await supabase
+    .from("exercises")
+    .select(
+      "id, trainer_id, is_global, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, exercise_tags(tag)",
+    )
+    .eq("id", id)
+    .or(trainerId ? `is_global.eq.true,trainer_id.eq.${trainerId}` : "is_global.eq.true")
+    .maybeSingle();
+
+  return data ? fromExerciseRow(data as ExerciseRow) : null;
+}

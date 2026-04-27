@@ -3,6 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
 import { PencilLine, Plus, Search, X } from "lucide-react";
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ExerciseCard } from "@/components/product/exercise-card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Exercise } from "@/lib/types";
 
-const filters = ["All", "Squat", "Hinge", "Pull", "Push", "Core", "Mobility", "Beginner"];
+const filters = ["All", "Gym", "Free Weights", "Bodyweight", "Calisthenics", "Conditioning"];
 const storageKey = "aurelian-demo-exercises";
 const fallbackDemoUrl =
   "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80";
@@ -106,6 +107,11 @@ export function ExerciseLibrary({
       const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
       const matchesFilter =
         activeFilter === "All" ||
+        (activeFilter === "Gym" && exercise.category === "Gym (Machines & Weights)") ||
+        (activeFilter === "Free Weights" && exercise.category === "Free Weights (Barbell & Dumbbell Focus)") ||
+        (activeFilter === "Bodyweight" && exercise.category === "Bodyweight (Beginner-Friendly)") ||
+        (activeFilter === "Calisthenics" && exercise.category === "Calisthenics (Progression-Based Bodyweight)") ||
+        (activeFilter === "Conditioning" && exercise.category === "Cardio / Conditioning") ||
         searchable.includes(activeFilter.toLowerCase()) ||
         exercise.difficulty.toLowerCase() === activeFilter.toLowerCase();
 
@@ -460,7 +466,7 @@ export function ExerciseLibrary({
           </Dialog.Root>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+        <div className="no-scrollbar -mx-2 flex gap-2 overflow-x-auto overscroll-x-contain px-2 py-2">
           {filters.map((filter) => (
             <button key={filter} type="button" onClick={() => setActiveFilter(filter)}>
               <Badge variant={filter === activeFilter ? "dark" : "default"}>{filter}</Badge>
@@ -479,7 +485,9 @@ export function ExerciseLibrary({
               transition={{ delay: Math.min(index * 0.035, 0.2) }}
             >
               <div className="space-y-3">
-                <ExerciseCard exercise={exercise} />
+                <Link href={`/trainer/exercises/${exercise.id}`} className="block">
+                  <ExerciseCard exercise={exercise} />
+                </Link>
                 {exercise.editable ?? mode === "demo" ? (
                   <Button
                     variant="secondary"
