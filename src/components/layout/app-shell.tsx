@@ -91,14 +91,14 @@ export function AppShell({
     }
 
     if (hour >= 12 && hour < 17) {
-      return `Still rolling, ${name}.`;
+      return `Good afternoon, ${name}.`;
     }
 
     if (hour >= 17 && hour < 21) {
-      return `Finish strong, ${name}.`;
+      return `Good evening, ${name}.`;
     }
 
-    return `Still going, ${name}.`;
+    return `Welcome back, ${name}.`;
   }
 
   async function loadIdentity() {

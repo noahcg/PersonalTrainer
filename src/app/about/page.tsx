@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Dumbbell, HeartPulse, MessageCircle } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { PublicSiteShell } from "@/components/marketing/public-site-shell";
@@ -34,7 +35,7 @@ export default function AboutPage() {
   return (
     <PublicSiteShell>
       <section className="px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
-        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+        <div className="grid gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.68fr)] md:items-start">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">About the trainer</p>
             <h1 className="mt-5 max-w-3xl font-serif text-5xl font-semibold leading-[0.95] text-charcoal-950 sm:text-6xl">
@@ -45,17 +46,34 @@ export default function AboutPage() {
               they can actually follow.
             </p>
           </div>
-          <Card className="bg-charcoal-950 p-5 sm:p-6 text-ivory-50 ring-1 ring-white/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">What clients can expect</p>
-            <div className="mt-5 space-y-4">
-              {outcomes.map((item) => (
-                <div key={item} className="flex items-start gap-3">
-                  <div className="mt-2 h-2 w-2 rounded-full bg-bronze-300" />
-                  <p className="text-sm leading-6 text-ivory-50/72">{item}</p>
-                </div>
-              ))}
+          <div className="grid min-w-0 gap-5 md:w-full md:max-w-[420px] md:justify-self-end">
+            <div className="relative h-[360px] w-full overflow-hidden rounded-[1.75rem] border border-white/70 bg-charcoal-950 shadow-soft sm:h-[440px] sm:rounded-[2rem] md:aspect-[4/5] md:h-auto md:min-h-0">
+              <Image
+                src="/images/NickGlushien.PNG"
+                alt="Nick Glushien"
+                fill
+                className="object-cover object-[center_18%] sm:object-[center_22%] md:object-center"
+                sizes="(max-width: 767px) 100vw, 420px"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/68 via-charcoal-950/5 to-transparent" />
+              <div className="absolute bottom-5 left-5 right-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">Nick Glushien</p>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-ivory-50/72">Personal training built around clear movement, practical strength, and steady accountability.</p>
+              </div>
             </div>
-          </Card>
+            <Card className="bg-charcoal-950 p-5 text-ivory-50 ring-1 ring-white/10 sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">What clients can expect</p>
+              <div className="mt-5 space-y-4">
+                {outcomes.map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <div className="mt-2 h-2 w-2 rounded-full bg-bronze-300" />
+                    <p className="text-sm leading-6 text-ivory-50/72">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
         </div>
       </section>
 
