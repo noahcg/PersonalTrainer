@@ -1,8 +1,8 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Copy, PencilLine, Save, Send, Users, X } from "lucide-react";
-import { HTMLAttributes, forwardRef, useEffect, useState } from "react";
+import { CalendarDays, Copy, Dumbbell, PencilLine, Plus, Save, Send, Users, X, type LucideIcon } from "lucide-react";
+import { HTMLAttributes, forwardRef, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,10 +46,16 @@ export function TrainerPlansManager({
   const [assignOpen, setAssignOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [assigningPlanId, setAssigningPlanId] = useState<string | null>(null);
+  const [activePlanId, setActivePlanId] = useState<string | null>(initialPlans[0]?.id ?? null);
   const [draft, setDraft] = useState<DraftPlan>(emptyDraft);
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const activePlan = useMemo(
+    () => plans.find((plan) => plan.id === activePlanId) ?? plans[0] ?? null,
+    [activePlanId, plans],
+  );
 
   useEffect(() => {
     if (mode !== "demo") return;
@@ -206,6 +212,9 @@ export function TrainerPlansManager({
       }
 
       setPlans(nextPlans);
+      if (!editingId) {
+        setActivePlanId(nextPlans[0]?.id ?? null);
+      }
       persist(nextPlans);
       setOpen(false);
       resetDraft();
@@ -267,6 +276,7 @@ export function TrainerPlansManager({
       }
 
       setPlans(nextPlans);
+      setActivePlanId(nextPlans[0]?.id ?? activePlanId);
       persist(nextPlans);
       setMessage("Plan duplicated.");
       window.setTimeout(() => setMessage(null), 2200);
@@ -329,99 +339,167 @@ export function TrainerPlansManager({
 
   return (
     <>
-      <Card className="mb-5 p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <Card className="mb-5 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Plan controls</p>
-            <p className="mt-2 text-sm leading-6 text-stone-600">Create, duplicate, and assign polished training cycles while keeping the plan library easy to trust and easy to scan.</p>
+            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Plan workspace</p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-600">Select a plan, review the structure, edit the training cycle, then assign it to clients when it is ready.</p>
           </div>
-          <div className="flex flex-wrap gap-3 text-sm text-stone-500">
-            <div className="rounded-full bg-stone-50 px-4 py-2">{plans.length} plans</div>
-            <div className="rounded-full bg-stone-50 px-4 py-2">{plans.filter((plan) => plan.template).length} templates</div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              variant="warm"
+              onClick={() => {
+                resetDraft();
+                setOpen(true);
+              }}
+            >
+              <Plus className="size-4" />
+              New plan
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setDraft({
+                  ...emptyDraft,
+                  title: "New reusable template",
+                  template: true,
+                });
+                setEditingId(null);
+                setOpen(true);
+              }}
+            >
+              Save template
+            </Button>
           </div>
         </div>
       </Card>
 
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        <Button
-          variant="warm"
-          className="w-full sm:w-auto"
-          onClick={() => {
-            resetDraft();
-            setOpen(true);
-          }}
-        >
-          Create plan from scratch
-        </Button>
-        <Button
-          variant="secondary"
-          className="w-full sm:w-auto"
-          onClick={() => {
-            setDraft({
-              ...emptyDraft,
-              title: "New reusable template",
-              template: true,
-            });
-            setEditingId(null);
-            setOpen(true);
-          }}
-        >
-          Save current as template
-        </Button>
-      </div>
+      <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <Card className="lg:sticky lg:top-5 lg:max-h-[calc(100vh-2.5rem)] lg:overflow-hidden">
+          <CardHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>Plan library</CardTitle>
+                <p className="mt-1 text-sm text-stone-500">{plans.length} plans · {plans.filter((plan) => plan.template).length} templates</p>
+              </div>
+              <Badge>{clients.length} clients</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-3">
+            {plans.length ? (
+              plans.map((plan) => (
+                <button
+                  key={plan.id}
+                  type="button"
+                  onClick={() => setActivePlanId(plan.id)}
+                  className={`w-full rounded-[1.35rem] border px-4 py-4 text-left transition ${
+                    activePlan?.id === plan.id ? "border-bronze-300 bg-bronze-50" : "border-stone-200 bg-white/80 hover:bg-stone-50"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-charcoal-950">{plan.title}</p>
+                      <p className="mt-1 text-sm text-stone-500">{plan.duration}</p>
+                    </div>
+                    {plan.template ? <Badge variant="sage">Template</Badge> : null}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-stone-500">
+                    <span className="rounded-full bg-white/80 px-2.5 py-1">{plan.workouts.length} workouts</span>
+                    <span className="rounded-full bg-white/80 px-2.5 py-1">{plan.assignedClients.length} assigned</span>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="rounded-[1.35rem] bg-stone-50/86 p-4 text-sm leading-6 text-stone-500">
+                No plans yet. Create a plan to start building reusable training cycles.
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        {plans.map((plan) => (
-          <Card key={plan.id} className="overflow-hidden">
+        <Card className="overflow-hidden">
+          {activePlan ? (
+            <>
             <CardHeader>
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <Badge variant="bronze">{plan.duration}</Badge>
-                  <CardTitle className="mt-4 font-serif text-4xl">{plan.title}</CardTitle>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="bronze">{activePlan.duration}</Badge>
+                    {activePlan.template ? <Badge variant="sage">Template</Badge> : null}
+                  </div>
+                  <CardTitle className="mt-4 font-serif text-4xl">{activePlan.title}</CardTitle>
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-600">{activePlan.description || "No description has been added yet."}</p>
                 </div>
-                {plan.template && <Badge variant="sage">Template</Badge>}
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="secondary" onClick={() => duplicatePlan(activePlan)} disabled={busy}>
+                    <Copy className="size-4" /> Duplicate
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      populateDraft(activePlan);
+                      setEditingId(activePlan.id);
+                      setOpen(true);
+                    }}
+                    disabled={busy}
+                  >
+                    <PencilLine className="size-4" /> Edit
+                  </Button>
+                  <Button
+                    variant="warm"
+                    onClick={() => {
+                      setAssigningPlanId(activePlan.id);
+                      setSelectedClientIds(activePlan.assignedClients);
+                      setAssignOpen(true);
+                    }}
+                    disabled={busy}
+                  >
+                    <Send className="size-4" /> Assign
+                  </Button>
+                </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-7 text-stone-600">{plan.description}</p>
-              <div className="mt-5 grid gap-3 rounded-[1.5rem] bg-stone-50/88 p-5">
-                <p><span className="font-semibold">Goal:</span> {plan.goal || "Not specified"}</p>
-                <p><span className="font-semibold">Weekly structure:</span> {plan.weeklyStructure || "Not specified"}</p>
-                <p><span className="font-semibold">Notes:</span> {plan.notes || "No notes yet."}</p>
+            <CardContent className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-3">
+                <PlanMetric icon={CalendarDays} label="Duration" value={activePlan.duration} />
+                <PlanMetric icon={Dumbbell} label="Workouts" value={String(activePlan.workouts.length)} />
+                <PlanMetric icon={Users} label="Assigned" value={String(activePlan.assignedClients.length)} />
               </div>
-              <div className="mt-5 text-sm text-stone-500">
-                {plan.assignedClients.length} active assignment{plan.assignedClients.length === 1 ? "" : "s"}
+              <div className="grid gap-4 rounded-[1.5rem] bg-stone-50/88 p-5">
+                <PlanText label="Goal" value={activePlan.goal} />
+                <PlanText label="Weekly structure" value={activePlan.weeklyStructure} />
+                <PlanText label="Notes" value={activePlan.notes} />
               </div>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Button variant="secondary" onClick={() => duplicatePlan(plan)} disabled={busy}>
-                  <Copy className="size-4" /> Duplicate
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    populateDraft(plan);
-                    setEditingId(plan.id);
-                    setOpen(true);
-                  }}
-                  disabled={busy}
-                >
-                  <PencilLine className="size-4" /> Edit
-                </Button>
-                <Button
-                  variant="warm"
-                  onClick={() => {
-                    setAssigningPlanId(plan.id);
-                    setSelectedClientIds(plan.assignedClients);
-                    setAssignOpen(true);
-                  }}
-                  disabled={busy}
-                >
-                  <Send className="size-4" /> Assign to clients
-                </Button>
+              <div>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-charcoal-950">Included workouts</p>
+                  <Badge>{activePlan.workouts.length} total</Badge>
+                </div>
+                <div className="space-y-3">
+                  {activePlan.workouts.length ? (
+                    activePlan.workouts.map((workout) => (
+                      <div key={workout.id} className="rounded-[1.35rem] border border-stone-200 bg-white/80 p-4">
+                        <p className="font-semibold text-charcoal-950">{workout.name}</p>
+                        <p className="mt-1 text-sm text-stone-500">{workout.dayLabel}</p>
+                        <p className="mt-3 text-sm leading-6 text-stone-600">{workout.coachNotes || "No coach notes added."}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[1.35rem] border border-dashed border-stone-200 bg-white/70 p-4 text-sm leading-6 text-stone-500">
+                      No workouts are linked to this plan yet. Link workouts from the Workout Builder.
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
-          </Card>
-        ))}
+            </>
+          ) : (
+            <CardContent className="p-8 text-center">
+              <p className="font-serif text-3xl font-semibold">No plan selected.</p>
+              <p className="mt-2 text-sm text-stone-500">Create or select a plan to review its structure.</p>
+            </CardContent>
+          )}
+        </Card>
       </div>
 
       <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -562,5 +640,24 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {label}
       {children}
     </label>
+  );
+}
+
+function PlanMetric({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+  return (
+    <div className="rounded-[1.35rem] bg-stone-50/88 p-4">
+      <Icon className="size-5 text-bronze-600" />
+      <p className="mt-4 text-[0.66rem] uppercase tracking-[0.24em] text-stone-500">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-charcoal-950">{value}</p>
+    </div>
+  );
+}
+
+function PlanText({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[0.66rem] uppercase tracking-[0.24em] text-stone-500">{label}</p>
+      <p className="mt-2 text-sm leading-7 text-stone-700">{value || "Not specified"}</p>
+    </div>
   );
 }

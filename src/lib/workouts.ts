@@ -1,5 +1,6 @@
 import { workouts as demoWorkouts } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/auth-server";
+import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
 import type { Exercise, Plan, Workout, WorkoutBlock, WorkoutExercise } from "@/lib/types";
 
@@ -106,18 +107,19 @@ export async function getTrainerWorkouts() {
 
   const { supabase, trainerId } = await getTrainerContext();
   if (!trainerId) return { mode: "supabase" as const, workouts: [] as Workout[] };
+  const db = hasSupabaseAdminEnv() ? createAdminClient() : supabase;
 
   const [{ data: workoutRows }, { data: blockRows }, { data: itemRows }, { data: exerciseRows }] = await Promise.all([
-    supabase
+    db
       .from("workouts")
       .select("id, training_plan_id, name, phase_label, warmup, cooldown, coach_notes")
       .eq("trainer_id", trainerId)
       .order("created_at", { ascending: false }),
-    supabase.from("workout_blocks").select("id, workout_id, label, intent, position"),
-    supabase
+    db.from("workout_blocks").select("id, workout_id, label, intent, position"),
+    db
       .from("workout_exercises")
       .select("id, workout_block_id, exercise_id, sets, reps, tempo, rest_time, rpe_target, load_guidance, duration, notes, position"),
-    supabase.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, is_global"),
+    db.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, is_global"),
   ]);
 
   const exercisesById = new Map(
@@ -161,8 +163,9 @@ export async function getClientWorkouts() {
 
   const { supabase, clientId } = await getTrainerContext();
   if (!clientId) return { mode: "supabase" as const, workouts: [] as Workout[] };
+  const db = hasSupabaseAdminEnv() ? createAdminClient() : supabase;
 
-  const { data: assignments } = await supabase
+  const { data: assignments } = await db
     .from("plan_assignments")
     .select("training_plan_id")
     .eq("client_id", clientId)
@@ -172,16 +175,16 @@ export async function getClientWorkouts() {
   if (!planIds.length) return { mode: "supabase" as const, workouts: [] as Workout[] };
 
   const [{ data: workoutRows }, { data: blockRows }, { data: itemRows }, { data: exerciseRows }] = await Promise.all([
-    supabase
+    db
       .from("workouts")
       .select("id, training_plan_id, name, phase_label, warmup, cooldown, coach_notes")
       .in("training_plan_id", planIds)
       .order("created_at", { ascending: false }),
-    supabase.from("workout_blocks").select("id, workout_id, label, intent, position"),
-    supabase
+    db.from("workout_blocks").select("id, workout_id, label, intent, position"),
+    db
       .from("workout_exercises")
       .select("id, workout_block_id, exercise_id, sets, reps, tempo, rest_time, rpe_target, load_guidance, duration, notes, position"),
-    supabase.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, is_global"),
+    db.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, is_global"),
   ]);
 
   const exercisesById = new Map(
@@ -229,8 +232,9 @@ export async function getTrainerPlanOptions() {
 
   const { supabase, trainerId } = await getTrainerContext();
   if (!trainerId) return { plans: [] as Array<Pick<Plan, "id" | "title">> };
+  const db = hasSupabaseAdminEnv() ? createAdminClient() : supabase;
 
-  const { data } = await supabase
+  const { data } = await db
     .from("training_plans")
     .select("id, title")
     .eq("trainer_id", trainerId)

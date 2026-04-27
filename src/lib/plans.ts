@@ -1,5 +1,6 @@
 import { plans as demoPlans } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/auth-server";
+import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
 import type { Client, Plan, Workout } from "@/lib/types";
 
@@ -87,8 +88,9 @@ export async function getTrainerPlans() {
   if (!trainerId) {
     return { mode: "supabase" as const, plans: [] as Plan[] };
   }
+  const db = hasSupabaseAdminEnv() ? createAdminClient() : supabase;
 
-  const { data: planRows } = await supabase
+  const { data: planRows } = await db
     .from("training_plans")
     .select("id, title, description, duration_weeks, goal, weekly_structure, notes, is_template")
     .eq("trainer_id", trainerId)
@@ -97,12 +99,12 @@ export async function getTrainerPlans() {
   const plans = await Promise.all(
     (planRows ?? []).map(async (row: TrainingPlanRow) => {
       const [{ data: workouts }, { data: assignments }] = await Promise.all([
-        supabase
+        db
           .from("workouts")
           .select("id, name, phase_label, warmup, cooldown, coach_notes")
           .eq("training_plan_id", row.id)
           .order("scheduled_day", { ascending: true }),
-        supabase.from("plan_assignments").select("client_id").eq("training_plan_id", row.id).eq("status", "active"),
+        db.from("plan_assignments").select("client_id").eq("training_plan_id", row.id).eq("status", "active"),
       ]);
 
       return buildPlan(
@@ -139,8 +141,9 @@ export async function getClientAssignedPlan() {
   if (!client?.id) {
     return { mode: "supabase" as const, plan: null as Plan | null };
   }
+  const db = hasSupabaseAdminEnv() ? createAdminClient() : supabase;
 
-  const { data: assignment } = await supabase
+  const { data: assignment } = await db
     .from("plan_assignments")
     .select("training_plans(id, title, description, duration_weeks, goal, weekly_structure, notes, is_template)")
     .eq("client_id", client.id)
@@ -154,7 +157,7 @@ export async function getClientAssignedPlan() {
     return { mode: "supabase" as const, plan: null as Plan | null };
   }
 
-  const { data: workouts } = await supabase
+  const { data: workouts } = await db
     .from("workouts")
     .select("id, name, phase_label, warmup, cooldown, coach_notes")
     .eq("training_plan_id", trainingPlan.id)

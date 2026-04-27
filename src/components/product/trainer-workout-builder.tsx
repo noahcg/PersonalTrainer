@@ -1,7 +1,7 @@
 "use client";
 
-import { Plus, Save } from "lucide-react";
-import { useState } from "react";
+import { Plus, Save, Search, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +70,15 @@ function createExerciseItem(exercise: Exercise, suffix: number): WorkoutExercise
   };
 }
 
+function getCategoryLabel(category: string) {
+  if (category === "Free Weights (Barbell & Dumbbell Focus)") return "Free Weights";
+  if (category === "Bodyweight (Beginner-Friendly)") return "Bodyweight";
+  if (category === "Gym (Machines & Weights)") return "Gym";
+  if (category === "Calisthenics (Progression-Based Bodyweight)") return "Calisthenics";
+  if (category === "Cardio / Conditioning") return "Conditioning";
+  return category;
+}
+
 export function TrainerWorkoutBuilder({
   initialWorkouts,
   exercises,
@@ -87,8 +96,33 @@ export function TrainerWorkoutBuilder({
   const [activeBlockId, setActiveBlockId] = useState<string | null>(draft.blocks[0]?.id ?? null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [exerciseQuery, setExerciseQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
 
-  const filteredExercises = exercises;
+  const exerciseCategories = useMemo(
+    () => ["All", ...Array.from(new Set(exercises.map((exercise) => exercise.category))).sort()],
+    [exercises],
+  );
+
+  const filteredExercises = useMemo(() => {
+    const normalizedQuery = exerciseQuery.trim().toLowerCase();
+
+    return exercises.filter((exercise) => {
+      const matchesCategory = activeCategory === "All" || exercise.category === activeCategory;
+      const searchable = [
+        exercise.name,
+        exercise.category,
+        exercise.pattern,
+        exercise.difficulty,
+        ...exercise.muscleGroups,
+        ...exercise.equipment,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return matchesCategory && (!normalizedQuery || searchable.includes(normalizedQuery));
+    });
+  }, [activeCategory, exerciseQuery, exercises]);
 
   function selectWorkout(workout: Workout) {
     setActiveWorkoutId(workout.id);
@@ -116,6 +150,13 @@ export function TrainerWorkoutBuilder({
     setBlock(targetBlockId, (block) => ({
       ...block,
       exercises: [...block.exercises, createExerciseItem(exercise, block.exercises.length + 1)],
+    }));
+  }
+
+  function removeExercise(blockId: string, exerciseId: string) {
+    setBlock(blockId, (block) => ({
+      ...block,
+      exercises: block.exercises.filter((exercise) => exercise.id !== exerciseId),
     }));
   }
 
@@ -232,28 +273,15 @@ export function TrainerWorkoutBuilder({
 
   return (
     <>
-      <Card className="mb-5 p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <Card className="mb-5 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Workout controls</p>
-            <p className="mt-2 text-sm leading-6 text-stone-600">Shape complete sessions with clean structure, readable prescriptions, and mobile-ready clarity for clients.</p>
+            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Workout workspace</p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-600">Choose a workout, edit its structure, add movements to the selected block, then save the complete session.</p>
           </div>
-          <div className="flex flex-wrap gap-3 text-sm text-stone-500">
-            <div className="rounded-full bg-stone-50 px-4 py-2">{workouts.length} workouts</div>
-            <div className="rounded-full bg-stone-50 px-4 py-2">{exercises.length} exercises</div>
-          </div>
-        </div>
-      </Card>
-
-      <div className="grid gap-5 xl:grid-cols-[300px_1fr_340px]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Workouts</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button
-              className="w-full"
-              variant="warm"
+              variant="secondary"
               onClick={() => {
                 const nextDraft = toDraft();
                 setActiveWorkoutId(null);
@@ -264,62 +292,194 @@ export function TrainerWorkoutBuilder({
               <Plus className="size-4" />
               New workout
             </Button>
-            {workouts.map((workout) => (
-              <button
-                key={workout.id}
-                type="button"
-                onClick={() => selectWorkout(workout)}
-                className={`w-full rounded-[1.35rem] border px-4 py-4 text-left transition ${
-                  activeWorkoutId === workout.id ? "border-bronze-300 bg-bronze-50" : "border-stone-200 bg-white/80"
-                }`}
-              >
-                <p className="font-semibold">{workout.name}</p>
-                <p className="mt-1 text-sm text-stone-500">{workout.dayLabel}</p>
-              </button>
-            ))}
+            <Button variant="warm" onClick={saveWorkout} disabled={busy || !draft.name.trim()}>
+              <Save className="size-4" />
+              {busy ? "Saving..." : "Save workout"}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <Card className="lg:sticky lg:top-5 lg:max-h-[calc(100vh-2.5rem)] lg:overflow-hidden">
+          <CardHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>Workout library</CardTitle>
+                <p className="mt-1 text-sm text-stone-500">{workouts.length} saved sessions</p>
+              </div>
+              <Badge>{exercises.length} exercises</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-3">
+            {workouts.length ? (
+              workouts.map((workout) => (
+                <button
+                  key={workout.id}
+                  type="button"
+                  onClick={() => selectWorkout(workout)}
+                  className={`w-full rounded-[1.35rem] border px-4 py-4 text-left transition ${
+                    activeWorkoutId === workout.id ? "border-bronze-300 bg-bronze-50" : "border-stone-200 bg-white/80 hover:bg-stone-50"
+                  }`}
+                >
+                  <p className="font-semibold text-charcoal-950">{workout.name}</p>
+                  <p className="mt-1 text-sm text-stone-500">{workout.dayLabel}</p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-stone-500">
+                    <span className="rounded-full bg-white/80 px-2.5 py-1">{workout.blocks.length} blocks</span>
+                    <span className="rounded-full bg-white/80 px-2.5 py-1">
+                      {workout.blocks.reduce((total, block) => total + block.exercises.length, 0)} exercises
+                    </span>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="rounded-[1.35rem] bg-stone-50/86 p-4 text-sm leading-6 text-stone-500">
+                No workouts yet. Start with a new workout, add movements, and save it to the library.
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle>{draft.id ? "Edit workout" : "Create workout"}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Workout name" />
-              <Input value={draft.dayLabel} onChange={(event) => setDraft((current) => ({ ...current, dayLabel: event.target.value }))} placeholder="Phase / day label" />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-[0.66rem] uppercase tracking-[0.28em] text-bronze-600">
+                  {draft.id ? "Editing workout" : "New workout"}
+                </p>
+                <CardTitle className="mt-2">{draft.name || "Untitled workout"}</CardTitle>
+              </div>
+              <Badge variant={activeBlockId ? "bronze" : "default"}>
+                {activeBlockId ? "Block selected" : "Select a block"}
+              </Badge>
             </div>
-            <select
-              value={draft.trainingPlanId}
-              onChange={(event) => setDraft((current) => ({ ...current, trainingPlanId: event.target.value }))}
-              className="h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
-            >
-              <option value="">Unassigned workout</option>
-              {plans.map((plan) => (
-                <option key={plan.id} value={plan.id}>
-                  {plan.title}
-                </option>
-              ))}
-            </select>
-            <Textarea value={draft.warmup} onChange={(event) => setDraft((current) => ({ ...current, warmup: event.target.value }))} placeholder="Warm-up" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 rounded-[1.5rem] bg-stone-50/82 p-4 md:grid-cols-2">
+              <label className="grid gap-2 text-sm font-medium text-charcoal-950">
+                Workout name
+                <Input value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Upper strength day" />
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-charcoal-950">
+                Phase or day label
+                <Input value={draft.dayLabel} onChange={(event) => setDraft((current) => ({ ...current, dayLabel: event.target.value }))} placeholder="Week 1 / Day 1" />
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-charcoal-950 md:col-span-2">
+                Linked plan
+                <select
+                  value={draft.trainingPlanId}
+                  onChange={(event) => setDraft((current) => ({ ...current, trainingPlanId: event.target.value }))}
+                  className="h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
+                >
+                  <option value="">Unassigned workout</option>
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-charcoal-950 md:col-span-2">
+                Warm-up
+                <Textarea value={draft.warmup} onChange={(event) => setDraft((current) => ({ ...current, warmup: event.target.value }))} placeholder="Warm-up" />
+              </label>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-stone-200 bg-white/72 p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-charcoal-950">Add exercises</p>
+                  <p className="mt-1 text-sm text-stone-500">Exercises are added to the currently selected block.</p>
+                </div>
+                {activeBlockId ? <Badge variant="bronze">Targeting selected block</Badge> : <Badge>Select a block first</Badge>}
+              </div>
+              <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+                  <Input
+                    value={exerciseQuery}
+                    onChange={(event) => setExerciseQuery(event.target.value)}
+                    placeholder="Search exercises, equipment, patterns..."
+                    className="pl-10"
+                  />
+                </div>
+                <div className="no-scrollbar flex max-w-full gap-2 overflow-x-auto py-1 lg:max-w-[360px]">
+                  {exerciseCategories.map((category) => (
+                    <button key={category} type="button" onClick={() => setActiveCategory(category)}>
+                      <Badge variant={category === activeCategory ? "dark" : "default"}>{getCategoryLabel(category)}</Badge>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 grid max-h-72 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredExercises.map((exercise) => (
+                  <button
+                    key={exercise.id}
+                    type="button"
+                    onClick={() => addExercise(exercise)}
+                    className="rounded-[1.15rem] border border-stone-200 bg-stone-50/86 px-3 py-3 text-left transition hover:bg-white"
+                  >
+                    <span className="block truncate text-sm font-semibold text-charcoal-950">{exercise.name}</span>
+                    <span className="mt-1 block truncate text-xs text-stone-500">{exercise.pattern} · {exercise.equipment.join(", ")}</span>
+                  </button>
+                ))}
+                {!filteredExercises.length ? (
+                  <div className="rounded-[1.15rem] bg-stone-50/86 px-3 py-4 text-sm text-stone-500 sm:col-span-2 xl:col-span-3">
+                    No exercises match that view.
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
             {draft.blocks.map((block) => (
               <div key={block.id} className="rounded-[1.5rem] border border-stone-200 bg-stone-50/86 p-4">
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex-1 space-y-3">
-                    <Input value={block.label} onChange={(event) => setBlock(block.id, (current) => ({ ...current, label: event.target.value }))} />
-                    <Input value={block.intent} onChange={(event) => setBlock(block.id, (current) => ({ ...current, intent: event.target.value }))} placeholder="Block intent" />
+                  <div className="grid flex-1 gap-3 sm:grid-cols-[0.8fr_1.2fr]">
+                    <label className="grid gap-2 text-sm font-medium text-charcoal-950">
+                      Block label
+                      <Input value={block.label} onChange={(event) => setBlock(block.id, (current) => ({ ...current, label: event.target.value }))} />
+                    </label>
+                    <label className="grid gap-2 text-sm font-medium text-charcoal-950">
+                      Intent
+                      <Input value={block.intent} onChange={(event) => setBlock(block.id, (current) => ({ ...current, intent: event.target.value }))} placeholder="Block intent" />
+                    </label>
                   </div>
                   <Button variant={activeBlockId === block.id ? "warm" : "secondary"} size="sm" onClick={() => setActiveBlockId(block.id)}>
                     Target
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {block.exercises.map((exercise) => (
-                    <div key={exercise.id} className="grid gap-3 rounded-[1.35rem] bg-white/90 p-4 md:grid-cols-[1.2fr_repeat(5,90px)] md:items-start">
-                      <div className="space-y-2">
-                        <p className="font-semibold">{exercise.name}</p>
+                  {block.exercises.length ? (
+                    block.exercises.map((exercise) => (
+                      <div key={exercise.id} className="rounded-[1.35rem] bg-white/90 p-4">
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold">{exercise.name}</p>
+                            <p className="mt-1 text-xs text-stone-500">Prescription and notes</p>
+                          </div>
+                          <Button variant="ghost" size="icon" aria-label={`Remove ${exercise.name}`} onClick={() => removeExercise(block.id, exercise.id)}>
+                            <X className="size-4" />
+                          </Button>
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-5">
+                          <MiniField label="Sets">
+                            <Input value={String(exercise.sets)} onChange={(event) => setBlock(block.id, (current) => ({ ...current, exercises: current.exercises.map((item) => item.id === exercise.id ? { ...item, sets: Number(event.target.value) || 0 } : item) }))} />
+                          </MiniField>
+                          <MiniField label="Reps">
+                            <Input value={exercise.reps} onChange={(event) => setBlock(block.id, (current) => ({ ...current, exercises: current.exercises.map((item) => item.id === exercise.id ? { ...item, reps: event.target.value } : item) }))} />
+                          </MiniField>
+                          <MiniField label="Tempo">
+                            <Input value={exercise.tempo} onChange={(event) => setBlock(block.id, (current) => ({ ...current, exercises: current.exercises.map((item) => item.id === exercise.id ? { ...item, tempo: event.target.value } : item) }))} />
+                          </MiniField>
+                          <MiniField label="Rest">
+                            <Input value={exercise.rest} onChange={(event) => setBlock(block.id, (current) => ({ ...current, exercises: current.exercises.map((item) => item.id === exercise.id ? { ...item, rest: event.target.value } : item) }))} />
+                          </MiniField>
+                          <MiniField label="RPE">
+                            <Input value={exercise.rpe} onChange={(event) => setBlock(block.id, (current) => ({ ...current, exercises: current.exercises.map((item) => item.id === exercise.id ? { ...item, rpe: event.target.value } : item) }))} />
+                          </MiniField>
+                        </div>
                         <Textarea
-                          className="min-h-20"
+                          className="mt-3 min-h-20"
                           value={exercise.notes}
                           onChange={(event) =>
                             setBlock(block.id, (current) => ({
@@ -332,13 +492,12 @@ export function TrainerWorkoutBuilder({
                           placeholder="Notes"
                         />
                       </div>
-                      <Input value={String(exercise.sets)} onChange={(event) => setBlock(block.id, (current) => ({ ...current, exercises: current.exercises.map((item) => item.id === exercise.id ? { ...item, sets: Number(event.target.value) || 0 } : item) }))} />
-                      <Input value={exercise.reps} onChange={(event) => setBlock(block.id, (current) => ({ ...current, exercises: current.exercises.map((item) => item.id === exercise.id ? { ...item, reps: event.target.value } : item) }))} />
-                      <Input value={exercise.tempo} onChange={(event) => setBlock(block.id, (current) => ({ ...current, exercises: current.exercises.map((item) => item.id === exercise.id ? { ...item, tempo: event.target.value } : item) }))} />
-                      <Input value={exercise.rest} onChange={(event) => setBlock(block.id, (current) => ({ ...current, exercises: current.exercises.map((item) => item.id === exercise.id ? { ...item, rest: event.target.value } : item) }))} />
-                      <Input value={exercise.rpe} onChange={(event) => setBlock(block.id, (current) => ({ ...current, exercises: current.exercises.map((item) => item.id === exercise.id ? { ...item, rpe: event.target.value } : item) }))} />
+                    ))
+                  ) : (
+                    <div className="rounded-[1.35rem] border border-dashed border-stone-200 bg-white/70 p-4 text-sm text-stone-500">
+                      Select this block, then add exercises from the panel above.
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             ))}
@@ -346,34 +505,20 @@ export function TrainerWorkoutBuilder({
               <Plus className="size-4" />
               Add block
             </Button>
-            <Textarea value={draft.cooldown} onChange={(event) => setDraft((current) => ({ ...current, cooldown: event.target.value }))} placeholder="Cooldown" />
-            <Textarea value={draft.coachNotes} onChange={(event) => setDraft((current) => ({ ...current, coachNotes: event.target.value }))} placeholder="Coach notes" />
-            <Button variant="warm" onClick={saveWorkout} disabled={busy}>
+            <div className="grid gap-4 rounded-[1.5rem] bg-stone-50/82 p-4 md:grid-cols-2">
+              <label className="grid gap-2 text-sm font-medium text-charcoal-950">
+                Cooldown
+                <Textarea value={draft.cooldown} onChange={(event) => setDraft((current) => ({ ...current, cooldown: event.target.value }))} placeholder="Cooldown" />
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-charcoal-950">
+                Coach notes
+                <Textarea value={draft.coachNotes} onChange={(event) => setDraft((current) => ({ ...current, coachNotes: event.target.value }))} placeholder="Coach notes" />
+              </label>
+            </div>
+            <Button className="w-full sm:w-auto" variant="warm" onClick={saveWorkout} disabled={busy || !draft.name.trim()}>
               <Save className="size-4" />
               {busy ? "Saving..." : "Save workout"}
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Exercise drawer</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {activeBlockId ? <Badge variant="bronze">Adding to selected block</Badge> : null}
-            {filteredExercises.map((exercise) => (
-              <div key={exercise.id} className="rounded-[1.35rem] bg-stone-50/86 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold">{exercise.name}</p>
-                    <p className="text-sm text-stone-500">{exercise.pattern} · {exercise.equipment.join(", ")}</p>
-                  </div>
-                  <Button size="sm" variant="secondary" onClick={() => addExercise(exercise)}>
-                    Add
-                  </Button>
-                </div>
-              </div>
-            ))}
           </CardContent>
         </Card>
       </div>
@@ -384,5 +529,20 @@ export function TrainerWorkoutBuilder({
         </div>
       ) : null}
     </>
+  );
+}
+
+function MiniField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="grid gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
+      {label}
+      {children}
+    </label>
   );
 }
