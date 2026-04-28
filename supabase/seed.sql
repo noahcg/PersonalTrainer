@@ -23,11 +23,17 @@ on conflict (id) do nothing;
 
 insert into public.clients (
   id, trainer_id, profile_id, full_name, email, profile_photo_url, goals, fitness_level,
-  injuries_limitations, notes, preferred_training_style, availability, pricing_tier, invite_sent_at, start_date, status
+  injuries_limitations, notes, preferred_training_style, availability, pricing_tier, package_session_limit, invite_sent_at, start_date, status
 )
 values
-  ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', 'Mara Lee', 'mara@example.com', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330', 'Build confident strength, improve posture, and train for a fall half marathon.', 'Intermediate', 'Occasional right hip tightness.', 'Responds well to concise weekly priorities.', 'Strength-first, calm coaching, measurable progression.', 'Mon/Wed/Fri mornings, Sunday mobility.', 'ongoing_coaching', '2026-01-12T12:00:00Z', '2026-01-12', 'active'),
-  ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', null, 'Eli Brooks', 'eli@example.com', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e', 'Return to pain-free lifting and rebuild work capacity.', 'Foundation', 'History of shoulder impingement.', 'Needs reminders to log RPE and sleep.', 'Technique-focused, low ego, mobility emphasis.', 'Tue/Thu evenings, Saturday morning.', 'intro_session', '2026-02-03T12:00:00Z', '2026-02-03', 'needs_attention')
+  ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', 'Mara Lee', 'mara@example.com', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330', 'Build confident strength, improve posture, and train for a fall half marathon.', 'Intermediate', 'Occasional right hip tightness.', 'Responds well to concise weekly priorities.', 'Strength-first, calm coaching, measurable progression.', 'Mon/Wed/Fri mornings, Sunday mobility.', 'ongoing_coaching', 12, '2026-01-12T12:00:00Z', '2026-01-12', 'active'),
+  ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', null, 'Eli Brooks', 'eli@example.com', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e', 'Return to pain-free lifting and rebuild work capacity.', 'Foundation', 'History of shoulder impingement.', 'Needs reminders to log RPE and sleep.', 'Technique-focused, low ego, mobility emphasis.', 'Tue/Thu evenings, Saturday morning.', 'intro_session', 1, '2026-02-03T12:00:00Z', '2026-02-03', 'needs_attention')
+on conflict (id) do nothing;
+
+insert into public.client_sessions (id, client_id, started_at, completed_at, status, location, notes, duration_minutes, created_by)
+values
+  ('31000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', '2026-04-22T13:00:00Z', '2026-04-22T14:00:00Z', 'completed', 'Studio', 'Lower body strength session. Kept hinge volume conservative.', 60, 'trainer'),
+  ('31000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000001', '2026-04-17T13:00:00Z', '2026-04-17T14:00:00Z', 'completed', 'Studio', 'Technique work and steady progression on split squats.', 60, 'trainer')
 on conflict (id) do nothing;
 
 insert into public.training_plans (id, trainer_id, title, description, duration_weeks, goal, weekly_structure, notes, is_template, status)

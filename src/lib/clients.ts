@@ -1,9 +1,9 @@
 import { formatDistanceToNow } from "date-fns";
-import { clients as demoClients, plans } from "@/lib/demo-data";
+import { clientSessions as demoClientSessions, clients as demoClients, plans } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/auth-server";
 import { normalizePricingTier } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase-server";
-import type { Client, CoachingEntry, Plan } from "@/lib/types";
+import type { Client, ClientSession, CoachingEntry, Plan } from "@/lib/types";
 
 type ClientRow = {
   id: string;
@@ -19,6 +19,7 @@ type ClientRow = {
   start_date: string | null;
   status: Client["status"];
   pricing_tier: string | null;
+  package_session_limit: number | null;
   profile_id: string | null;
   invite_sent_at: string | null;
 };
@@ -40,6 +41,23 @@ type PlanRow = {
     duration_weeks: number | null;
   } | null;
 };
+
+type ClientSessionRow = {
+  id: string;
+  client_id: string;
+  started_at: string;
+  completed_at: string | null;
+  status: ClientSession["status"];
+  location: string | null;
+  notes: string | null;
+  duration_minutes: number | null;
+  created_by: "trainer" | "client";
+};
+
+const clientSelect =
+  "id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status, pricing_tier, package_session_limit, invite_sent_at";
+const legacyClientSelect =
+  "id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status, pricing_tier, invite_sent_at";
 
 async function getTrainerContext() {
   const supabase = await createClient();
@@ -68,13 +86,41 @@ function formatRelativeDate(value: string | null) {
   return formatDistanceToNow(new Date(value), { addSuffix: true });
 }
 
+function withLegacySessionPackage<T extends Omit<ClientRow, "package_session_limit">>(row: T): ClientRow {
+  return {
+    ...row,
+    package_session_limit: null,
+  };
+}
+
 async function hydrateClient(row: ClientRow, supabase: Awaited<ReturnType<typeof createClient>>) {
-  const [{ count: completedCount }, { data: latestCheckIn }, { data: latestProgress }] = await Promise.all([
+  const [{ count: completedCount }, { count: usedSessions }, { data: activeSession }, { data: latestSession }, { data: latestCheckIn }, { data: latestProgress }] = await Promise.all([
     supabase
       .from("workout_logs")
       .select("*", { count: "exact", head: true })
       .eq("client_id", row.id)
       .eq("status", "completed"),
+    supabase
+      .from("client_sessions")
+      .select("*", { count: "exact", head: true })
+      .eq("client_id", row.id)
+      .eq("status", "completed"),
+    supabase
+      .from("client_sessions")
+      .select("id")
+      .eq("client_id", row.id)
+      .eq("status", "active")
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ id: string }>(),
+    supabase
+      .from("client_sessions")
+      .select("started_at")
+      .eq("client_id", row.id)
+      .eq("status", "completed")
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ started_at: string }>(),
     supabase
       .from("check_ins")
       .select("submitted_at")
@@ -90,6 +136,8 @@ async function hydrateClient(row: ClientRow, supabase: Awaited<ReturnType<typeof
       .limit(1)
       .maybeSingle<{ body_weight: number | null; adherence_percent: number | null }>(),
   ]);
+  const packageTotal = row.package_session_limit;
+  const packageUsed = usedSessions ?? 0;
 
   return {
     id: row.id,
@@ -117,6 +165,18 @@ async function hydrateClient(row: ClientRow, supabase: Awaited<ReturnType<typeof
         })
       : null,
     pricingTier: normalizePricingTier(row.pricing_tier),
+    sessionPackage: {
+      total: packageTotal,
+      used: packageUsed,
+      remaining: packageTotal === null ? null : Math.max(packageTotal - packageUsed, 0),
+      activeSessionId: activeSession?.id ?? null,
+      lastSessionAt: latestSession?.started_at
+        ? new Date(latestSession.started_at).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : null,
+    },
     adherence: Math.round(latestProgress?.adherence_percent ?? 0),
     metrics: {
       bodyWeight: latestProgress?.body_weight ? `${latestProgress.body_weight} lb` : "—",
@@ -125,6 +185,32 @@ async function hydrateClient(row: ClientRow, supabase: Awaited<ReturnType<typeof
       lastCheckIn: formatRelativeDate(latestCheckIn?.submitted_at ?? null),
     },
   } satisfies Client;
+}
+
+function toClientSession(row: ClientSessionRow): ClientSession {
+  return {
+    id: row.id,
+    clientId: row.client_id,
+    startedAt: new Date(row.started_at).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+    completedAt: row.completed_at
+      ? new Date(row.completed_at).toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : null,
+    status: row.status,
+    location: row.location ?? "",
+    notes: row.notes ?? "",
+    durationMinutes: row.duration_minutes,
+    createdBy: row.created_by,
+  };
 }
 
 export async function getTrainerClients() {
@@ -139,11 +225,21 @@ export async function getTrainerClients() {
 
   const { data } = await supabase
     .from("clients")
-    .select("id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status, pricing_tier, invite_sent_at")
+    .select(clientSelect)
     .eq("trainer_id", trainerId)
     .order("created_at", { ascending: false });
+  let rows = (data ?? []) as ClientRow[];
 
-  const hydrated = await Promise.all((data ?? []).map((row) => hydrateClient(row as ClientRow, supabase)));
+  if (!rows.length) {
+    const { data: legacyRows } = await supabase
+      .from("clients")
+      .select(legacyClientSelect)
+      .eq("trainer_id", trainerId)
+      .order("created_at", { ascending: false });
+    rows = (legacyRows ?? []).map((row) => withLegacySessionPackage(row as Omit<ClientRow, "package_session_limit">));
+  }
+
+  const hydrated = await Promise.all(rows.map((row) => hydrateClient(row, supabase)));
   return { mode: "supabase" as const, clients: hydrated };
 }
 
@@ -155,6 +251,7 @@ export async function getTrainerClientProfile(id: string) {
       mode: "demo" as const,
       client,
       coachingNotes: [] as CoachingEntry[],
+      sessions: demoClientSessions.filter((session) => session.clientId === id),
       assignedPlan: plans[0],
     };
   }
@@ -164,15 +261,26 @@ export async function getTrainerClientProfile(id: string) {
 
   const { data: row } = await supabase
     .from("clients")
-    .select("id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status, pricing_tier, invite_sent_at")
+    .select(clientSelect)
     .eq("trainer_id", trainerId)
     .eq("id", id)
     .maybeSingle<ClientRow>();
 
-  if (!row) return null;
+  let clientRow = row;
+  if (!clientRow) {
+    const { data: legacyRow } = await supabase
+      .from("clients")
+      .select(legacyClientSelect)
+      .eq("trainer_id", trainerId)
+      .eq("id", id)
+      .maybeSingle<Omit<ClientRow, "package_session_limit">>();
+    clientRow = legacyRow ? withLegacySessionPackage(legacyRow) : null;
+  }
 
-  const [client, notesResponse, assignmentResponse] = await Promise.all([
-    hydrateClient(row, supabase),
+  if (!clientRow) return null;
+
+  const [client, notesResponse, sessionsResponse, assignmentResponse] = await Promise.all([
+    hydrateClient(clientRow, supabase),
     supabase
       .from("messages")
       .select("id, body, created_at")
@@ -180,6 +288,12 @@ export async function getTrainerClientProfile(id: string) {
       .eq("client_id", id)
       .eq("kind", "coaching_note")
       .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("client_sessions")
+      .select("id, client_id, started_at, completed_at, status, location, notes, duration_minutes, created_by")
+      .eq("client_id", id)
+      .order("started_at", { ascending: false })
       .limit(8),
     supabase
       .from("plan_assignments")
@@ -201,6 +315,7 @@ export async function getTrainerClientProfile(id: string) {
       minute: "2-digit",
     }),
   }));
+  const sessions = ((sessionsResponse.data ?? []) as ClientSessionRow[]).map(toClientSession);
 
   const assignedPlanRow = assignmentResponse.data?.training_plans;
   const assignedPlan: Plan =
@@ -223,6 +338,7 @@ export async function getTrainerClientProfile(id: string) {
     mode: "supabase" as const,
     client,
     coachingNotes,
+    sessions,
     assignedPlan,
   };
 }
@@ -243,16 +359,26 @@ export async function getClientSelfProfile() {
 
   const { data: row } = await supabase
     .from("clients")
-    .select("id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status, pricing_tier, invite_sent_at")
+    .select(clientSelect)
     .eq("profile_id", user.id)
     .maybeSingle<ClientRow>();
 
-  if (!row) {
+  let clientRow = row;
+  if (!clientRow) {
+    const { data: legacyRow } = await supabase
+      .from("clients")
+      .select(legacyClientSelect)
+      .eq("profile_id", user.id)
+      .maybeSingle<Omit<ClientRow, "package_session_limit">>();
+    clientRow = legacyRow ? withLegacySessionPackage(legacyRow) : null;
+  }
+
+  if (!clientRow) {
     return { mode: "supabase" as const, client: null as Client | null };
   }
 
   return {
     mode: "supabase" as const,
-    client: await hydrateClient(row, supabase),
+    client: await hydrateClient(clientRow, supabase),
   };
 }

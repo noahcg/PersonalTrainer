@@ -1,12 +1,13 @@
 "use client";
 
-import type { Client, CoachingEntry } from "@/lib/types";
+import type { Client, ClientSession, CoachingEntry } from "@/lib/types";
 
 export const demoClientsStorageKey = "aurelian-demo-clients";
 
 export type StoredTrainerClientProfile = {
   client: Client;
   coachingNotes: CoachingEntry[];
+  sessions?: ClientSession[];
 };
 
 export function demoClientProfileStorageKey(clientId: string) {

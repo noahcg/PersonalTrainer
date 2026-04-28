@@ -57,12 +57,12 @@ export function ClientCard({
           <p className="text-[11px] text-stone-500">Workouts</p>
         </div>
         <div>
-          <p className="text-lg font-semibold">{client.metrics.streak}</p>
-          <p className="text-[11px] text-stone-500">Streak</p>
+          <p className="text-lg font-semibold">{client.sessionPackage.used}</p>
+          <p className="text-[11px] text-stone-500">Sessions</p>
         </div>
         <div>
-          <p className="text-lg font-semibold">{client.metrics.bodyWeight}</p>
-          <p className="text-[11px] text-stone-500">Weight</p>
+          <p className="text-lg font-semibold">{client.sessionPackage.remaining === null ? "∞" : client.sessionPackage.remaining}</p>
+          <p className="text-[11px] text-stone-500">Left</p>
         </div>
       </div>
       <div className="mt-5">

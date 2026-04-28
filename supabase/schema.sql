@@ -5,6 +5,7 @@ create extension if not exists "pgcrypto";
 
 create type app_role as enum ('trainer', 'client');
 create type client_status as enum ('active', 'needs_attention', 'paused', 'archived');
+create type client_session_status as enum ('active', 'completed', 'cancelled');
 create type difficulty_level as enum ('beginner', 'intermediate', 'advanced');
 create type message_kind as enum ('message', 'coaching_note', 'reminder');
 
@@ -40,6 +41,7 @@ create table public.clients (
   preferred_training_style text,
   availability text,
   pricing_tier text,
+  package_session_limit int check (package_session_limit is null or package_session_limit >= 0),
   invite_sent_at timestamptz,
   start_date date,
   status client_status not null default 'active',
@@ -152,6 +154,20 @@ create table public.workout_logs (
   feedback text,
   perceived_effort int check (perceived_effort between 1 and 10),
   created_at timestamptz not null default now()
+);
+
+create table public.client_sessions (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients(id) on delete cascade,
+  started_at timestamptz not null default now(),
+  completed_at timestamptz,
+  status client_session_status not null default 'active',
+  location text,
+  notes text,
+  duration_minutes int check (duration_minutes is null or duration_minutes >= 0),
+  created_by app_role not null default 'trainer',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table public.set_logs (
@@ -268,6 +284,7 @@ create index exercises_trainer_idx on public.exercises(trainer_id, is_global);
 create index workouts_plan_idx on public.workouts(training_plan_id);
 create index plan_assignments_client_idx on public.plan_assignments(client_id, status);
 create index workout_logs_client_idx on public.workout_logs(client_id, status);
+create index client_sessions_client_idx on public.client_sessions(client_id, status, started_at desc);
 create index check_ins_client_idx on public.check_ins(client_id, submitted_at desc);
 create index messages_thread_idx on public.messages(trainer_id, client_id, created_at desc);
 
@@ -282,6 +299,7 @@ alter table public.workout_blocks enable row level security;
 alter table public.workout_exercises enable row level security;
 alter table public.plan_assignments enable row level security;
 alter table public.workout_logs enable row level security;
+alter table public.client_sessions enable row level security;
 alter table public.set_logs enable row level security;
 alter table public.progress_entries enable row level security;
 alter table public.check_ins enable row level security;
@@ -326,6 +344,9 @@ create policy "workout exercises trainer writes" on public.workout_exercises for
 create policy "assignments visible" on public.plan_assignments for select using (client_id = public.current_client_id() or exists (select 1 from public.training_plans p where p.id = training_plan_id and p.trainer_id = public.current_trainer_id()));
 create policy "logs client trainer visible" on public.workout_logs for select using (client_id = public.current_client_id() or exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id()));
 create policy "logs client writes own" on public.workout_logs for all using (client_id = public.current_client_id()) with check (client_id = public.current_client_id());
+create policy "client sessions visible" on public.client_sessions for select using (client_id = public.current_client_id() or exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id()));
+create policy "client sessions trainer writes" on public.client_sessions for all using (exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id())) with check (exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id()));
+create policy "client sessions client starts own" on public.client_sessions for insert with check (client_id = public.current_client_id() and created_by = 'client');
 create policy "set logs visible" on public.set_logs for select using (exists (select 1 from public.workout_logs wl where wl.id = workout_log_id and (wl.client_id = public.current_client_id() or exists (select 1 from public.clients c where c.id = wl.client_id and c.trainer_id = public.current_trainer_id()))));
 create policy "set logs client writes" on public.set_logs for all using (exists (select 1 from public.workout_logs wl where wl.id = workout_log_id and wl.client_id = public.current_client_id())) with check (exists (select 1 from public.workout_logs wl where wl.id = workout_log_id and wl.client_id = public.current_client_id()));
 create policy "progress visible" on public.progress_entries for select using (client_id = public.current_client_id() or exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id()));

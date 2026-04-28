@@ -1,5 +1,5 @@
 import { brand } from "./brand";
-import type { BulletinPost, CheckIn, Client, Exercise, Message, Plan, ProgressPoint, Resource, Workout } from "./types";
+import type { BulletinPost, CheckIn, Client, ClientSession, Exercise, Message, Plan, ProgressPoint, Resource, Workout } from "./types";
 
 export const clients: Client[] = [
   {
@@ -18,6 +18,7 @@ export const clients: Client[] = [
     accessStatus: "account_active",
     inviteSentAt: "Jan 12",
     pricingTier: "ongoing_coaching",
+    sessionPackage: { total: 12, used: 7, remaining: 5, activeSessionId: null, lastSessionAt: "Apr 22" },
     adherence: 91,
     metrics: { bodyWeight: "142 lb", workouts: 38, streak: 7, lastCheckIn: "Today" },
   },
@@ -37,6 +38,7 @@ export const clients: Client[] = [
     accessStatus: "invite_pending",
     inviteSentAt: "Feb 3",
     pricingTier: "intro_session",
+    sessionPackage: { total: 1, used: 0, remaining: 1, activeSessionId: null, lastSessionAt: null },
     adherence: 68,
     metrics: { bodyWeight: "188 lb", workouts: 19, streak: 1, lastCheckIn: "3 days ago" },
   },
@@ -56,8 +58,45 @@ export const clients: Client[] = [
     accessStatus: "not_invited",
     inviteSentAt: null,
     pricingTier: "high_touch_coaching",
+    sessionPackage: { total: 16, used: 13, remaining: 3, activeSessionId: null, lastSessionAt: "Apr 24" },
     adherence: 96,
     metrics: { bodyWeight: "126 lb", workouts: 72, streak: 13, lastCheckIn: "Yesterday" },
+  },
+];
+
+export const clientSessions: ClientSession[] = [
+  {
+    id: "session-mara-1",
+    clientId: "mara-lee",
+    startedAt: "Apr 22, 9:00 AM",
+    completedAt: "Apr 22, 10:00 AM",
+    status: "completed",
+    location: "Studio",
+    notes: "Lower body strength session. Kept hinge volume conservative.",
+    durationMinutes: 60,
+    createdBy: "trainer",
+  },
+  {
+    id: "session-mara-2",
+    clientId: "mara-lee",
+    startedAt: "Apr 17, 9:00 AM",
+    completedAt: "Apr 17, 10:00 AM",
+    status: "completed",
+    location: "Studio",
+    notes: "Technique work and steady progression on split squats.",
+    durationMinutes: 60,
+    createdBy: "trainer",
+  },
+  {
+    id: "session-eli-1",
+    clientId: "eli-brooks",
+    startedAt: "Apr 21, 6:30 PM",
+    completedAt: null,
+    status: "cancelled",
+    location: "Studio",
+    notes: "Cancelled before session start. Does not count against package.",
+    durationMinutes: null,
+    createdBy: "trainer",
   },
 ];
 

@@ -298,10 +298,10 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
       if (readyForPersistence) {
         await ensureWorkoutLog();
       }
-      setMessage("Session started.");
+      setMessage("Workout started.");
       window.setTimeout(() => setMessage(null), 1800);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to start session.");
+      setMessage(error instanceof Error ? error.message : "Unable to start workout.");
     } finally {
       setStarting(false);
     }
@@ -422,7 +422,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
             </div>
             <Button variant="warm" size="lg" onClick={startSession} disabled={starting || saving}>
               <PlayCircle className="size-5" />
-              {starting ? "Starting..." : logId ? "Session active" : "Start session"}
+              {starting ? "Starting..." : logId ? "Workout active" : "Start workout"}
             </Button>
           </div>
           <div className="mt-7">

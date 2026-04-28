@@ -9,7 +9,7 @@ export default async function ClientWorkoutPage({ params }: { params: Promise<{ 
   if (!workout) notFound();
 
   return (
-    <AppShell role="client" title="Workout session" subtitle="Log sets, reps, load, notes, completion, and feedback with a mobile-first flow.">
+    <AppShell role="client" title="Workout log" subtitle="Log sets, reps, load, notes, completion, and feedback with a mobile-first flow.">
       <WorkoutLogger workout={workout} />
     </AppShell>
   );

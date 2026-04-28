@@ -19,6 +19,28 @@ export type ClientAccessStatus = "account_active" | "invite_pending" | "not_invi
 
 export type PricingTier = "intro_session" | "ongoing_coaching" | "high_touch_coaching";
 
+export type ClientSessionStatus = "active" | "completed" | "cancelled";
+
+export type ClientSession = {
+  id: string;
+  clientId: string;
+  startedAt: string;
+  completedAt: string | null;
+  status: ClientSessionStatus;
+  location: string;
+  notes: string;
+  durationMinutes: number | null;
+  createdBy: Role;
+};
+
+export type ClientSessionPackage = {
+  total: number | null;
+  used: number;
+  remaining: number | null;
+  activeSessionId: string | null;
+  lastSessionAt: string | null;
+};
+
 export type Client = {
   id: string;
   name: string;
@@ -35,6 +57,7 @@ export type Client = {
   accessStatus: ClientAccessStatus;
   inviteSentAt: string | null;
   pricingTier: PricingTier;
+  sessionPackage: ClientSessionPackage;
   adherence: number;
   metrics: {
     bodyWeight: string;

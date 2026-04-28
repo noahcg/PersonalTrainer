@@ -3,7 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowLeft, Ban, Copy, ExternalLink, Mail, PencilLine, Save, StickyNote, Trash2, X } from "lucide-react";
+import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, ExternalLink, Mail, PencilLine, PlayCircle, Save, StickyNote, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { clientAccessDetail, clientAccessLabel } from "@/lib/client-access";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
@@ -18,27 +18,32 @@ import { deleteStoredDemoClient, readStoredDemoClientProfile, syncDemoClientReco
 import { defaultInviteMessage, defaultInviteSubject } from "@/lib/invitations";
 import { pricingTierDetail, pricingTierLabel, pricingTierOptions } from "@/lib/pricing";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
-import type { Client, ClientStatus, CoachingEntry, Plan, PricingTier } from "@/lib/types";
+import type { Client, ClientSession, ClientStatus, CoachingEntry, Plan, PricingTier } from "@/lib/types";
 
 export function TrainerClientProfile({
   initialClient,
   assignedPlan,
   initialCoachingNotes,
+  initialSessions,
   mode,
 }: {
   initialClient: Client;
   assignedPlan: Plan;
   initialCoachingNotes: CoachingEntry[];
+  initialSessions: ClientSession[];
   mode: "demo" | "supabase";
 }) {
   const [client, setClient] = useState(initialClient);
   const [coachingNotes, setCoachingNotes] = useState<CoachingEntry[]>(initialCoachingNotes);
+  const [sessions, setSessions] = useState<ClientSession[]>(initialSessions);
   const [editOpen, setEditOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(initialClient);
   const [draftNote, setDraftNote] = useState("");
+  const [sessionLocation, setSessionLocation] = useState("In person");
+  const [sessionNotes, setSessionNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -55,18 +60,50 @@ export function TrainerClientProfile({
       setClient(stored.client);
       setDraftClient(stored.client);
       setCoachingNotes(stored.coachingNotes ?? []);
+      setSessions(stored.sessions ?? initialSessions);
     }, 0);
 
     return () => window.clearTimeout(timeout);
-  }, [initialClient, mode]);
+  }, [initialClient, initialSessions, mode]);
 
-  function persist(nextClient: Client, nextNotes: CoachingEntry[]) {
-    writeStoredDemoClientProfile(initialClient.id, { client: nextClient, coachingNotes: nextNotes });
+  function persist(nextClient: Client, nextNotes: CoachingEntry[], nextSessions = sessions) {
+    writeStoredDemoClientProfile(initialClient.id, { client: nextClient, coachingNotes: nextNotes, sessions: nextSessions });
     syncDemoClientRecord(nextClient, demoClients);
+  }
+
+  function withSessionPackage(nextClient: Client, nextSessions: ClientSession[]) {
+    const used = nextSessions.filter((session) => session.status === "completed").length;
+    const activeSession = nextSessions.find((session) => session.status === "active") ?? null;
+    const lastCompleted = nextSessions.find((session) => session.status === "completed") ?? null;
+    const total = nextClient.sessionPackage.total;
+
+    return {
+      ...nextClient,
+      sessionPackage: {
+        total,
+        used,
+        remaining: total === null ? null : Math.max(total - used, 0),
+        activeSessionId: activeSession?.id ?? null,
+        lastSessionAt: lastCompleted?.startedAt ?? null,
+      },
+    };
   }
 
   function updateDraft(field: keyof Client, value: string | ClientStatus | PricingTier) {
     setDraftClient((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateDraftSessionLimit(value: string) {
+    const trimmed = value.trim();
+    const total = trimmed ? Math.max(Number(trimmed), 0) : null;
+    setDraftClient((current) => ({
+      ...current,
+      sessionPackage: {
+        ...current.sessionPackage,
+        total,
+        remaining: total === null ? null : Math.max(total - current.sessionPackage.used, 0),
+      },
+    }));
   }
 
   async function saveProfile() {
@@ -76,7 +113,7 @@ export function TrainerClientProfile({
     try {
       if (mode === "supabase") {
         const supabase = createBrowserClient();
-        const { error } = await supabase
+        let { error } = await supabase
           .from("clients")
           .update({
             full_name: draftClient.name,
@@ -89,8 +126,28 @@ export function TrainerClientProfile({
             availability: draftClient.availability,
             status: draftClient.status,
             pricing_tier: draftClient.pricingTier,
+            package_session_limit: draftClient.sessionPackage.total,
           })
           .eq("id", draftClient.id);
+
+        if (error?.message.includes("package_session_limit")) {
+          const retry = await supabase
+            .from("clients")
+            .update({
+              full_name: draftClient.name,
+              email: draftClient.email,
+              goals: draftClient.goals,
+              fitness_level: draftClient.level,
+              injuries_limitations: draftClient.injuries,
+              notes: draftClient.notes,
+              preferred_training_style: draftClient.style,
+              availability: draftClient.availability,
+              status: draftClient.status,
+              pricing_tier: draftClient.pricingTier,
+            })
+            .eq("id", draftClient.id);
+          error = retry.error;
+        }
 
         if (error) throw error;
       } else {
@@ -103,6 +160,157 @@ export function TrainerClientProfile({
       window.setTimeout(() => setMessage(null), 2400);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save profile.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startInPersonSession() {
+    if (client.sessionPackage.activeSessionId) return;
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      let nextSessions = sessions;
+      const startedAt = new Date();
+
+      if (mode === "supabase") {
+        const supabase = createBrowserClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) throw new Error("You need an authenticated trainer session to start a client session.");
+
+        const { data: inserted, error } = await supabase
+          .from("client_sessions")
+          .insert({
+            client_id: client.id,
+            started_at: startedAt.toISOString(),
+            status: "active",
+            location: sessionLocation.trim() || "In person",
+            notes: sessionNotes.trim() || null,
+            created_by: "trainer",
+          })
+          .select("id, client_id, started_at, completed_at, status, location, notes, duration_minutes, created_by")
+          .single<{
+            id: string;
+            client_id: string;
+            started_at: string;
+            completed_at: string | null;
+            status: ClientSession["status"];
+            location: string | null;
+            notes: string | null;
+            duration_minutes: number | null;
+            created_by: "trainer" | "client";
+          }>();
+
+        if (error || !inserted) throw error ?? new Error("Unable to start in-person session.");
+
+        nextSessions = [
+          {
+            id: inserted.id,
+            clientId: inserted.client_id,
+            startedAt: new Date(inserted.started_at).toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            }),
+            completedAt: null,
+            status: inserted.status,
+            location: inserted.location ?? "",
+            notes: inserted.notes ?? "",
+            durationMinutes: inserted.duration_minutes,
+            createdBy: inserted.created_by,
+          },
+          ...sessions,
+        ];
+      } else {
+        nextSessions = [
+          {
+            id: `client-session-${Date.now()}`,
+            clientId: client.id,
+            startedAt: startedAt.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            }),
+            completedAt: null,
+            status: "active",
+            location: sessionLocation.trim() || "In person",
+            notes: sessionNotes.trim(),
+            durationMinutes: null,
+            createdBy: "trainer",
+          },
+          ...sessions,
+        ];
+      }
+
+      const nextClient = withSessionPackage(client, nextSessions);
+      setSessions(nextSessions);
+      setClient(nextClient);
+      setDraftClient(nextClient);
+      if (mode === "demo") persist(nextClient, coachingNotes, nextSessions);
+      setSessionNotes("");
+      setMessage("In-person session started.");
+      window.setTimeout(() => setMessage(null), 2400);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to start in-person session.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function completeInPersonSession(sessionId: string) {
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      const completedAt = new Date();
+      const session = sessions.find((item) => item.id === sessionId);
+      const startedTime = session ? new Date(session.startedAt).getTime() : completedAt.getTime();
+      const durationMinutes = Math.max(Math.round((completedAt.getTime() - startedTime) / 60000), 1);
+
+      if (mode === "supabase") {
+        const supabase = createBrowserClient();
+        const { error } = await supabase
+          .from("client_sessions")
+          .update({
+            status: "completed",
+            completed_at: completedAt.toISOString(),
+            duration_minutes: durationMinutes,
+          })
+          .eq("id", sessionId)
+          .eq("client_id", client.id);
+        if (error) throw error;
+      }
+
+      const nextSessions = sessions.map((item) =>
+        item.id === sessionId
+          ? {
+              ...item,
+              status: "completed" as const,
+              completedAt: completedAt.toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              }),
+              durationMinutes,
+            }
+          : item,
+      );
+      const nextClient = withSessionPackage(client, nextSessions);
+      setSessions(nextSessions);
+      setClient(nextClient);
+      setDraftClient(nextClient);
+      if (mode === "demo") persist(nextClient, coachingNotes, nextSessions);
+      setMessage("In-person session completed and counted against package.");
+      window.setTimeout(() => setMessage(null), 2600);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to complete in-person session.");
     } finally {
       setBusy(false);
     }
@@ -338,6 +546,7 @@ export function TrainerClientProfile({
     ],
     [client],
   );
+  const activeSession = sessions.find((session) => session.status === "active") ?? null;
 
   return (
     <>
@@ -379,6 +588,10 @@ export function TrainerClientProfile({
                   <StickyNote className="size-4" />
                   Leave coaching note
                 </Button>
+                <Button variant="warm" onClick={() => void startInPersonSession()} disabled={busy || Boolean(activeSession)}>
+                  <PlayCircle className="size-4" />
+                  {activeSession ? "Session active" : "Start in-person session"}
+                </Button>
                 <Button variant="secondary" onClick={() => setEditOpen(true)}>
                   <PencilLine className="size-4" />
                   Edit profile
@@ -396,8 +609,8 @@ export function TrainerClientProfile({
               <Progress value={client.adherence} />
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <MetricTile label="Workouts" value={String(client.metrics.workouts)} />
-                <MetricTile label="Streak" value={String(client.metrics.streak)} />
-                <MetricTile label="Weight" value={client.metrics.bodyWeight} />
+                <MetricTile label="In-person sessions" value={`${client.sessionPackage.used}/${client.sessionPackage.total ?? "∞"}`} />
+                <MetricTile label="Remaining" value={client.sessionPackage.remaining === null ? "∞" : String(client.sessionPackage.remaining)} />
               </div>
             </div>
             <div className="grid content-start gap-3">
@@ -510,6 +723,83 @@ export function TrainerClientProfile({
             </CardContent>
           </Card>
         </div>
+
+        <Card className="overflow-hidden p-0">
+          <CardHeader className="border-b border-border bg-white/35">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <CardTitle>In-person session package</CardTitle>
+                <p className="text-sm leading-6 text-stone-500">
+                  Track live coached sessions separately from at-home workout logs.
+                </p>
+              </div>
+              <Badge variant={client.sessionPackage.remaining === 0 ? "alert" : "sage"}>
+                {client.sessionPackage.remaining === null ? "Open package" : `${client.sessionPackage.remaining} remaining`}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="grid gap-5 border-b border-border p-5 lg:grid-cols-[1fr_22rem] sm:p-6">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <MetricTile label="Package total" value={client.sessionPackage.total === null ? "Open" : String(client.sessionPackage.total)} />
+                <MetricTile label="Used" value={String(client.sessionPackage.used)} />
+                <MetricTile label="Last in-person" value={client.sessionPackage.lastSessionAt ?? "None yet"} />
+              </div>
+              <div className="grid gap-3">
+                <Input value={sessionLocation} onChange={(event) => setSessionLocation(event.target.value)} placeholder="Studio, client home, gym..." />
+                <Input value={sessionNotes} onChange={(event) => setSessionNotes(event.target.value)} placeholder="Optional session note" />
+                {activeSession ? (
+                  <Button variant="warm" onClick={() => void completeInPersonSession(activeSession.id)} disabled={busy}>
+                    <CheckCircle2 className="size-4" />
+                    {busy ? "Completing..." : "Complete active session"}
+                  </Button>
+                ) : (
+                  <Button variant="warm" onClick={() => void startInPersonSession()} disabled={busy}>
+                    <PlayCircle className="size-4" />
+                    {busy ? "Starting..." : "Start in-person session"}
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="p-5 sm:p-6">
+              <div className="mb-4 flex items-center gap-2">
+                <CalendarClock className="size-4 text-bronze-600" />
+                <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Session ledger</p>
+              </div>
+              <div className="grid gap-3">
+                {sessions.length ? (
+                  sessions.map((session) => (
+                    <div key={session.id} className="rounded-[1.25rem] border border-stone-200 bg-white/70 p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-charcoal-950">{session.startedAt}</p>
+                            <Badge variant={session.status === "completed" ? "sage" : session.status === "active" ? "bronze" : "default"}>
+                              {session.status}
+                            </Badge>
+                          </div>
+                          <p className="mt-2 text-sm text-stone-500">
+                            {session.location || "In person"}{session.durationMinutes ? ` · ${session.durationMinutes} min` : ""}
+                          </p>
+                          {session.notes ? <p className="mt-3 text-sm leading-6 text-stone-600">{session.notes}</p> : null}
+                        </div>
+                        {session.status === "active" ? (
+                          <Button variant="secondary" size="sm" onClick={() => void completeInPersonSession(session.id)} disabled={busy}>
+                            Complete
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[1.25rem] bg-stone-50 p-4 text-sm text-stone-500">
+                    No in-person sessions recorded yet. Start a session when live training begins.
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Dialog.Root open={editOpen} onOpenChange={setEditOpen}>
@@ -555,6 +845,15 @@ export function TrainerClientProfile({
                         </option>
                       ))}
                     </select>
+                  </Field>
+                  <Field label="In-person session package">
+                    <Input
+                      type="number"
+                      min="0"
+                      value={draftClient.sessionPackage.total ?? ""}
+                      onChange={(event) => updateDraftSessionLimit(event.target.value)}
+                      placeholder="Leave blank for open-ended"
+                    />
                   </Field>
                   <Field label="Fitness level">
                     <select

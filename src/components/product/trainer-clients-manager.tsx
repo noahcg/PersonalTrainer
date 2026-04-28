@@ -26,6 +26,7 @@ type DraftClient = {
   style: string;
   availability: string;
   pricingTier: PricingTier;
+  packageSessionLimit: string;
 };
 
 type InvitePreview = {
@@ -44,6 +45,7 @@ const emptyDraft: DraftClient = {
   style: "",
   availability: "",
   pricingTier: "ongoing_coaching",
+  packageSessionLimit: "12",
 };
 
 export function TrainerClientsManager({
@@ -133,7 +135,7 @@ export function TrainerClientsManager({
           .maybeSingle<{ id: string }>();
         if (!trainer?.id) throw new Error("Trainer profile not found.");
 
-        const { data: inserted, error } = await supabase
+        let { data: inserted, error } = await supabase
           .from("clients")
           .insert({
             trainer_id: trainer.id,
@@ -146,11 +148,34 @@ export function TrainerClientsManager({
             preferred_training_style: draft.style.trim(),
             availability: draft.availability.trim(),
             pricing_tier: draft.pricingTier,
+            package_session_limit: draft.packageSessionLimit ? Number(draft.packageSessionLimit) : null,
             start_date: new Date().toISOString().slice(0, 10),
             status: "active",
           })
           .select("id")
           .single<{ id: string }>();
+        if (error?.message.includes("package_session_limit")) {
+          const retry = await supabase
+            .from("clients")
+            .insert({
+              trainer_id: trainer.id,
+              full_name: draft.name.trim(),
+              email: draft.email.trim(),
+              goals: draft.goals.trim(),
+              fitness_level: draft.level,
+              injuries_limitations: draft.injuries.trim(),
+              notes: draft.notes.trim(),
+              preferred_training_style: draft.style.trim(),
+              availability: draft.availability.trim(),
+              pricing_tier: draft.pricingTier,
+              start_date: new Date().toISOString().slice(0, 10),
+              status: "active",
+            })
+            .select("id")
+            .single<{ id: string }>();
+          inserted = retry.data;
+          error = retry.error;
+        }
         if (error || !inserted?.id) throw error ?? new Error("Unable to create client.");
 
         nextClient = {
@@ -169,6 +194,13 @@ export function TrainerClientsManager({
           accessStatus: "not_invited",
           inviteSentAt: null,
           pricingTier: draft.pricingTier,
+          sessionPackage: {
+            total: draft.packageSessionLimit ? Number(draft.packageSessionLimit) : null,
+            used: 0,
+            remaining: draft.packageSessionLimit ? Number(draft.packageSessionLimit) : null,
+            activeSessionId: null,
+            lastSessionAt: null,
+          },
           adherence: 0,
           metrics: {
             bodyWeight: "—",
@@ -194,6 +226,13 @@ export function TrainerClientsManager({
           accessStatus: "not_invited",
           inviteSentAt: null,
           pricingTier: draft.pricingTier,
+          sessionPackage: {
+            total: draft.packageSessionLimit ? Number(draft.packageSessionLimit) : null,
+            used: 0,
+            remaining: draft.packageSessionLimit ? Number(draft.packageSessionLimit) : null,
+            activeSessionId: null,
+            lastSessionAt: null,
+          },
           adherence: 0,
           metrics: {
             bodyWeight: "—",
@@ -526,6 +565,14 @@ export function TrainerClientsManager({
                         </option>
                       ))}
                     </select>
+                  </Field>
+                  <Field label="In-person sessions">
+                    <Input
+                      type="number"
+                      min="0"
+                      value={draft.packageSessionLimit}
+                      onChange={(event) => setDraft((current) => ({ ...current, packageSessionLimit: event.target.value }))}
+                    />
                   </Field>
                 </div>
                 <Field label="Goals">
