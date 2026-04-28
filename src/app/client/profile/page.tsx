@@ -19,5 +19,5 @@ export default async function ClientProfilePage() {
     );
   }
 
-  return <ClientProfileEditor initialClient={result.client} mode={result.mode} />;
+  return <ClientProfileEditor initialClient={result.client} initialSessions={result.sessions} mode={result.mode} />;
 }

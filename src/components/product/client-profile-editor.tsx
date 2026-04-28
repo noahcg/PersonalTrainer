@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarRange, ShieldPlus, Target } from "lucide-react";
+import { CalendarClock, CalendarRange, CheckCircle2, ShieldPlus, Target } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -12,13 +12,15 @@ import { clients as demoClients } from "@/lib/demo-data";
 import { readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
 import { dispatchProfileUpdated, readImageFileAsDataUrl, uploadProfilePhoto } from "@/lib/profile-identity";
 import { pricingTierDetail, pricingTierLabel } from "@/lib/pricing";
-import type { Client } from "@/lib/types";
+import type { Client, ClientSession } from "@/lib/types";
 
 export function ClientProfileEditor({
   initialClient,
+  initialSessions,
   mode,
 }: {
   initialClient: Client;
+  initialSessions: ClientSession[];
   mode: "demo" | "supabase";
 }) {
   const [profile, setProfile] = useState({
@@ -28,6 +30,7 @@ export function ClientProfileEditor({
     notes: initialClient.notes,
   });
   const [client, setClient] = useState(initialClient);
+  const [sessions, setSessions] = useState(initialSessions);
   const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -46,9 +49,10 @@ export function ClientProfileEditor({
         injuries: stored.client.injuries,
         notes: stored.client.notes,
       });
+      setSessions(stored.sessions ?? initialSessions);
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [initialClient.id, mode]);
+  }, [initialClient.id, initialSessions, mode]);
 
   async function saveProfile() {
     setSaving(true);
@@ -93,6 +97,7 @@ export function ClientProfileEditor({
         writeStoredDemoClientProfile(initialClient.id, {
           client: nextClient,
           coachingNotes: existing?.coachingNotes ?? [],
+          sessions,
         });
         syncDemoClientRecord(nextClient, demoClients);
       }
@@ -147,6 +152,58 @@ export function ClientProfileEditor({
             <p className="mt-2 text-sm leading-6 text-stone-600">{pricingTierDetail(client.pricingTier)}</p>
           </Card>
         </div>
+
+        <Card className="overflow-hidden p-0">
+          <CardHeader className="border-b border-border bg-white/35">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle>In-person session package</CardTitle>
+                <p className="text-sm leading-6 text-stone-500">
+                  These are live coached sessions and do not include your individual at-home workout logs.
+                </p>
+              </div>
+              <Badge variant={client.sessionPackage.remaining === 0 ? "alert" : "sage"}>
+                {client.sessionPackage.remaining === null ? "Open package" : `${client.sessionPackage.remaining} remaining`}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="grid gap-3 border-b border-border p-5 sm:grid-cols-3 sm:p-6">
+              <SessionMetric icon={CalendarRange} label="Package total" value={client.sessionPackage.total === null ? "Open" : String(client.sessionPackage.total)} />
+              <SessionMetric icon={CheckCircle2} label="Sessions used" value={String(client.sessionPackage.used)} />
+              <SessionMetric icon={CalendarClock} label="Last in-person" value={client.sessionPackage.lastSessionAt ?? "None yet"} />
+            </div>
+            <div className="p-5 sm:p-6">
+              <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Recent in-person sessions</p>
+              <div className="mt-4 grid gap-3">
+                {sessions.length ? (
+                  sessions.map((session) => (
+                    <div key={session.id} className="rounded-[1.25rem] border border-stone-200 bg-white/70 p-4">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-charcoal-950">{session.startedAt}</p>
+                            <Badge variant={session.status === "completed" ? "sage" : session.status === "active" ? "bronze" : "default"}>
+                              {session.status}
+                            </Badge>
+                          </div>
+                          <p className="mt-2 text-sm text-stone-500">
+                            {session.location || "In person"}{session.durationMinutes ? ` · ${session.durationMinutes} min` : ""}
+                          </p>
+                          {session.notes ? <p className="mt-3 text-sm leading-6 text-stone-600">{session.notes}</p> : null}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[1.25rem] bg-stone-50 p-4 text-sm text-stone-500">
+                    No in-person sessions have been recorded yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -203,6 +260,24 @@ export function ClientProfileEditor({
       </div>
       {message ? <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">{message}</div> : null}
     </AppShell>
+  );
+}
+
+function SessionMetric({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[1.25rem] bg-stone-50 p-4">
+      <Icon className="size-4 text-bronze-600" />
+      <p className="mt-4 text-[0.66rem] uppercase tracking-[0.22em] text-stone-500">{label}</p>
+      <p className="mt-2 font-serif text-3xl font-semibold text-charcoal-950">{value}</p>
+    </div>
   );
 }
 

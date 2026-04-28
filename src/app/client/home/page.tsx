@@ -89,7 +89,12 @@ export default async function ClientHomePage() {
             {[
               { label: "Weekly adherence", value: client ? `${client.adherence}%` : "—", detail: `${client?.metrics.workouts ?? 0} sessions logged`, Icon: CalendarCheck },
               { label: "Check-ins", value: String(checkIns.length), detail: latestCheckIn ? `Latest: ${latestCheckIn.date}` : "No check-ins yet", Icon: CheckCircle2 },
-              { label: "Resources", value: String(resources.length), detail: resources.length ? "Support material available" : "No resources assigned yet", Icon: NotebookPen },
+              {
+                label: "In-person sessions",
+                value: client?.sessionPackage.remaining === null ? "Open" : String(client?.sessionPackage.remaining ?? 0),
+                detail: client ? `${client.sessionPackage.used} used in this package` : "No package assigned yet",
+                Icon: NotebookPen,
+              },
             ].map(({ label, value, detail, Icon }) => (
               <Card key={label} className="p-5">
                 <Icon className="size-5 text-bronze-500" />

@@ -345,7 +345,12 @@ export async function getTrainerClientProfile(id: string) {
 
 export async function getClientSelfProfile() {
   if (!isSupabaseConfigured()) {
-    return { mode: "demo" as const, client: demoClients[0] };
+    const client = demoClients[0];
+    return {
+      mode: "demo" as const,
+      client,
+      sessions: demoClientSessions.filter((session) => session.clientId === client.id),
+    };
   }
 
   const supabase = await createClient();
@@ -354,7 +359,7 @@ export async function getClientSelfProfile() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { mode: "supabase" as const, client: null as Client | null };
+    return { mode: "supabase" as const, client: null as Client | null, sessions: [] as ClientSession[] };
   }
 
   const { data: row } = await supabase
@@ -374,11 +379,22 @@ export async function getClientSelfProfile() {
   }
 
   if (!clientRow) {
-    return { mode: "supabase" as const, client: null as Client | null };
+    return { mode: "supabase" as const, client: null as Client | null, sessions: [] as ClientSession[] };
   }
+
+  const [client, sessionsResponse] = await Promise.all([
+    hydrateClient(clientRow, supabase),
+    supabase
+      .from("client_sessions")
+      .select("id, client_id, started_at, completed_at, status, location, notes, duration_minutes, created_by")
+      .eq("client_id", clientRow.id)
+      .order("started_at", { ascending: false })
+      .limit(8),
+  ]);
 
   return {
     mode: "supabase" as const,
-    client: await hydrateClient(clientRow, supabase),
+    client,
+    sessions: ((sessionsResponse.data ?? []) as ClientSessionRow[]).map(toClientSession),
   };
 }
