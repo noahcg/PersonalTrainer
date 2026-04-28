@@ -3,7 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { Ban, Copy, ExternalLink, Mail, PencilLine, Save, StickyNote, Trash2, X } from "lucide-react";
+import { ArrowLeft, Ban, Copy, ExternalLink, Mail, PencilLine, Save, StickyNote, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { clientAccessDetail, clientAccessLabel } from "@/lib/client-access";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
@@ -342,6 +342,82 @@ export function TrainerClientProfile({
   return (
     <>
       <div className="space-y-5">
+        <Card className="overflow-hidden p-0">
+          <div className="border-b border-border bg-white/35 p-5 sm:p-6">
+            <Button asChild variant="ghost" size="sm" className="-ml-2 mb-5 w-fit">
+              <Link href="/trainer/clients">
+                <ArrowLeft className="size-4" />
+                Back to roster
+              </Link>
+            </Button>
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
+                <Avatar name={client.name} src={client.photo} className="size-20 sm:size-24" />
+                <div className="min-w-0">
+                  <h2 className="font-serif text-4xl font-semibold leading-tight text-charcoal-950 sm:text-5xl">{client.name}</h2>
+                  <p className="mt-2 break-all text-sm text-stone-500">{client.email}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Badge variant="sage">{client.level}</Badge>
+                    <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
+                    <Badge variant="default">{clientAccessLabel(client.accessStatus)}</Badge>
+                    <Badge variant={client.status === "needs_attention" ? "alert" : client.status === "archived" ? "default" : "bronze"}>
+                      {client.status.replace("_", " ")}
+                    </Badge>
+                  </div>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">{clientAccessDetail(client.accessStatus, client.inviteSentAt)}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:w-[21rem] lg:grid-cols-1">
+                {client.accessStatus !== "account_active" ? (
+                  <Button variant="secondary" onClick={() => setInviteOpen(true)} disabled={busy}>
+                    <Mail className="size-4" />
+                    {client.accessStatus === "invite_pending" ? "Resend access invite" : "Send access invite"}
+                  </Button>
+                ) : null}
+                <Button variant="warm" onClick={() => setNoteOpen(true)}>
+                  <StickyNote className="size-4" />
+                  Leave coaching note
+                </Button>
+                <Button variant="secondary" onClick={() => setEditOpen(true)}>
+                  <PencilLine className="size-4" />
+                  Edit profile
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-5 p-5 lg:grid-cols-[1fr_18rem] sm:p-6">
+            <div>
+              <div className="mb-2 flex justify-between text-sm text-stone-500">
+                <span>Adherence</span>
+                <span>{client.adherence}%</span>
+              </div>
+              <Progress value={client.adherence} />
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <MetricTile label="Workouts" value={String(client.metrics.workouts)} />
+                <MetricTile label="Streak" value={String(client.metrics.streak)} />
+                <MetricTile label="Weight" value={client.metrics.bodyWeight} />
+              </div>
+            </div>
+            <div className="grid content-start gap-3">
+              <Button variant="ghost" onClick={deactivateClient} disabled={busy}>
+                <Ban className="size-4" />
+                {client.status === "archived" ? "Reactivate client" : "Deactivate client"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setDeleteOpen(true)}
+                disabled={busy}
+                className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+              >
+                <Trash2 className="size-4" />
+                Delete client
+              </Button>
+            </div>
+          </div>
+        </Card>
+
         {invitePreviewLink ? (
           <Card className="border-sage-200 bg-sage-50/55 p-5">
             <p className="text-[0.66rem] uppercase tracking-[0.22em] text-sage-700">Local invite testing</p>
@@ -368,118 +444,71 @@ export function TrainerClientProfile({
           </Card>
         ) : null}
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {sections.map(([title, body]) => (
-            <Card key={title}>
-              <CardHeader>
-                <CardTitle>{title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-7 text-stone-600">{body}</p>
-              </CardContent>
-            </Card>
-          ))}
-          <Card>
-            <CardHeader>
-              <CardTitle>Pricing package</CardTitle>
+        <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
+          <Card className="overflow-hidden p-0">
+            <CardHeader className="border-b border-border bg-white/35">
+              <CardTitle>Profile context</CardTitle>
+              <p className="text-sm leading-6 text-stone-500">The training details that shape programming, cueing, and weekly decisions.</p>
             </CardHeader>
-            <CardContent>
-              <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
-              <p className="mt-4 text-sm leading-6 text-stone-600">{pricingTierDetail(client.pricingTier)}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
-        <Card className="p-5 sm:p-6">
-          <Avatar name={client.name} src={client.photo} className="size-24" />
-          <h2 className="mt-5 font-serif text-4xl font-semibold">{client.name}</h2>
-          <p className="text-sm text-stone-500">{client.email}</p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Badge variant="sage">{client.level}</Badge>
-            <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
-            <Badge variant="default">{clientAccessLabel(client.accessStatus)}</Badge>
-            <Badge variant={client.status === "needs_attention" ? "alert" : client.status === "archived" ? "default" : "bronze"}>
-              {client.status.replace("_", " ")}
-            </Badge>
-          </div>
-          <p className="mt-3 text-sm leading-6 text-stone-500">{clientAccessDetail(client.accessStatus, client.inviteSentAt)}</p>
-          <div className="mt-6">
-            <div className="mb-2 flex justify-between text-sm text-stone-500">
-              <span>Adherence</span>
-              <span>{client.adherence}%</span>
-            </div>
-            <Progress value={client.adherence} />
-          </div>
-          <div className="mt-6 grid grid-cols-3 gap-2 text-center">
-            <MetricTile label="Workouts" value={String(client.metrics.workouts)} />
-            <MetricTile label="Streak" value={String(client.metrics.streak)} />
-            <MetricTile label="Weight" value={client.metrics.bodyWeight} />
-          </div>
-          <div className="mt-6 grid gap-3">
-            {client.accessStatus !== "account_active" ? (
-              <Button variant="secondary" onClick={() => setInviteOpen(true)} disabled={busy}>
-                <Mail className="size-4" />
-                {client.accessStatus === "invite_pending" ? "Resend access invite" : "Send access invite"}
-              </Button>
-            ) : null}
-            <Button variant="warm" onClick={() => setNoteOpen(true)}>
-              <StickyNote className="size-4" />
-              Leave coaching note
-            </Button>
-            <Button variant="secondary" onClick={() => setEditOpen(true)}>
-              <PencilLine className="size-4" />
-              Edit profile
-            </Button>
-            <Button variant="ghost" onClick={deactivateClient} disabled={busy}>
-              <Ban className="size-4" />
-              {client.status === "archived" ? "Reactivate client" : "Deactivate client"}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => setDeleteOpen(true)}
-              disabled={busy}
-              className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-            >
-              <Trash2 className="size-4" />
-              Delete client
-            </Button>
-          </div>
-        </Card>
-
-        <div className="grid gap-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent coaching notes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {coachingNotes.length ? (
-                coachingNotes.map((note) => (
-                  <div key={note.id} className="rounded-[1.5rem] bg-stone-50 p-4">
-                    <p className="text-sm leading-6 text-stone-700">{note.body}</p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.18em] text-stone-400">{note.createdAt}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-[1.5rem] bg-stone-50 p-4 text-sm text-stone-500">
-                  No coaching notes yet. Use the note action to leave your first cue, reminder, or encouragement.
+            <CardContent className="p-0">
+              <div className="grid divide-y divide-border md:grid-cols-2 md:divide-x md:divide-y-0">
+                <div className="grid divide-y divide-border">
+                  {sections.slice(0, 3).map(([title, body]) => (
+                    <ProfileContextRow key={title} title={title} body={body} />
+                  ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Assigned plan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-[1.75rem] bg-stone-50 p-5">
-                <p className="text-xl font-semibold">{assignedPlan.title}</p>
-                <p className="mt-2 text-sm leading-6 text-stone-600">{assignedPlan.description}</p>
+                <div className="grid divide-y divide-border">
+                  {sections.slice(3).map(([title, body]) => (
+                    <ProfileContextRow key={title} title={title} body={body} />
+                  ))}
+                  <div className="p-5 sm:p-6">
+                    <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Pricing package</p>
+                    <div className="mt-3">
+                      <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-stone-600">{pricingTierDetail(client.pricingTier)}</p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
-        </div>
+
+          <Card className="overflow-hidden p-0">
+            <CardHeader className="border-b border-border bg-white/35">
+              <CardTitle>Coaching activity</CardTitle>
+              <p className="text-sm leading-6 text-stone-500">Recent notes and the plan currently anchoring this client’s work.</p>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="border-b border-border p-5 sm:p-6">
+                <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Assigned plan</p>
+                <p className="mt-3 text-xl font-semibold text-charcoal-950">{assignedPlan.title}</p>
+                <p className="mt-2 text-sm leading-6 text-stone-600">{assignedPlan.description}</p>
+              </div>
+              <div className="p-5 sm:p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Recent notes</p>
+                  <Button variant="ghost" size="sm" onClick={() => setNoteOpen(true)}>
+                    <StickyNote className="size-4" />
+                    Add note
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {coachingNotes.length ? (
+                    coachingNotes.map((note) => (
+                      <div key={note.id} className="border-l-2 border-bronze-200 pl-4">
+                        <p className="text-sm leading-6 text-stone-700">{note.body}</p>
+                        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-stone-400">{note.createdAt}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[1.25rem] bg-stone-50 p-4 text-sm text-stone-500">
+                      No coaching notes yet. Use the note action to leave your first cue, reminder, or encouragement.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -657,6 +686,15 @@ function MetricTile({ label, value }: { label: string; value: string }) {
     <div className="rounded-2xl bg-stone-50 p-3">
       <p className="font-semibold">{value}</p>
       <p className="text-xs text-stone-500">{label}</p>
+    </div>
+  );
+}
+
+function ProfileContextRow({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="p-5 sm:p-6">
+      <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">{title}</p>
+      <p className="mt-3 text-sm leading-7 text-stone-600">{body}</p>
     </div>
   );
 }

@@ -10,7 +10,7 @@ export default async function ClientProfilePage({ params }: { params: Promise<{ 
   const { client, assignedPlan, coachingNotes, mode } = result;
 
   return (
-    <AppShell role="trainer" title={client.name} subtitle="A complete client profile with context, metrics, assignments, and coaching notes.">
+    <AppShell role="trainer" title="Client Profile" subtitle="A complete client profile with context, metrics, assignments, and coaching notes.">
       <TrainerClientProfile
         initialClient={client}
         assignedPlan={assignedPlan}

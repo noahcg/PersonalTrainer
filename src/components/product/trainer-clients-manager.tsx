@@ -3,7 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { Copy, ExternalLink, Mail, Plus, Save, X } from "lucide-react";
+import { Archive, Clock3, Copy, ExternalLink, Mail, Plus, Save, Search, UserCheck, UserPlus, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ClientCard } from "@/components/product/client-card";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
@@ -98,6 +98,9 @@ export function TrainerClientsManager({
     }),
     [clients],
   );
+
+  const activeClients = useMemo(() => clients.filter((client) => client.status === "active").length, [clients]);
+  const needsAttention = useMemo(() => clients.filter((client) => client.status === "needs_attention").length, [clients]);
 
   function persist(nextClients: Client[]) {
     if (mode === "demo") {
@@ -342,52 +345,65 @@ export function TrainerClientsManager({
 
   return (
     <>
-      <Card className="mb-5 p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Roster controls</p>
-            <p className="mt-2 text-sm leading-6 text-stone-600">Search the roster, track access, and handle invite or archive actions without opening every profile.</p>
-          </div>
-          <div className="flex flex-wrap gap-3 text-sm text-stone-500">
-            <div className="rounded-full bg-stone-50 px-4 py-2">{clients.length} total clients</div>
-            <div className="rounded-full bg-stone-50 px-4 py-2">{selectedIds.length} selected</div>
+      <Card className="mb-5 overflow-hidden p-0">
+        <div className="border-b border-border bg-white/35 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Roster workspace</p>
+              <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">Client operations at a glance.</h2>
+              <p className="mt-3 text-sm leading-6 text-stone-600">
+                Search the roster, track account access, and handle invite or archive actions without opening every profile.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-sm text-stone-600">
+              <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/70 px-3 py-2">
+                <Users className="size-4 text-bronze-500" />
+                {clients.length} total
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/70 px-3 py-2">
+                <UserCheck className="size-4 text-sage-700" />
+                {selectedIds.length} selected
+              </div>
+            </div>
           </div>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-[1.25rem] bg-stone-50 px-4 py-3 text-sm text-stone-600">
-            <p className="text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">Account active</p>
-            <p className="mt-2 text-2xl font-semibold text-charcoal-950">{accessSummary.active}</p>
-          </div>
-          <div className="rounded-[1.25rem] bg-stone-50 px-4 py-3 text-sm text-stone-600">
-            <p className="text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">Invite pending</p>
-            <p className="mt-2 text-2xl font-semibold text-charcoal-950">{accessSummary.pending}</p>
-          </div>
-          <div className="rounded-[1.25rem] bg-stone-50 px-4 py-3 text-sm text-stone-600">
-            <p className="text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">Not invited</p>
-            <p className="mt-2 text-2xl font-semibold text-charcoal-950">{accessSummary.notInvited}</p>
+
+        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-5 sm:p-6">
+          <RosterMetric icon={Users} label="Total clients" value={String(clients.length)} detail={`${activeClients} active`} tone="text-charcoal-950" />
+          <RosterMetric icon={Clock3} label="Needs review" value={String(needsAttention)} detail="Status flags" tone="text-bronze-500" />
+          <RosterMetric icon={UserCheck} label="Account active" value={String(accessSummary.active)} detail="Setup complete" tone="text-sage-700" />
+          <RosterMetric icon={Mail} label="Invite pending" value={String(accessSummary.pending)} detail="Awaiting setup" tone="text-bronze-500" />
+          <RosterMetric icon={UserPlus} label="Not invited" value={String(accessSummary.notInvited)} detail="Ready to send" tone="text-stone-600" />
+        </div>
+
+        <div className="border-t border-border bg-stone-50/45 p-5 sm:p-6">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search clients by name, goal, status, or access..."
+                className="pl-10"
+              />
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row xl:justify-end">
+              <Button variant="warm" onClick={() => setOpen(true)}>
+                <Plus className="size-4" />
+                Create client
+              </Button>
+              <Button variant="secondary" onClick={() => setInviteOpen(true)} disabled={busy || selectedIds.length === 0}>
+                <Mail className="size-4" />
+                Send invites
+              </Button>
+              <Button variant="secondary" onClick={() => void archiveSelected()} disabled={busy || selectedIds.length === 0}>
+                <Archive className="size-4" />
+                Archive selected
+              </Button>
+            </div>
           </div>
         </div>
       </Card>
-
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row">
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search clients by name, goal, status, or access..."
-          className="sm:max-w-md"
-        />
-        <Button variant="warm" onClick={() => setOpen(true)}>
-          <Plus className="size-4" />
-          Create client
-        </Button>
-        <Button variant="secondary" onClick={() => setInviteOpen(true)} disabled={busy || selectedIds.length === 0}>
-          <Mail className="size-4" />
-          Send invites
-        </Button>
-        <Button variant="secondary" onClick={() => void archiveSelected()} disabled={busy || selectedIds.length === 0}>
-          Archive selected
-        </Button>
-      </div>
 
       {message ? (
         <Card className="mb-5 border-bronze-200 bg-bronze-50/70 p-4 text-sm text-stone-700">
@@ -566,5 +582,30 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {label}
       {children}
     </label>
+  );
+}
+
+function RosterMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  detail: string;
+  tone: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-[1.25rem] border border-stone-200/80 bg-white/72 p-4 shadow-inner-soft">
+      <div className="flex items-center justify-between gap-3">
+        <p className="truncate text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">{label}</p>
+        <Icon className={`size-4 shrink-0 ${tone}`} />
+      </div>
+      <p className="mt-4 font-serif text-3xl font-semibold leading-none text-charcoal-950">{value}</p>
+      <p className="mt-2 truncate text-xs text-stone-500">{detail}</p>
+    </div>
   );
 }
