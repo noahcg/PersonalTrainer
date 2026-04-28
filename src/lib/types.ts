@@ -201,6 +201,13 @@ export type BulletinPost = {
   requiresRsvp: boolean;
   sessionStartsAt?: string | null;
   sessionLocation?: string | null;
+  sessionLocationDetails?: {
+    placeName: string;
+    meetingPoint: string;
+    address: string;
+    notes: string;
+    mapUrl: string;
+  } | null;
   sessionCapacity?: number | null;
   reminderEnabled?: boolean;
   reminderMinutesBefore?: number | null;

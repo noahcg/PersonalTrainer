@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
 import { applyStoredReminderSettings, archiveStoredBulletinId, deleteStoredBulletinId, writeStoredReminderSettings } from "@/lib/bulletin-reminder-storage";
+import { emptyBulletinLocationDetails, formatBulletinLocation, isValidMapUrl, normalizeBulletinLocationDetails } from "@/lib/bulletin-location";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { BulletinPost } from "@/lib/types";
 
@@ -22,6 +23,7 @@ type ComposerErrors = {
   body?: string;
   sessionStartsAt?: string;
   sessionLocation?: string;
+  sessionMapUrl?: string;
   form?: string;
 };
 
@@ -37,6 +39,25 @@ function formatSessionDate(value?: string | null) {
   });
 }
 
+type SavedBulletinRow = {
+  id: string;
+  title: string;
+  body: string;
+  pinned: boolean;
+  status: "active" | "archived";
+  post_type: "announcement" | "session";
+  requires_rsvp: boolean;
+  session_starts_at: string | null;
+  session_location: string | null;
+  session_location_details?: unknown;
+  session_capacity: number | null;
+  reminder_enabled: boolean;
+  reminder_minutes_before: number | null;
+  reminder_audience: "attending" | "all";
+  reminder_trainer_enabled: boolean;
+  published_at: string;
+};
+
 function hydrateRsvps(posts: BulletinPost[], rawStorage: string | null) {
   const stored = rawStorage ? (JSON.parse(rawStorage) as Record<string, unknown>) : {};
   return posts.map((post) => {
@@ -46,6 +67,7 @@ function hydrateRsvps(posts: BulletinPost[], rawStorage: string | null) {
       requiresRsvp: post.requiresRsvp ?? false,
       sessionStartsAt: post.sessionStartsAt ?? null,
       sessionLocation: post.sessionLocation ?? null,
+      sessionLocationDetails: normalizeBulletinLocationDetails(post.sessionLocationDetails),
       sessionCapacity: post.sessionCapacity ?? null,
       reminderEnabled: post.reminderEnabled ?? false,
       reminderMinutesBefore: post.reminderMinutesBefore ?? null,
@@ -105,7 +127,7 @@ export function TrainerBulletinBoard({
   const [postType, setPostType] = useState<"announcement" | "session">("announcement");
   const [requiresRsvp, setRequiresRsvp] = useState(false);
   const [sessionStartsAt, setSessionStartsAt] = useState("");
-  const [sessionLocation, setSessionLocation] = useState("");
+  const [sessionLocationDetails, setSessionLocationDetails] = useState(emptyBulletinLocationDetails);
   const [sessionCapacity, setSessionCapacity] = useState("");
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderMinutesBefore, setReminderMinutesBefore] = useState("60");
@@ -169,7 +191,7 @@ export function TrainerBulletinBoard({
     setRequiresRsvp(false);
     setPostType("announcement");
     setSessionStartsAt("");
-    setSessionLocation("");
+    setSessionLocationDetails(emptyBulletinLocationDetails);
     setSessionCapacity("");
     setReminderEnabled(true);
     setReminderMinutesBefore("60");
@@ -200,7 +222,10 @@ export function TrainerBulletinBoard({
     setRequiresRsvp(post.requiresRsvp);
     setPostType(post.postType);
     setSessionStartsAt(post.sessionStartsAt ? post.sessionStartsAt.slice(0, 16) : "");
-    setSessionLocation(post.sessionLocation ?? "");
+    setSessionLocationDetails(normalizeBulletinLocationDetails(post.sessionLocationDetails) ?? {
+      ...emptyBulletinLocationDetails,
+      placeName: post.sessionLocation ?? "",
+    });
     setSessionCapacity(post.sessionCapacity ? String(post.sessionCapacity) : "");
     setReminderEnabled(post.reminderEnabled ?? false);
     setReminderMinutesBefore(post.reminderMinutesBefore ? String(post.reminderMinutesBefore) : "60");
@@ -215,7 +240,10 @@ export function TrainerBulletinBoard({
     if (!title.trim()) nextErrors.title = "Add a bulletin title.";
     if (!body.trim()) nextErrors.body = "Write the bulletin message.";
     if (postType === "session" && !sessionStartsAt.trim()) nextErrors.sessionStartsAt = "Add the session date and time.";
-    if (postType === "session" && !sessionLocation.trim()) nextErrors.sessionLocation = "Add the session location.";
+    if (postType === "session" && !sessionLocationDetails.placeName.trim()) nextErrors.sessionLocation = "Add the park or place name.";
+    if (postType === "session" && sessionLocationDetails.mapUrl.trim() && !isValidMapUrl(sessionLocationDetails.mapUrl)) {
+      nextErrors.sessionMapUrl = "Paste a valid map link.";
+    }
 
     if (Object.keys(nextErrors).length) {
       setComposerErrors(nextErrors);
@@ -228,78 +256,31 @@ export function TrainerBulletinBoard({
     try {
       let nextPost: BulletinPost;
       if (mode === "supabase") {
-        const supabase = createBrowserClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) throw new Error("You need an authenticated trainer session to publish announcements.");
-        const { data: trainer } = await supabase
-          .from("trainers")
-          .select("id")
-          .eq("profile_id", user.id)
-          .maybeSingle<{ id: string }>();
-        if (!trainer?.id) throw new Error("Trainer profile not found.");
+        const response = await fetch("/api/trainer/bulletins", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: editingId,
+            title: title.trim(),
+            body: body.trim(),
+            pinned,
+            postType,
+            requiresRsvp,
+            sessionStartsAt: postType === "session" ? sessionStartsAt : null,
+            sessionLocationDetails: postType === "session" ? sessionLocationDetails : null,
+            sessionCapacity: postType === "session" && sessionCapacity ? Number(sessionCapacity) : null,
+            reminderEnabled: postType === "session" ? reminderEnabled : false,
+            reminderMinutesBefore: postType === "session" && reminderEnabled ? Number(reminderMinutesBefore) : null,
+            reminderAudience,
+            reminderTrainerEnabled: postType === "session" ? reminderTrainerEnabled : false,
+          }),
+        });
+        const result = (await response.json()) as { post?: SavedBulletinRow; error?: string };
+        if (!response.ok || !result.post) throw new Error(result.error ?? `Unable to ${editingId ? "update" : "publish"} bulletin.`);
+        const inserted = result.post;
 
-        const legacyPayload = {
-          trainer_id: trainer.id,
-          title: title.trim(),
-          body: body.trim(),
-          pinned,
-          post_type: postType,
-          requires_rsvp: postType === "session" ? true : requiresRsvp,
-          session_starts_at: postType === "session" ? new Date(sessionStartsAt).toISOString() : null,
-          session_location: postType === "session" ? sessionLocation.trim() : null,
-          session_capacity: postType === "session" && sessionCapacity ? Number(sessionCapacity) : null,
-        };
-        const payload = {
-          ...legacyPayload,
-          status: "active",
-          reminder_enabled: postType === "session" ? reminderEnabled : false,
-          reminder_minutes_before: postType === "session" && reminderEnabled ? Number(reminderMinutesBefore) : null,
-          reminder_audience: reminderAudience,
-          reminder_trainer_enabled: postType === "session" ? reminderTrainerEnabled : false,
-        };
-        const fullQuery = editingId
-          ? supabase
-              .from("bulletin_posts")
-              .update(payload)
-              .eq("id", editingId)
-              .select("id, title, body, pinned, status, post_type, requires_rsvp, session_starts_at, session_location, session_capacity, reminder_enabled, reminder_minutes_before, reminder_audience, reminder_trainer_enabled, published_at")
-              .single<{ id: string; title: string; body: string; pinned: boolean; status: "active" | "archived"; post_type: "announcement" | "session"; requires_rsvp: boolean; session_starts_at: string | null; session_location: string | null; session_capacity: number | null; reminder_enabled: boolean; reminder_minutes_before: number | null; reminder_audience: "attending" | "all"; reminder_trainer_enabled: boolean; published_at: string }>()
-          : supabase
-              .from("bulletin_posts")
-              .insert(payload)
-              .select("id, title, body, pinned, status, post_type, requires_rsvp, session_starts_at, session_location, session_capacity, reminder_enabled, reminder_minutes_before, reminder_audience, reminder_trainer_enabled, published_at")
-              .single<{ id: string; title: string; body: string; pinned: boolean; status: "active" | "archived"; post_type: "announcement" | "session"; requires_rsvp: boolean; session_starts_at: string | null; session_location: string | null; session_capacity: number | null; reminder_enabled: boolean; reminder_minutes_before: number | null; reminder_audience: "attending" | "all"; reminder_trainer_enabled: boolean; published_at: string }>();
-
-        let { data: inserted, error } = await fullQuery;
-        if (error) {
-          const legacyQuery = editingId
-            ? supabase
-                .from("bulletin_posts")
-                .update(legacyPayload)
-                .eq("id", editingId)
-                .select("id, title, body, pinned, post_type, requires_rsvp, session_starts_at, session_location, session_capacity, published_at")
-                .single<{ id: string; title: string; body: string; pinned: boolean; post_type: "announcement" | "session"; requires_rsvp: boolean; session_starts_at: string | null; session_location: string | null; session_capacity: number | null; published_at: string }>()
-            : supabase
-                .from("bulletin_posts")
-                .insert(legacyPayload)
-                .select("id, title, body, pinned, post_type, requires_rsvp, session_starts_at, session_location, session_capacity, published_at")
-                .single<{ id: string; title: string; body: string; pinned: boolean; post_type: "announcement" | "session"; requires_rsvp: boolean; session_starts_at: string | null; session_location: string | null; session_capacity: number | null; published_at: string }>();
-          const legacyResult = await legacyQuery;
-          inserted = legacyResult.data
-            ? {
-                ...legacyResult.data,
-                status: "active",
-                reminder_enabled: false,
-                reminder_minutes_before: null,
-                reminder_audience: "attending",
-                reminder_trainer_enabled: true,
-              }
-            : null;
-          error = legacyResult.error;
-        }
-        if (error || !inserted) throw error ?? new Error(`Unable to ${editingId ? "update" : "publish"} bulletin.`);
         nextPost = {
           id: inserted.id,
           title: inserted.title,
@@ -317,6 +298,7 @@ export function TrainerBulletinBoard({
           requiresRsvp: inserted.requires_rsvp,
           sessionStartsAt: inserted.session_starts_at,
           sessionLocation: inserted.session_location,
+          sessionLocationDetails: postType === "session" ? sessionLocationDetails : normalizeBulletinLocationDetails(inserted.session_location_details),
           sessionCapacity: inserted.session_capacity,
           reminderEnabled: inserted.reminder_enabled || (postType === "session" ? reminderEnabled : false),
           reminderMinutesBefore: inserted.reminder_minutes_before ?? (postType === "session" && reminderEnabled ? Number(reminderMinutesBefore) : null),
@@ -345,7 +327,8 @@ export function TrainerBulletinBoard({
           postType,
           requiresRsvp: postType === "session" ? true : requiresRsvp,
           sessionStartsAt: postType === "session" ? new Date(sessionStartsAt).toISOString() : null,
-          sessionLocation: postType === "session" ? sessionLocation.trim() : null,
+          sessionLocation: postType === "session" ? formatBulletinLocation(sessionLocationDetails) : null,
+          sessionLocationDetails: postType === "session" ? sessionLocationDetails : null,
           sessionCapacity: postType === "session" && sessionCapacity ? Number(sessionCapacity) : null,
           reminderEnabled: postType === "session" ? reminderEnabled : false,
           reminderMinutesBefore: postType === "session" && reminderEnabled ? Number(reminderMinutesBefore) : null,
@@ -535,9 +518,21 @@ export function TrainerBulletinBoard({
                   <CalendarCheck className="size-4 text-bronze-600" />
                   <span suppressHydrationWarning>{formatSessionDate(post.sessionStartsAt) ?? "Session timing pending"}</span>
                 </div>
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-2 flex items-start gap-2">
                   <MapPin className="size-4 text-bronze-600" />
-                  <span>{post.sessionLocation ?? "Location to be announced"}</span>
+                  <div>
+                    <span>{formatBulletinLocation(post.sessionLocationDetails, post.sessionLocation) || "Location to be announced"}</span>
+                    {post.sessionLocationDetails?.notes ? (
+                      <p className="mt-1 text-stone-500">{post.sessionLocationDetails.notes}</p>
+                    ) : null}
+                    {post.sessionLocationDetails?.mapUrl ? (
+                      <Button asChild variant="ghost" size="sm" className="mt-2 h-auto px-0 py-0 text-bronze-700">
+                        <a href={post.sessionLocationDetails.mapUrl} target="_blank" rel="noreferrer">
+                          Open map
+                        </a>
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
                 {post.sessionCapacity ? (
                   <div className="mt-2 flex items-center gap-2">
@@ -730,25 +725,71 @@ export function TrainerBulletinBoard({
                         />
                         {composerErrors.sessionStartsAt ? <span className="text-sm font-medium text-rose-600">{composerErrors.sessionStartsAt}</span> : null}
                       </label>
+                      <div className="grid gap-2">
+                        <span className="text-sm font-medium text-stone-700">Capacity</span>
+                        <Input type="number" min="1" value={sessionCapacity} onChange={(event) => setSessionCapacity(event.target.value)} placeholder="Optional" />
+                      </div>
+                    </div>
+                    <div className="rounded-[1.5rem] border border-stone-200 bg-white/70 p-4">
+                      <div className="mb-4 flex items-center gap-2">
+                        <MapPin className="size-4 text-bronze-600" />
+                        <p className="text-sm font-semibold text-charcoal-950">Session location</p>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
                       <label className="grid gap-2 text-sm font-medium text-stone-700">
                         <span className="flex items-center gap-2">
-                          Location <RequiredIndicator />
+                          Park or place name <RequiredIndicator />
                         </span>
                         <Input
-                          value={sessionLocation}
+                          value={sessionLocationDetails.placeName}
                           onChange={(event) => {
-                            setSessionLocation(event.target.value);
+                            setSessionLocationDetails((current) => ({ ...current, placeName: event.target.value }));
                             setComposerErrors((current) => ({ ...current, sessionLocation: undefined, form: undefined }));
                           }}
-                          placeholder="Studio, park, or gym location"
+                          placeholder="Riverside Park"
                           aria-invalid={Boolean(composerErrors.sessionLocation)}
                           className={composerErrors.sessionLocation ? "border-rose-300 focus-visible:border-rose-400 focus-visible:ring-rose-100" : undefined}
                         />
                         {composerErrors.sessionLocation ? <span className="text-sm font-medium text-rose-600">{composerErrors.sessionLocation}</span> : null}
                       </label>
-                      <div className="grid gap-2">
-                        <span className="text-sm font-medium text-stone-700">Capacity</span>
-                        <Input type="number" min="1" value={sessionCapacity} onChange={(event) => setSessionCapacity(event.target.value)} placeholder="Optional" />
+                        <label className="grid gap-2 text-sm font-medium text-stone-700">
+                          Meeting point
+                          <Input
+                            value={sessionLocationDetails.meetingPoint}
+                            onChange={(event) => setSessionLocationDetails((current) => ({ ...current, meetingPoint: event.target.value }))}
+                            placeholder="South lot near tennis courts"
+                          />
+                        </label>
+                        <label className="grid gap-2 text-sm font-medium text-stone-700">
+                          Address or cross streets
+                          <Input
+                            value={sessionLocationDetails.address}
+                            onChange={(event) => setSessionLocationDetails((current) => ({ ...current, address: event.target.value }))}
+                            placeholder="Maple Ave & 3rd St"
+                          />
+                        </label>
+                        <label className="grid gap-2 text-sm font-medium text-stone-700">
+                          Map link
+                          <Input
+                            value={sessionLocationDetails.mapUrl}
+                            onChange={(event) => {
+                              setSessionLocationDetails((current) => ({ ...current, mapUrl: event.target.value }));
+                              setComposerErrors((current) => ({ ...current, sessionMapUrl: undefined, form: undefined }));
+                            }}
+                            placeholder="Paste Apple Maps or Google Maps share link"
+                            aria-invalid={Boolean(composerErrors.sessionMapUrl)}
+                            className={composerErrors.sessionMapUrl ? "border-rose-300 focus-visible:border-rose-400 focus-visible:ring-rose-100" : undefined}
+                          />
+                          {composerErrors.sessionMapUrl ? <span className="text-sm font-medium text-rose-600">{composerErrors.sessionMapUrl}</span> : null}
+                        </label>
+                        <label className="grid gap-2 text-sm font-medium text-stone-700 sm:col-span-2">
+                          Arrival notes
+                          <Input
+                            value={sessionLocationDetails.notes}
+                            onChange={(event) => setSessionLocationDetails((current) => ({ ...current, notes: event.target.value }))}
+                            placeholder="Bring water. Meet by the benches."
+                          />
+                        </label>
                       </div>
                     </div>
                     <div className="rounded-[1.5rem] border border-stone-200 bg-white/70 p-4">

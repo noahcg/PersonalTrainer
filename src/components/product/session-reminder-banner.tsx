@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck, Clock3, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import { applyStoredReminderSettings, filterArchivedBulletins } from "@/lib/bulletin-reminder-storage";
 import type { BulletinPost, Role } from "@/lib/types";
 
@@ -121,27 +120,6 @@ export function SessionReminderBanner({
     const timeout = window.setTimeout(() => {
       const loadDismissals = async () => {
         const keys = readDismissedKeys();
-
-        if (mode === "supabase") {
-          try {
-            const supabase = createBrowserClient();
-            const {
-              data: { user },
-            } = await supabase.auth.getUser();
-            if (user) {
-              const { data } = await supabase
-                .from("bulletin_reminder_dismissals")
-                .select("reminder_key")
-                .eq("profile_id", user.id);
-              (data ?? []).forEach((row) => {
-                if (typeof row.reminder_key === "string") keys.add(row.reminder_key);
-              });
-            }
-          } catch {
-            // Local dismissals are enough when the dismissal table has not been applied yet.
-          }
-        }
-
         setDismissedKeys(keys);
         setBulletins((current) => filterArchivedBulletins(applyStoredReminderSettings(current)));
       };
@@ -182,26 +160,7 @@ export function SessionReminderBanner({
     writeDismissedKey(reminderKey);
     setDismissedKeys(readDismissedKeys());
 
-    if (mode === "supabase") {
-      try {
-        const supabase = createBrowserClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
-        await supabase.from("bulletin_reminder_dismissals").upsert(
-          {
-            bulletin_post_id: reminder.id,
-            profile_id: user.id,
-            role,
-            reminder_key: reminderKey,
-          },
-          { onConflict: "bulletin_post_id,profile_id,reminder_key" },
-        );
-      } catch {
-        // Local dismissal still keeps this in-app reminder quiet if the schema has not been applied yet.
-      }
-    }
+    // Local dismissal is enough for the in-app reminder and avoids requiring an optional dismissal table.
   }
 
   if (!reminder || !reminderKey || dismissedKeys?.has(reminderKey)) return null;

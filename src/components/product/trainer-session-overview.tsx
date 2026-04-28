@@ -6,6 +6,7 @@ import { ArrowRight, CalendarCheck, MapPin, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatBulletinLocation, normalizeBulletinLocationDetails } from "@/lib/bulletin-location";
 import { filterArchivedBulletins } from "@/lib/bulletin-reminder-storage";
 import type { BulletinPost } from "@/lib/types";
 
@@ -59,6 +60,7 @@ function hydrateRsvps(posts: BulletinPost[], rawStorage: string | null) {
       requiresRsvp: post.requiresRsvp ?? false,
       sessionStartsAt: post.sessionStartsAt ?? null,
       sessionLocation: post.sessionLocation ?? null,
+      sessionLocationDetails: normalizeBulletinLocationDetails(post.sessionLocationDetails),
       sessionCapacity: post.sessionCapacity ?? null,
       clientRsvp: attendees.find((entry) => entry.clientId === demoClient.id)?.status ?? null,
       rsvps: attendees,
@@ -150,10 +152,10 @@ export function TrainerSessionOverview({
               <CalendarCheck className="mr-1 size-3.5" />
               <span suppressHydrationWarning>{formatSessionDate(session.sessionStartsAt) ?? "Timing pending"}</span>
             </Badge>
-            {session.sessionLocation ? (
+            {formatBulletinLocation(session.sessionLocationDetails, session.sessionLocation) ? (
               <Badge variant="sage">
                 <MapPin className="mr-1 size-3.5" />
-                {session.sessionLocation}
+                {formatBulletinLocation(session.sessionLocationDetails, session.sessionLocation)}
               </Badge>
             ) : null}
             <Badge variant="dark">

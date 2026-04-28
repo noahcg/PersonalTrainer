@@ -249,6 +249,7 @@ create table public.bulletin_posts (
   requires_rsvp boolean not null default false,
   session_starts_at timestamptz,
   session_location text,
+  session_location_details jsonb,
   session_capacity int check (session_capacity is null or session_capacity > 0),
   reminder_enabled boolean not null default false,
   reminder_minutes_before int check (reminder_minutes_before is null or reminder_minutes_before > 0),

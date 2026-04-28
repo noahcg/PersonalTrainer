@@ -1,5 +1,6 @@
 import { bulletins as demoBulletins } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/auth-server";
+import { normalizeBulletinLocationDetails } from "@/lib/bulletin-location";
 import { createClient } from "@/lib/supabase-server";
 import type { BulletinPost } from "@/lib/types";
 
@@ -13,6 +14,7 @@ type BulletinRow = {
   requires_rsvp: boolean;
   session_starts_at: string | null;
   session_location: string | null;
+  session_location_details?: unknown;
   session_capacity: number | null;
   reminder_enabled: boolean;
   reminder_minutes_before: number | null;
@@ -78,6 +80,7 @@ function mapBulletin(
     requiresRsvp: row.requires_rsvp,
     sessionStartsAt: row.session_starts_at,
     sessionLocation: row.session_location,
+    sessionLocationDetails: normalizeBulletinLocationDetails(row.session_location_details),
     sessionCapacity: row.session_capacity,
     reminderEnabled: row.reminder_enabled,
     reminderMinutesBefore: row.reminder_minutes_before,
@@ -116,7 +119,7 @@ export async function getTrainerBulletins() {
   const [{ data, error }, { data: rsvps }] = await Promise.all([
     supabase
     .from("bulletin_posts")
-    .select("id, title, body, pinned, status, post_type, requires_rsvp, session_starts_at, session_location, session_capacity, reminder_enabled, reminder_minutes_before, reminder_audience, reminder_trainer_enabled, published_at")
+    .select("id, title, body, pinned, status, post_type, requires_rsvp, session_starts_at, session_location, session_location_details, session_capacity, reminder_enabled, reminder_minutes_before, reminder_audience, reminder_trainer_enabled, published_at")
     .eq("trainer_id", trainerId)
     .eq("status", "active")
     .order("pinned", { ascending: false })
@@ -128,7 +131,7 @@ export async function getTrainerBulletins() {
   if (error) {
     const { data: legacyData } = await supabase
       .from("bulletin_posts")
-      .select("id, title, body, pinned, post_type, requires_rsvp, session_starts_at, session_location, session_capacity, published_at")
+      .select("id, title, body, pinned, post_type, requires_rsvp, session_starts_at, session_location, session_location_details, session_capacity, published_at")
       .eq("trainer_id", trainerId)
       .order("pinned", { ascending: false })
       .order("published_at", { ascending: false });
@@ -168,7 +171,7 @@ export async function getClientBulletins() {
   const [{ data, error }, { data: rsvps }] = await Promise.all([
     supabase
       .from("bulletin_posts")
-    .select("id, title, body, pinned, status, post_type, requires_rsvp, session_starts_at, session_location, session_capacity, reminder_enabled, reminder_minutes_before, reminder_audience, reminder_trainer_enabled, published_at")
+    .select("id, title, body, pinned, status, post_type, requires_rsvp, session_starts_at, session_location, session_location_details, session_capacity, reminder_enabled, reminder_minutes_before, reminder_audience, reminder_trainer_enabled, published_at")
       .eq("trainer_id", trainerId)
       .eq("status", "active")
       .order("pinned", { ascending: false })
@@ -179,7 +182,7 @@ export async function getClientBulletins() {
   if (error) {
     const { data: legacyData } = await supabase
       .from("bulletin_posts")
-      .select("id, title, body, pinned, post_type, requires_rsvp, session_starts_at, session_location, session_capacity, published_at")
+      .select("id, title, body, pinned, post_type, requires_rsvp, session_starts_at, session_location, session_location_details, session_capacity, published_at")
       .eq("trainer_id", trainerId)
       .order("pinned", { ascending: false })
       .order("published_at", { ascending: false });
