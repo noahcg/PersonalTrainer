@@ -2,8 +2,9 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { CalendarCheck, MapPin, PenSquare, Pin, Plus, Send, Users, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CalendarCheck, MapPin, Megaphone, PenSquare, Pin, Plus, Send, Users, X } from "lucide-react";
+import type { ComponentType } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
@@ -95,6 +96,17 @@ export function TrainerBulletinBoard({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const bulletinSummary = useMemo(
+    () => ({
+      total: bulletins.length,
+      pinned: bulletins.filter((post) => post.pinned).length,
+      sessions: bulletins.filter((post) => post.postType === "session").length,
+      rsvpRequested: bulletins.filter((post) => post.requiresRsvp).length,
+      attending: bulletins.reduce((total, post) => total + (post.rsvpSummary?.attending ?? 0), 0),
+    }),
+    [bulletins],
+  );
 
   useEffect(() => {
     if (mode !== "demo") return;
@@ -292,29 +304,45 @@ export function TrainerBulletinBoard({
 
   return (
     <>
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <div className="max-w-2xl text-sm text-stone-600">
-          Post studio-wide announcements, schedule changes, reminders, or coaching themes that every client should see.
+      <Card className="mb-5 overflow-hidden p-0">
+        <div className="border-b border-border bg-white/35 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Bulletin workspace</p>
+              <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">Studio updates in one clear feed.</h2>
+              <p className="mt-3 text-sm leading-6 text-stone-600">
+                Post announcements, schedule changes, session invites, and coaching themes that every client should see.
+              </p>
+            </div>
+            <Button variant="warm" onClick={openCreate} className="w-fit">
+              <Plus className="size-4" />
+              Post bulletin
+            </Button>
+          </div>
         </div>
-        <Button variant="warm" onClick={openCreate}>
-          <Plus className="size-4" />
-          Post bulletin
-        </Button>
-      </div>
+
+        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-5 sm:p-6">
+          <BulletinMetric icon={Megaphone} label="Total posts" value={String(bulletinSummary.total)} detail="Published bulletins" tone="text-charcoal-950" />
+          <BulletinMetric icon={Pin} label="Pinned" value={String(bulletinSummary.pinned)} detail="Top of feed" tone="text-bronze-500" />
+          <BulletinMetric icon={CalendarCheck} label="Sessions" value={String(bulletinSummary.sessions)} detail="Training invites" tone="text-sage-700" />
+          <BulletinMetric icon={Send} label="RSVPs" value={String(bulletinSummary.rsvpRequested)} detail="Requested responses" tone="text-bronze-500" />
+          <BulletinMetric icon={Users} label="Attending" value={String(bulletinSummary.attending)} detail="Reserved spots" tone="text-stone-600" />
+        </div>
+      </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        {bulletins.map((post) => (
-          <Card key={post.id} className="p-5 sm:p-6">
+        {bulletins.length ? bulletins.map((post) => (
+          <Card key={post.id} className="overflow-hidden p-5 transition hover:-translate-y-1 hover:bg-white/90 sm:p-6">
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <p suppressHydrationWarning className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">{post.publishedAt}</p>
-                <h2 className="mt-3 font-serif text-4xl font-semibold">{post.title}</h2>
+                <h2 className="mt-3 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">{post.title}</h2>
               </div>
               <div className="flex flex-wrap justify-end gap-2">
                 {post.postType === "session" ? (
                   <div className="flex items-center gap-2 rounded-full bg-charcoal-950 px-3 py-2 text-xs font-medium text-ivory-50">
                     <CalendarCheck className="size-3.5" />
-                    Session invite
+                    Session
                   </div>
                 ) : null}
                 {post.pinned ? (
@@ -326,7 +354,7 @@ export function TrainerBulletinBoard({
                 {post.requiresRsvp ? (
                   <div className="flex items-center gap-2 rounded-full bg-sage-50 px-3 py-2 text-xs font-medium text-sage-700">
                     <CalendarCheck className="size-3.5" />
-                    RSVP requested
+                    RSVP
                   </div>
                 ) : null}
               </div>
@@ -351,9 +379,9 @@ export function TrainerBulletinBoard({
               </div>
             ) : null}
             {post.requiresRsvp ? (
-              <div className="mt-5 flex gap-3 text-sm text-stone-600">
-                <span>{post.rsvpSummary?.attending ?? 0} attending</span>
-                <span>{post.rsvpSummary?.notAttending ?? 0} not attending</span>
+              <div className="mt-5 flex flex-wrap gap-3 text-sm text-stone-600">
+                <span className="rounded-full bg-stone-50 px-3 py-2">{post.rsvpSummary?.attending ?? 0} attending</span>
+                <span className="rounded-full bg-stone-50 px-3 py-2">{post.rsvpSummary?.notAttending ?? 0} not attending</span>
               </div>
             ) : null}
             {post.postType === "session" ? (
@@ -375,7 +403,7 @@ export function TrainerBulletinBoard({
                 </div>
               </div>
             ) : null}
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-3 border-t border-border pt-5">
               <Button variant="secondary" onClick={() => openEdit(post)} disabled={busy}>
                 <PenSquare className="size-4" />
                 Edit
@@ -386,7 +414,23 @@ export function TrainerBulletinBoard({
               </Button>
             </div>
           </Card>
-        ))}
+        )) : (
+          <Card className="p-7 text-center lg:col-span-2">
+            <div className="mx-auto grid size-12 place-items-center rounded-full bg-bronze-50 text-bronze-600">
+              <Megaphone className="size-5" />
+            </div>
+            <h2 className="mt-4 font-serif text-3xl font-semibold text-charcoal-950">No bulletins yet.</h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-stone-600">
+              Publish your first studio update, coaching reminder, or session invite when there is something every client should see.
+            </p>
+            <div className="mt-5 flex justify-center">
+              <Button variant="warm" onClick={openCreate}>
+                <Plus className="size-4" />
+                Post bulletin
+              </Button>
+            </div>
+          </Card>
+        )}
       </div>
 
       <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -491,5 +535,30 @@ export function TrainerBulletinBoard({
 
       {message ? <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">{message}</div> : null}
     </>
+  );
+}
+
+function BulletinMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  detail: string;
+  tone: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-[1.25rem] border border-stone-200/80 bg-white/72 p-4 shadow-inner-soft">
+      <div className="flex items-center justify-between gap-3">
+        <p className="truncate text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">{label}</p>
+        <Icon className={`size-4 shrink-0 ${tone}`} />
+      </div>
+      <p className="mt-4 font-serif text-3xl font-semibold leading-none text-charcoal-950">{value}</p>
+      <p className="mt-2 truncate text-xs text-stone-500">{detail}</p>
+    </div>
   );
 }
