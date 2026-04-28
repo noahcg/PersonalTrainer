@@ -25,7 +25,9 @@ export type ClientSession = {
   id: string;
   clientId: string;
   startedAt: string;
+  startedAtIso: string;
   completedAt: string | null;
+  completedAtIso: string | null;
   status: ClientSessionStatus;
   location: string;
   notes: string;

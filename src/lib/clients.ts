@@ -191,12 +191,14 @@ function toClientSession(row: ClientSessionRow): ClientSession {
   return {
     id: row.id,
     clientId: row.client_id,
+    startedAtIso: row.started_at,
     startedAt: new Date(row.started_at).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
     }),
+    completedAtIso: row.completed_at,
     completedAt: row.completed_at
       ? new Date(row.completed_at).toLocaleString("en-US", {
           month: "short",

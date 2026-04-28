@@ -211,6 +211,7 @@ export function TrainerClientProfile({
           {
             id: inserted.id,
             clientId: inserted.client_id,
+            startedAtIso: inserted.started_at,
             startedAt: new Date(inserted.started_at).toLocaleString("en-US", {
               month: "short",
               day: "numeric",
@@ -218,6 +219,7 @@ export function TrainerClientProfile({
               minute: "2-digit",
             }),
             completedAt: null,
+            completedAtIso: null,
             status: inserted.status,
             location: inserted.location ?? "",
             notes: inserted.notes ?? "",
@@ -231,6 +233,7 @@ export function TrainerClientProfile({
           {
             id: `client-session-${Date.now()}`,
             clientId: client.id,
+            startedAtIso: startedAt.toISOString(),
             startedAt: startedAt.toLocaleString("en-US", {
               month: "short",
               day: "numeric",
@@ -238,6 +241,7 @@ export function TrainerClientProfile({
               minute: "2-digit",
             }),
             completedAt: null,
+            completedAtIso: null,
             status: "active",
             location: sessionLocation.trim() || "In person",
             notes: sessionNotes.trim(),
@@ -270,7 +274,7 @@ export function TrainerClientProfile({
     try {
       const completedAt = new Date();
       const session = sessions.find((item) => item.id === sessionId);
-      const startedTime = session ? new Date(session.startedAt).getTime() : completedAt.getTime();
+      const startedTime = session ? new Date(session.startedAtIso).getTime() : completedAt.getTime();
       const durationMinutes = Math.max(Math.round((completedAt.getTime() - startedTime) / 60000), 1);
 
       if (mode === "supabase") {
@@ -298,6 +302,7 @@ export function TrainerClientProfile({
                 hour: "numeric",
                 minute: "2-digit",
               }),
+              completedAtIso: completedAt.toISOString(),
               durationMinutes,
             }
           : item,
