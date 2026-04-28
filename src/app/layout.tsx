@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { brand } from "@/lib/brand";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export const metadata: Metadata = {
   title: brand.businessName,
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className="min-h-full font-sans" suppressHydrationWarning>
         {children}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
