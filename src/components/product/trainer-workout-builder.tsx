@@ -1,6 +1,7 @@
 "use client";
 
-import { Plus, Save, Search, X } from "lucide-react";
+import { Dumbbell, Layers3, ListChecks, Plus, Save, Search, TimerReset, Undo2, X } from "lucide-react";
+import type { ComponentType } from "react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,7 @@ export function TrainerWorkoutBuilder({
 }) {
   const [workouts, setWorkouts] = useState(initialWorkouts);
   const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(initialWorkouts[0]?.id ?? null);
+  const [previousWorkoutId, setPreviousWorkoutId] = useState<string | null>(initialWorkouts[0]?.id ?? null);
   const [draft, setDraft] = useState<DraftWorkout>(toDraft(initialWorkouts[0]));
   const [activeBlockId, setActiveBlockId] = useState<string | null>(draft.blocks[0]?.id ?? null);
   const [busy, setBusy] = useState(false);
@@ -124,11 +126,54 @@ export function TrainerWorkoutBuilder({
     });
   }, [activeCategory, exerciseQuery, exercises]);
 
+  const builderSummary = useMemo(
+    () => ({
+      workouts: workouts.length,
+      exercises: exercises.length,
+      plans: plans.length,
+      blocks: draft.blocks.length,
+      prescribedExercises: draft.blocks.reduce((total, block) => total + block.exercises.length, 0),
+    }),
+    [draft.blocks, exercises.length, plans.length, workouts.length],
+  );
+
   function selectWorkout(workout: Workout) {
     setActiveWorkoutId(workout.id);
+    setPreviousWorkoutId(workout.id);
     const nextDraft = toDraft(workout);
     setDraft(nextDraft);
     setActiveBlockId(nextDraft.blocks[0]?.id ?? null);
+  }
+
+  function startNewWorkout() {
+    setPreviousWorkoutId(activeWorkoutId);
+    const nextDraft = toDraft();
+    setActiveWorkoutId(null);
+    setDraft(nextDraft);
+    setActiveBlockId(nextDraft.blocks[0]?.id ?? null);
+    setMessage("New workout draft ready.");
+    window.setTimeout(() => setMessage(null), 1800);
+  }
+
+  function cancelNewWorkout() {
+    const fallbackWorkout =
+      workouts.find((workout) => workout.id === previousWorkoutId) ??
+      workouts[0] ??
+      null;
+
+    if (!fallbackWorkout) {
+      const nextDraft = toDraft();
+      setActiveWorkoutId(null);
+      setDraft(nextDraft);
+      setActiveBlockId(nextDraft.blocks[0]?.id ?? null);
+      setMessage("New workout draft cleared.");
+      window.setTimeout(() => setMessage(null), 1800);
+      return;
+    }
+
+    selectWorkout(fallbackWorkout);
+    setMessage("New workout draft canceled.");
+    window.setTimeout(() => setMessage(null), 1800);
   }
 
   function setBlock(blockId: string, updater: (block: WorkoutBlock) => WorkoutBlock) {
@@ -273,30 +318,49 @@ export function TrainerWorkoutBuilder({
 
   return (
     <>
-      <Card className="mb-5 p-4 sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Workout workspace</p>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-600">Choose a workout, edit its structure, add movements to the selected block, then save the complete session.</p>
+      <Card className="mb-5 overflow-hidden p-0">
+        <div className="border-b border-border bg-white/35 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Builder workspace</p>
+              <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">Session composition in one working surface.</h2>
+              <p className="mt-3 text-sm leading-6 text-stone-600">
+                Choose a workout, edit its structure, add movements to the selected block, then save the complete session.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              {!draft.id && (draft.name || draft.dayLabel || draft.warmup || draft.cooldown || draft.coachNotes || draft.blocks.some((block) => block.intent || block.exercises.length)) ? (
+                <Button variant="ghost" onClick={cancelNewWorkout}>
+                  <Undo2 className="size-4" />
+                  Cancel draft
+                </Button>
+              ) : !draft.id && activeWorkoutId === null ? (
+                <Button variant="ghost" onClick={cancelNewWorkout}>
+                  <Undo2 className="size-4" />
+                  Cancel draft
+                </Button>
+              ) : null}
+              <Button
+                variant="secondary"
+                onClick={startNewWorkout}
+              >
+                <Plus className="size-4" />
+                New workout
+              </Button>
+              <Button variant="warm" onClick={saveWorkout} disabled={busy || !draft.name.trim()}>
+                <Save className="size-4" />
+                {busy ? "Saving..." : "Save workout"}
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                const nextDraft = toDraft();
-                setActiveWorkoutId(null);
-                setDraft(nextDraft);
-                setActiveBlockId(nextDraft.blocks[0]?.id ?? null);
-              }}
-            >
-              <Plus className="size-4" />
-              New workout
-            </Button>
-            <Button variant="warm" onClick={saveWorkout} disabled={busy || !draft.name.trim()}>
-              <Save className="size-4" />
-              {busy ? "Saving..." : "Save workout"}
-            </Button>
-          </div>
+        </div>
+
+        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-5 sm:p-6">
+          <BuilderMetric icon={Layers3} label="Workouts" value={String(builderSummary.workouts)} detail="Saved sessions" tone="text-charcoal-950" />
+          <BuilderMetric icon={ListChecks} label="Exercise options" value={String(builderSummary.exercises)} detail="Library movements" tone="text-sage-700" />
+          <BuilderMetric icon={TimerReset} label="Linked plans" value={String(builderSummary.plans)} detail="Plan options" tone="text-bronze-500" />
+          <BuilderMetric icon={Dumbbell} label="Blocks" value={String(builderSummary.blocks)} detail="Current workout" tone="text-stone-600" />
+          <BuilderMetric icon={Save} label="Prescribed" value={String(builderSummary.prescribedExercises)} detail="Current exercises" tone="text-bronze-500" />
         </div>
       </Card>
 
@@ -312,6 +376,18 @@ export function TrainerWorkoutBuilder({
             </div>
           </CardHeader>
           <CardContent className="space-y-3 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-3">
+            {!activeWorkoutId ? (
+              <div className="rounded-[1.35rem] border border-bronze-300 bg-bronze-50 px-4 py-4 text-left">
+                <p className="font-semibold text-charcoal-950">New workout draft</p>
+                <p className="mt-1 text-sm text-stone-600">Fill in the builder, then save to add it to the library.</p>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-stone-500">
+                  <span className="rounded-full bg-white/80 px-2.5 py-1">{draft.blocks.length} blocks</span>
+                  <span className="rounded-full bg-white/80 px-2.5 py-1">
+                    {draft.blocks.reduce((total, block) => total + block.exercises.length, 0)} exercises
+                  </span>
+                </div>
+              </div>
+            ) : null}
             {workouts.length ? (
               workouts.map((workout) => (
                 <button
@@ -347,7 +423,7 @@ export function TrainerWorkoutBuilder({
                 <p className="text-[0.66rem] uppercase tracking-[0.28em] text-bronze-600">
                   {draft.id ? "Editing workout" : "New workout"}
                 </p>
-                <CardTitle className="mt-2">{draft.name || "Untitled workout"}</CardTitle>
+                <CardTitle className="mt-2">{draft.name || (draft.id ? "Untitled workout" : "New workout draft")}</CardTitle>
               </div>
               <Badge variant={activeBlockId ? "bronze" : "default"}>
                 {activeBlockId ? "Block selected" : "Select a block"}
@@ -544,5 +620,30 @@ function MiniField({
       {label}
       {children}
     </label>
+  );
+}
+
+function BuilderMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  detail: string;
+  tone: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-[1.25rem] border border-stone-200/80 bg-white/72 p-4 shadow-inner-soft">
+      <div className="flex items-center justify-between gap-3">
+        <p className="truncate text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">{label}</p>
+        <Icon className={`size-4 shrink-0 ${tone}`} />
+      </div>
+      <p className="mt-4 font-serif text-3xl font-semibold leading-none text-charcoal-950">{value}</p>
+      <p className="mt-2 truncate text-xs text-stone-500">{detail}</p>
+    </div>
   );
 }

@@ -2,7 +2,8 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { PencilLine, Plus, Search, X } from "lucide-react";
+import { BookOpenText, Dumbbell, Layers3, PencilLine, Plus, Search, Shapes, X } from "lucide-react";
+import type { ComponentType } from "react";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ExerciseCard } from "@/components/product/exercise-card";
@@ -118,6 +119,17 @@ export function ExerciseLibrary({
       return matchesQuery && matchesFilter;
     });
   }, [activeFilter, exercises, query]);
+
+  const librarySummary = useMemo(
+    () => ({
+      total: exercises.length,
+      visible: visibleExercises.length,
+      custom: exercises.filter((exercise) => exercise.editable).length,
+      patterns: new Set(exercises.map((exercise) => exercise.pattern).filter(Boolean)).size,
+      categories: new Set(exercises.map((exercise) => exercise.category).filter(Boolean)).size,
+    }),
+    [exercises, visibleExercises.length],
+  );
 
   function updateDraft<K extends keyof DraftExercise>(key: K, value: DraftExercise[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -272,29 +284,36 @@ export function ExerciseLibrary({
 
   return (
     <>
-      <div className="mb-6 space-y-4">
-        <Card className="p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Exercise workspace</p>
-              <p className="mt-2 text-sm leading-6 text-stone-600">Search, filter, and maintain the movement references clients rely on when they need clarity mid-session.</p>
-            </div>
-            <div className="flex gap-3 text-sm text-stone-500">
-              <div className="rounded-full bg-stone-50 px-4 py-2">{visibleExercises.length} visible</div>
-              <div className="rounded-full bg-stone-50 px-4 py-2">{exercises.length} total</div>
-            </div>
+      <Card className="mb-5 overflow-hidden p-0">
+        <div className="border-b border-border bg-white/35 p-5 sm:p-6">
+          <div className="max-w-2xl">
+            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Library workspace</p>
+            <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">Movement references built for fast coaching.</h2>
+            <p className="mt-3 text-sm leading-6 text-stone-600">
+              Search, filter, and maintain the instructions, cues, mistakes, and substitutions clients rely on mid-session.
+            </p>
           </div>
-        </Card>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="relative sm:max-w-xl sm:flex-1">
-            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search exercises, muscle groups, equipment..."
-              className="pl-11"
-            />
-          </div>
+        </div>
+
+        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-5 sm:p-6">
+          <LibraryMetric icon={Dumbbell} label="Exercise bank" value={String(librarySummary.total)} detail="Saved references" tone="text-charcoal-950" />
+          <LibraryMetric icon={Search} label="Current view" value={String(librarySummary.visible)} detail="Matching filters" tone="text-sage-700" />
+          <LibraryMetric icon={PencilLine} label="Custom" value={String(librarySummary.custom)} detail="Trainer-created" tone="text-bronze-500" />
+          <LibraryMetric icon={Shapes} label="Patterns" value={String(librarySummary.patterns)} detail="Movement types" tone="text-stone-600" />
+          <LibraryMetric icon={BookOpenText} label="Categories" value={String(librarySummary.categories)} detail="Reference groups" tone="text-bronze-500" />
+        </div>
+
+        <div className="border-t border-border bg-stone-50/45 p-5 sm:p-6">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search exercises, muscle groups, equipment..."
+                className="pl-11"
+              />
+            </div>
           <Dialog.Root open={open} onOpenChange={setOpen}>
             <Dialog.Trigger asChild>
               <Button
@@ -464,16 +483,23 @@ export function ExerciseLibrary({
               </Dialog.Content>
             </Dialog.Portal>
           </Dialog.Root>
-        </div>
+          </div>
 
-        <div className="no-scrollbar -mx-2 flex gap-2 overflow-x-auto overscroll-x-contain px-2 py-2">
-          {filters.map((filter) => (
-            <button key={filter} type="button" onClick={() => setActiveFilter(filter)}>
-              <Badge variant={filter === activeFilter ? "dark" : "default"}>{filter}</Badge>
-            </button>
-          ))}
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">
+              <Layers3 className="size-4" />
+              Filters
+            </div>
+            <div className="no-scrollbar -mx-2 flex gap-2 overflow-x-auto overscroll-x-contain px-2 py-2">
+              {filters.map((filter) => (
+                <button key={filter} type="button" onClick={() => setActiveFilter(filter)}>
+                  <Badge variant={filter === activeFilter ? "dark" : "default"}>{filter}</Badge>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {visibleExercises.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -527,5 +553,30 @@ export function ExerciseLibrary({
         </div>
       ) : null}
     </>
+  );
+}
+
+function LibraryMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  detail: string;
+  tone: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-[1.25rem] border border-stone-200/80 bg-white/72 p-4 shadow-inner-soft">
+      <div className="flex items-center justify-between gap-3">
+        <p className="truncate text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">{label}</p>
+        <Icon className={`size-4 shrink-0 ${tone}`} />
+      </div>
+      <p className="mt-4 font-serif text-3xl font-semibold leading-none text-charcoal-950">{value}</p>
+      <p className="mt-2 truncate text-xs text-stone-500">{detail}</p>
+    </div>
   );
 }
