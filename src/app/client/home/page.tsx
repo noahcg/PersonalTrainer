@@ -3,6 +3,7 @@ import { ArrowRight, CalendarCheck, CheckCircle2, HeartPulse, NotebookPen } from
 import { brand } from "@/lib/brand";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProgressChart } from "@/components/product/progress-chart";
+import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,22 +11,24 @@ import { getClientCheckInData } from "@/lib/checkins";
 import { getClientSelfProfile } from "@/lib/clients";
 import { getClientConversationData } from "@/lib/messages";
 import { getClientAssignedPlan } from "@/lib/plans";
+import { getClientBulletins } from "@/lib/bulletins";
 import { getClientResources } from "@/lib/resources";
 import { getClientWorkouts } from "@/lib/workouts";
 
 export default async function ClientHomePage() {
-  const [{ client }, { plan }, { workouts }, { messages }, { checkIns }, { resources }] = await Promise.all([
+  const [{ client }, { plan }, { workouts }, { messages }, { checkIns }, { resources }, { bulletins, mode }] = await Promise.all([
     getClientSelfProfile(),
     getClientAssignedPlan(),
     getClientWorkouts(),
     getClientConversationData(),
     getClientCheckInData(),
     getClientResources(),
+    getClientBulletins(),
   ]);
 
   const workout = workouts[0];
   const latestCheckIn = checkIns[0];
-  const hasWorkspaceData = Boolean(client || plan || workouts.length || messages.length || checkIns.length || resources.length);
+  const hasWorkspaceData = Boolean(client || plan || workouts.length || messages.length || checkIns.length || resources.length || bulletins.length);
 
   if (!hasWorkspaceData) {
     return (
@@ -34,6 +37,7 @@ export default async function ClientHomePage() {
         title="Welcome"
         subtitle="Your coaching workspace starts empty and fills in only with the plan, workouts, messages, and resources assigned to you."
       >
+        <SessionReminderBanner initialBulletins={bulletins} mode={mode} role="client" />
         <Card className="max-w-4xl p-8">
           <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
           <h2 className="mt-5 font-serif text-4xl font-semibold text-charcoal-950">Your workspace is ready for your coach to personalize.</h2>
@@ -58,6 +62,7 @@ export default async function ClientHomePage() {
 
   return (
     <AppShell role="client" title="Your next session is clear." subtitle={`${brand.tagline} Everything is organized so you can train with calm structure, log performance, and feel supported.`}>
+      <SessionReminderBanner initialBulletins={bulletins} mode={mode} role="client" />
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <section className="space-y-5">
           <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">

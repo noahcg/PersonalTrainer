@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { CalendarCheck, MapPin, Pin, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
+import { applyStoredReminderSettings, filterArchivedBulletins } from "@/lib/bulletin-reminder-storage";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { BulletinPost } from "@/lib/types";
 
@@ -34,6 +36,10 @@ function hydrateRsvps(posts: BulletinPost[], rawStorage: string | null) {
       sessionStartsAt: post.sessionStartsAt ?? null,
       sessionLocation: post.sessionLocation ?? null,
       sessionCapacity: post.sessionCapacity ?? null,
+      reminderEnabled: post.reminderEnabled ?? false,
+      reminderMinutesBefore: post.reminderMinutesBefore ?? null,
+      reminderAudience: post.reminderAudience ?? "attending",
+      reminderTrainerEnabled: post.reminderTrainerEnabled ?? true,
       rsvps: post.rsvps ?? [],
     };
     const record = stored[post.id];
@@ -85,16 +91,24 @@ export function ClientBulletinBoard({
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setBulletins((current) => filterArchivedBulletins(applyStoredReminderSettings(current)));
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
     if (mode !== "demo") return;
     const sync = () => {
       try {
         const stored = window.localStorage.getItem(storageKey);
         const posts = stored ? (JSON.parse(stored) as BulletinPost[]) : initialBulletins;
-        setBulletins(hydrateRsvps(posts, window.localStorage.getItem(rsvpStorageKey)));
+        setBulletins(filterArchivedBulletins(applyStoredReminderSettings(hydrateRsvps(posts, window.localStorage.getItem(rsvpStorageKey)))));
       } catch {
         window.localStorage.removeItem(storageKey);
         window.localStorage.removeItem(rsvpStorageKey);
-        setBulletins(hydrateRsvps(initialBulletins, null));
+        setBulletins(filterArchivedBulletins(applyStoredReminderSettings(hydrateRsvps(initialBulletins, null))));
       }
     };
     const timeout = window.setTimeout(sync, 0);
@@ -179,6 +193,7 @@ export function ClientBulletinBoard({
 
   return (
     <>
+      <SessionReminderBanner initialBulletins={bulletins} mode={mode} role="client" />
       <div className="mb-5 max-w-2xl text-sm text-stone-600">
         Review studio announcements, logistics, and special training events. Posts that require an RSVP let you confirm attendance without leaving the app.
       </div>

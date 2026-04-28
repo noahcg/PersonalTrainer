@@ -171,11 +171,16 @@ export type BulletinPost = {
   author: string;
   publishedAt: string;
   pinned: boolean;
+  status?: "active" | "archived";
   postType: "announcement" | "session";
   requiresRsvp: boolean;
   sessionStartsAt?: string | null;
   sessionLocation?: string | null;
   sessionCapacity?: number | null;
+  reminderEnabled?: boolean;
+  reminderMinutesBefore?: number | null;
+  reminderAudience?: "attending" | "all";
+  reminderTrainerEnabled?: boolean;
   clientRsvp?: "attending" | "not_attending" | null;
   rsvpSummary?: {
     attending: number;

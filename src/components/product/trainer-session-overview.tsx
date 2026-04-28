@@ -6,6 +6,7 @@ import { ArrowRight, CalendarCheck, MapPin, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { filterArchivedBulletins } from "@/lib/bulletin-reminder-storage";
 import type { BulletinPost } from "@/lib/types";
 
 const storageKey = "aurelian-bulletins";
@@ -84,9 +85,9 @@ export function TrainerSessionOverview({
       try {
         const stored = window.localStorage.getItem(storageKey);
         const posts = stored ? (JSON.parse(stored) as BulletinPost[]) : initialBulletins;
-        setBulletins(hydrateRsvps(posts, window.localStorage.getItem(rsvpStorageKey)));
+        setBulletins(filterArchivedBulletins(hydrateRsvps(posts, window.localStorage.getItem(rsvpStorageKey))));
       } catch {
-        setBulletins(hydrateRsvps(initialBulletins, null));
+        setBulletins(filterArchivedBulletins(hydrateRsvps(initialBulletins, null)));
       }
     };
     const timeout = window.setTimeout(sync, 0);

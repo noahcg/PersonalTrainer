@@ -228,11 +228,16 @@ create table public.bulletin_posts (
   title text not null,
   body text not null,
   pinned boolean not null default false,
+  status text not null default 'active' check (status in ('active', 'archived')),
   post_type text not null default 'announcement' check (post_type in ('announcement', 'session')),
   requires_rsvp boolean not null default false,
   session_starts_at timestamptz,
   session_location text,
   session_capacity int check (session_capacity is null or session_capacity > 0),
+  reminder_enabled boolean not null default false,
+  reminder_minutes_before int check (reminder_minutes_before is null or reminder_minutes_before > 0),
+  reminder_audience text not null default 'attending' check (reminder_audience in ('attending', 'all')),
+  reminder_trainer_enabled boolean not null default true,
   published_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -246,6 +251,16 @@ create table public.bulletin_rsvps (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (bulletin_post_id, client_id)
+);
+
+create table public.bulletin_reminder_dismissals (
+  id uuid primary key default gen_random_uuid(),
+  bulletin_post_id uuid not null references public.bulletin_posts(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  role app_role not null,
+  reminder_key text not null,
+  dismissed_at timestamptz not null default now(),
+  unique (bulletin_post_id, profile_id, reminder_key)
 );
 
 create index clients_trainer_idx on public.clients(trainer_id, status);
@@ -274,6 +289,7 @@ alter table public.messages enable row level security;
 alter table public.resources enable row level security;
 alter table public.bulletin_posts enable row level security;
 alter table public.bulletin_rsvps enable row level security;
+alter table public.bulletin_reminder_dismissals enable row level security;
 
 create or replace function public.current_trainer_id()
 returns uuid
@@ -331,6 +347,8 @@ create policy "bulletin rsvps visible" on public.bulletin_rsvps for select using
   )
 );
 create policy "bulletin rsvps client writes" on public.bulletin_rsvps for all using (client_id = public.current_client_id()) with check (client_id = public.current_client_id());
+create policy "bulletin reminder dismissals visible" on public.bulletin_reminder_dismissals for select using (profile_id = auth.uid());
+create policy "bulletin reminder dismissals write own" on public.bulletin_reminder_dismissals for all using (profile_id = auth.uid()) with check (profile_id = auth.uid());
 
 -- Demo domain seed with deterministic ids for local Supabase projects.
 insert into public.exercises (id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, is_global)
