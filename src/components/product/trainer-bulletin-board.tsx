@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { Archive, CalendarCheck, MapPin, Megaphone, PenSquare, Pin, Plus, Send, Trash2, Users, X } from "lucide-react";
+import { Archive, CalendarCheck, ExternalLink, MapPin, Megaphone, PenSquare, Pin, Plus, Send, Trash2, Users, X } from "lucide-react";
 import type { ComponentType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -519,18 +519,26 @@ export function TrainerBulletinBoard({
                   <span suppressHydrationWarning>{formatSessionDate(post.sessionStartsAt) ?? "Session timing pending"}</span>
                 </div>
                 <div className="mt-2 flex items-start gap-2">
-                  <MapPin className="size-4 text-bronze-600" />
-                  <div>
-                    <span>{formatBulletinLocation(post.sessionLocationDetails, post.sessionLocation) || "Location to be announced"}</span>
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-bronze-600" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <span>{formatBulletinLocation(post.sessionLocationDetails, post.sessionLocation) || "Location to be announced"}</span>
+                      {post.sessionLocationDetails?.mapUrl ? (
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="h-8 shrink-0 self-start rounded-full border-bronze-200 bg-ivory-50 px-3 text-xs font-medium text-bronze-700 hover:bg-bronze-50"
+                        >
+                          <a href={post.sessionLocationDetails.mapUrl} target="_blank" rel="noreferrer">
+                            <ExternalLink className="size-3.5" />
+                            Open map
+                          </a>
+                        </Button>
+                      ) : null}
+                    </div>
                     {post.sessionLocationDetails?.notes ? (
                       <p className="mt-1 text-stone-500">{post.sessionLocationDetails.notes}</p>
-                    ) : null}
-                    {post.sessionLocationDetails?.mapUrl ? (
-                      <Button asChild variant="ghost" size="sm" className="mt-2 h-auto px-0 py-0 text-bronze-700">
-                        <a href={post.sessionLocationDetails.mapUrl} target="_blank" rel="noreferrer">
-                          Open map
-                        </a>
-                      </Button>
                     ) : null}
                   </div>
                 </div>
