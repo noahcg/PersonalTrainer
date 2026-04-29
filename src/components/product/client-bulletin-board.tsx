@@ -243,7 +243,7 @@ export function ClientBulletinBoard({
                     {post.sessionLocationDetails?.mapUrl ? (
                       <Button
                         asChild
-                        variant="outline"
+                        variant="secondary"
                         size="sm"
                         className="h-8 shrink-0 self-start rounded-full border-bronze-200 bg-ivory-50 px-3 text-xs font-medium text-bronze-700 hover:bg-bronze-50"
                       >

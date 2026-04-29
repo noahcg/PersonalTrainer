@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { Archive, CalendarCheck, ExternalLink, MapPin, Megaphone, PenSquare, Pin, Plus, Send, Trash2, Users, X } from "lucide-react";
+import { Archive, CalendarCheck, Clock, ExternalLink, MapPin, Megaphone, PenSquare, Pin, Plus, Send, Trash2, Users, X } from "lucide-react";
 import type { ComponentType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,40 @@ type SavedBulletinRow = {
   reminder_trainer_enabled: boolean;
   published_at: string;
 };
+
+const sessionTimeOptions = Array.from({ length: 65 }, (_, index) => {
+  const totalMinutes = 5 * 60 + index * 15;
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  const value = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
+  return {
+    value,
+    label: `${displayHour}:${String(minute).padStart(2, "0")} ${period}`,
+  };
+});
+
+function toLocalDateValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getRelativeDateValue(daysFromToday: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromToday);
+  return toLocalDateValue(date);
+}
+
+function getSessionDateValue(value: string) {
+  return value.includes("T") ? value.split("T")[0] : "";
+}
+
+function getSessionTimeValue(value: string) {
+  return value.includes("T") ? value.split("T")[1]?.slice(0, 5) ?? "" : "";
+}
 
 function hydrateRsvps(posts: BulletinPost[], rawStorage: string | null) {
   const stored = rawStorage ? (JSON.parse(rawStorage) as Record<string, unknown>) : {};
@@ -137,6 +171,9 @@ export function TrainerBulletinBoard({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [composerErrors, setComposerErrors] = useState<ComposerErrors>({});
+  const sessionDate = getSessionDateValue(sessionStartsAt);
+  const sessionTime = getSessionTimeValue(sessionStartsAt);
+  const todayDateValue = getRelativeDateValue(0);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -233,6 +270,18 @@ export function TrainerBulletinBoard({
     setReminderTrainerEnabled(post.reminderTrainerEnabled ?? true);
     setComposerErrors({});
     setOpen(true);
+  }
+
+  function updateSessionSchedule(nextDate: string, nextTime: string) {
+    if (!nextDate && !nextTime) {
+      setSessionStartsAt("");
+      return;
+    }
+
+    const date = nextDate || todayDateValue;
+    const time = nextTime || sessionTime || "09:00";
+    setSessionStartsAt(`${date}T${time}`);
+    setComposerErrors((current) => ({ ...current, sessionStartsAt: undefined, form: undefined }));
   }
 
   async function saveBulletin() {
@@ -526,7 +575,7 @@ export function TrainerBulletinBoard({
                       {post.sessionLocationDetails?.mapUrl ? (
                         <Button
                           asChild
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
                           className="h-8 shrink-0 self-start rounded-full border-bronze-200 bg-ivory-50 px-3 text-xs font-medium text-bronze-700 hover:bg-bronze-50"
                         >
@@ -716,23 +765,68 @@ export function TrainerBulletinBoard({
                 </label>
                 {postType === "session" ? (
                   <div className="grid gap-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <label className="grid gap-2 text-sm font-medium text-stone-700">
-                        <span className="flex items-center gap-2">
+                    <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
+                      <div className="rounded-[1.5rem] border border-stone-200 bg-white/70 p-4">
+                        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-charcoal-950">
+                          <CalendarCheck className="size-4 text-bronze-600" />
                           Session date and time <RequiredIndicator />
-                        </span>
-                        <Input
-                          type="datetime-local"
-                          value={sessionStartsAt}
-                          onChange={(event) => {
-                            setSessionStartsAt(event.target.value);
-                            setComposerErrors((current) => ({ ...current, sessionStartsAt: undefined, form: undefined }));
-                          }}
-                          aria-invalid={Boolean(composerErrors.sessionStartsAt)}
-                          className={composerErrors.sessionStartsAt ? "border-rose-300 focus-visible:border-rose-400 focus-visible:ring-rose-100" : undefined}
-                        />
-                        {composerErrors.sessionStartsAt ? <span className="text-sm font-medium text-rose-600">{composerErrors.sessionStartsAt}</span> : null}
-                      </label>
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem]">
+                          <label className="grid gap-2 text-sm font-medium text-stone-700">
+                            Date
+                            <Input
+                              type="date"
+                              min={todayDateValue}
+                              value={sessionDate}
+                              onChange={(event) => updateSessionSchedule(event.target.value, sessionTime)}
+                              aria-invalid={Boolean(composerErrors.sessionStartsAt)}
+                              className={composerErrors.sessionStartsAt ? "border-rose-300 focus-visible:border-rose-400 focus-visible:ring-rose-100" : undefined}
+                            />
+                          </label>
+                          <label className="grid gap-2 text-sm font-medium text-stone-700">
+                            Time
+                            <div className="relative">
+                              <Clock className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-bronze-600" />
+                              <select
+                                value={sessionTime}
+                                onChange={(event) => updateSessionSchedule(sessionDate, event.target.value)}
+                                aria-invalid={Boolean(composerErrors.sessionStartsAt)}
+                                className={`h-11 w-full appearance-none rounded-2xl border bg-white/80 px-10 pr-4 text-sm text-charcoal-950 shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100 ${
+                                  composerErrors.sessionStartsAt ? "border-rose-300 focus-visible:border-rose-400 focus-visible:ring-rose-100" : "border-stone-200"
+                                }`}
+                              >
+                                <option value="">Choose time</option>
+                                {sessionTimeOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </label>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {[
+                            { label: "Today", value: todayDateValue },
+                            { label: "Tomorrow", value: getRelativeDateValue(1) },
+                            { label: "This weekend", value: getRelativeDateValue((6 - new Date().getDay() + 7) % 7 || 7) },
+                          ].map((item) => (
+                            <button
+                              key={item.label}
+                              type="button"
+                              onClick={() => updateSessionSchedule(item.value, sessionTime)}
+                              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                                sessionDate === item.value
+                                  ? "border-bronze-300 bg-bronze-50 text-bronze-700"
+                                  : "border-stone-200 bg-white/70 text-stone-600 hover:border-bronze-200 hover:text-bronze-700"
+                              }`}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                        {composerErrors.sessionStartsAt ? <span className="mt-2 block text-sm font-medium text-rose-600">{composerErrors.sessionStartsAt}</span> : null}
+                      </div>
                       <div className="grid gap-2">
                         <span className="text-sm font-medium text-stone-700">Capacity</span>
                         <Input type="number" min="1" value={sessionCapacity} onChange={(event) => setSessionCapacity(event.target.value)} placeholder="Optional" />
