@@ -57,6 +57,16 @@ export function TrainerPlansManager({
     [activePlanId, plans],
   );
 
+  const planSummary = useMemo(
+    () => ({
+      total: plans.length,
+      templates: plans.filter((plan) => plan.template).length,
+      assigned: plans.reduce((total, plan) => total + plan.assignedClients.length, 0),
+      workouts: plans.reduce((total, plan) => total + plan.workouts.length, 0),
+    }),
+    [plans],
+  );
+
   useEffect(() => {
     if (mode !== "demo") return;
     const stored = window.localStorage.getItem(storageKey);
@@ -326,38 +336,52 @@ export function TrainerPlansManager({
 
   return (
     <>
-      <Card className="mb-5 p-4 sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Plan workspace</p>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-600">Select a plan, review the structure, edit the training cycle, then assign it to clients when it is ready.</p>
+      <Card className="mb-5 overflow-hidden p-0">
+        <div className="border-b border-border bg-white/35 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Plan workspace</p>
+              <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">
+                Training cycles ready to edit, assign, and reuse.
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-stone-600">
+                Select a plan, review the structure, edit the training cycle, then assign it to clients when it is ready.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                variant="warm"
+                onClick={() => {
+                  resetDraft();
+                  setOpen(true);
+                }}
+              >
+                <Plus className="size-4" />
+                New plan
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setDraft({
+                    ...emptyDraft,
+                    title: "New reusable template",
+                    template: true,
+                  });
+                  setEditingId(null);
+                  setOpen(true);
+                }}
+              >
+                Save template
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              variant="warm"
-              onClick={() => {
-                resetDraft();
-                setOpen(true);
-              }}
-            >
-              <Plus className="size-4" />
-              New plan
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setDraft({
-                  ...emptyDraft,
-                  title: "New reusable template",
-                  template: true,
-                });
-                setEditingId(null);
-                setOpen(true);
-              }}
-            >
-              Save template
-            </Button>
-          </div>
+        </div>
+
+        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4 sm:p-6">
+          <PlanWorkspaceMetric icon={CalendarDays} label="Plans" value={String(planSummary.total)} detail="Saved cycles" tone="text-charcoal-950" />
+          <PlanWorkspaceMetric icon={Copy} label="Templates" value={String(planSummary.templates)} detail="Reusable starts" tone="text-sage-700" />
+          <PlanWorkspaceMetric icon={Users} label="Assignments" value={String(planSummary.assigned)} detail={`${clients.length} clients`} tone="text-bronze-500" />
+          <PlanWorkspaceMetric icon={Dumbbell} label="Workouts" value={String(planSummary.workouts)} detail="Linked sessions" tone="text-stone-600" />
         </div>
       </Card>
 
@@ -627,6 +651,31 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {label}
       {children}
     </label>
+  );
+}
+
+function PlanWorkspaceMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  detail: string;
+  tone: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-[1.25rem] border border-stone-200/80 bg-white/72 p-4 shadow-inner-soft">
+      <div className="flex items-center justify-between gap-3">
+        <p className="truncate text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">{label}</p>
+        <Icon className={`size-4 shrink-0 ${tone}`} />
+      </div>
+      <p className="mt-4 font-serif text-3xl font-semibold leading-none text-charcoal-950">{value}</p>
+      <p className="mt-2 truncate text-xs text-stone-500">{detail}</p>
+    </div>
   );
 }
 

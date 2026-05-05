@@ -3,7 +3,8 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowRight, BookOpenText, Globe2, LibraryBig, Sparkles, UserRound, X } from "lucide-react";
+import { ArrowRight, BookOpenText, Globe2, LibraryBig, Plus, Search, Sparkles, UserRound, X } from "lucide-react";
+import type { ComponentType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,8 @@ type DraftResource = {
   assignedClientId: string;
   estimatedTime: string;
 };
+
+type ResourceAudienceFilter = "all" | "global" | "personal";
 
 const emptyDraft: DraftResource = {
   title: "",
@@ -58,6 +61,8 @@ export function TrainerResourcesManager({
   const [resources, setResources] = useState(initialResources);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DraftResource>(emptyDraft);
+  const [query, setQuery] = useState("");
+  const [activeAudience, setActiveAudience] = useState<ResourceAudienceFilter>("all");
 
   useEffect(() => {
     if (mode !== "demo") return;
@@ -78,12 +83,39 @@ export function TrainerResourcesManager({
 
   const libraryStats = useMemo(() => {
     const personalCount = resources.filter((resource) => resource.audience === "personal").length;
+    const types = new Set(resources.map((resource) => resource.type).filter(Boolean)).size;
     return {
       total: resources.length,
       global: resources.length - personalCount,
       personal: personalCount,
+      types,
     };
   }, [resources]);
+
+  const visibleResources = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return resources.filter((resource) => {
+      const searchable = [
+        resource.title,
+        resource.description,
+        resource.content,
+        resource.type,
+        resource.estimatedTime,
+        ...resource.tags,
+        ...resource.assignedClientNames,
+      ]
+        .join(" ")
+        .toLowerCase();
+      const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
+      const matchesAudience =
+        activeAudience === "all" ||
+        (activeAudience === "global" && resource.audience === "all") ||
+        resource.audience === activeAudience;
+
+      return matchesQuery && matchesAudience;
+    });
+  }, [activeAudience, query, resources]);
 
   function persist(nextResources: Resource[]) {
     if (mode === "demo") {
@@ -165,49 +197,77 @@ export function TrainerResourcesManager({
 
   return (
     <>
-      <div className="space-y-5">
-        <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-          <Card className="min-h-[260px] p-7">
-            <Badge variant="bronze">Resource library</Badge>
-            <h2 className="mt-5 max-w-2xl font-serif text-4xl font-semibold leading-tight text-charcoal-950">
-              Build a support library clients can actually use between sessions.
-            </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-600">
-              Make resources feel like real coaching assets: clear summaries, detailed guidance, direct links, and a defined audience for who should see them.
-            </p>
-          </Card>
-          <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-1">
-            {[
-              { label: "Resources", value: String(libraryStats.total), icon: LibraryBig },
-              { label: "Global", value: String(libraryStats.global), icon: Globe2 },
-              { label: "Personal", value: String(libraryStats.personal), icon: UserRound },
-            ].map(({ label, value, icon: Icon }) => (
-              <Card key={label} className="p-5">
-                <Icon className="size-5 text-bronze-500" />
-                <p className="mt-6 text-[0.66rem] uppercase tracking-[0.28em] text-stone-500">{label}</p>
-                <p className="mt-2 font-serif text-4xl font-semibold text-charcoal-950">{value}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        <Card className="p-5">
-          <div className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
+      <Card className="mb-5 overflow-hidden p-0">
+        <div className="border-b border-border bg-white/35 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
               <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Resource workspace</p>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
-                Create evergreen resources for all clients or assign a focused resource to one person when it supports a specific plan, limitation, or habit.
+              <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">
+                Coaching references clients can revisit between sessions.
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-stone-600">
+                Create evergreen resources for all clients or assign focused guidance to one person when it supports a specific plan, limitation, or habit.
               </p>
             </div>
             <Button variant="warm" onClick={() => setOpen(true)}>
+              <Plus className="size-4" />
               Create resource
             </Button>
           </div>
+        </div>
 
-          <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {resources.map((resource) => (
+        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4 sm:p-6">
+          <ResourceMetric icon={LibraryBig} label="Resources" value={String(libraryStats.total)} detail="Saved references" tone="text-charcoal-950" />
+          <ResourceMetric icon={Search} label="Current view" value={String(visibleResources.length)} detail="Matching filters" tone="text-sage-700" />
+          <ResourceMetric icon={Globe2} label="Global" value={String(libraryStats.global)} detail="All clients" tone="text-bronze-500" />
+          <ResourceMetric icon={UserRound} label="Personal" value={String(libraryStats.personal)} detail={`${libraryStats.types} resource types`} tone="text-stone-600" />
+        </div>
+
+        <div className="border-t border-border bg-stone-50/45 p-5 sm:p-6">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search resources, tags, clients..."
+                className="pl-11"
+              />
+            </div>
+            <div className="no-scrollbar flex max-w-full gap-2 overflow-x-auto py-1">
+              {[
+                { label: "All", value: "all" },
+                { label: "Global", value: "global" },
+                { label: "Personal", value: "personal" },
+              ].map((filter) => {
+                const value = filter.value as ResourceAudienceFilter;
+
+                return (
+                  <button
+                    key={filter.label}
+                    type="button"
+                    onClick={() => setActiveAudience(value)}
+                  >
+                    <Badge variant={activeAudience === value ? "dark" : "default"}>{filter.label}</Badge>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {visibleResources.length > 0 ? (
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {visibleResources.map((resource, index) => (
+            <motion.div
+              key={resource.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(index * 0.035, 0.2) }}
+            >
               <Link key={resource.id} href={`/trainer/resources/${resource.id}`} className="block">
-                <Card className="h-full p-5 sm:p-6 transition hover:-translate-y-1 hover:bg-white/90">
+                <Card className="h-full p-5 transition hover:-translate-y-1 hover:bg-white/90 sm:p-6">
                   <div className="flex items-center justify-between gap-3">
                     <Badge variant="bronze">{resource.type}</Badge>
                     <Badge variant={resource.audience === "all" ? "sage" : "default"}>
@@ -237,10 +297,19 @@ export function TrainerResourcesManager({
                   </div>
                 </Card>
               </Link>
-            ))}
-          </div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <Card className="p-8 text-center">
+          <p className="font-serif text-3xl font-semibold">No resources match that view.</p>
+          <p className="mt-2 text-sm text-stone-500">Try a broader search or create the coaching reference you need.</p>
+          <Button className="mt-5" variant="warm" onClick={() => setOpen(true)}>
+            <Plus className="size-4" />
+            Create resource
+          </Button>
         </Card>
-      </div>
+      )}
 
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
@@ -327,6 +396,31 @@ export function TrainerResourcesManager({
         </Dialog.Portal>
       </Dialog.Root>
     </>
+  );
+}
+
+function ResourceMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  detail: string;
+  tone: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-[1.25rem] border border-stone-200/80 bg-white/72 p-4 shadow-inner-soft">
+      <div className="flex items-center justify-between gap-3">
+        <p className="truncate text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">{label}</p>
+        <Icon className={`size-4 shrink-0 ${tone}`} />
+      </div>
+      <p className="mt-4 font-serif text-3xl font-semibold leading-none text-charcoal-950">{value}</p>
+      <p className="mt-2 truncate text-xs text-stone-500">{detail}</p>
+    </div>
   );
 }
 
