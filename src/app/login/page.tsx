@@ -73,7 +73,7 @@ export default function LoginPage() {
         <Link href="/" className="block">
           <NGLogoLockup tone="ink" subtext="Training" />
         </Link>
-        <h1 className="mt-5 font-serif text-5xl font-semibold">Welcome back.</h1>
+        <h1 className="mt-5 font-serif text-4xl font-semibold sm:text-5xl">Welcome back.</h1>
         <p className="mt-3 text-sm font-semibold uppercase tracking-[0.24em] text-bronze-600">{brand.tagline}</p>
         <p className="mt-3 text-sm leading-6 text-stone-600">{message}</p>
         <div className="mt-8 space-y-4">

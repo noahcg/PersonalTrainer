@@ -14,8 +14,8 @@ export function PublicSiteShell({
       <a href="#main-content" className="skip-link">
         Skip to main
       </a>
-      <div className="mx-auto max-w-7xl overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/45 shadow-soft backdrop-blur-xl sm:rounded-[2.75rem]">
-        <header className="border-b border-stone-200/70 px-4 py-5 sm:px-8 lg:px-10">
+      <div className="mx-auto max-w-7xl">
+        <header className="py-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <Link href="/" className="block w-fit shrink-0">
               <NGLogoLockup tone="ink" subtext="Training" monogramVariant="mark" />

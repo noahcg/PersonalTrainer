@@ -26,11 +26,11 @@ const principles = [
 export default function AboutPage() {
   return (
     <PublicSiteShell>
-      <section className="px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
-        <div className="grid gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.68fr)] md:items-start">
+      <section className="py-12 lg:py-16">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.68fr)] md:items-start">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">About the trainer</p>
-            <h1 className="mt-5 max-w-3xl font-serif text-5xl font-semibold leading-[0.95] text-charcoal-950 sm:text-6xl">
+            <h1 className="mt-5 max-w-3xl font-serif text-4xl font-semibold leading-tight text-charcoal-950 sm:text-5xl">
               Calm, precise personal training built around real progress.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
@@ -68,7 +68,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-5 pb-12 sm:px-8 lg:px-10">
+      <section className="pb-12">
         <div className="grid gap-5 lg:grid-cols-3">
           {principles.map((item) => {
             const Icon = item.icon;
@@ -85,7 +85,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-5 pb-12 sm:px-8 lg:px-10 lg:pb-16">
+      <section className="pb-12 lg:pb-16">
         <div className="relative overflow-hidden rounded-[1.75rem] border border-bronze-300 bg-charcoal-950 p-5 text-ivory-50 shadow-soft sm:p-6 lg:p-8">
           <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-bronze-400 via-bronze-200 to-sage-200" />
           <div className="grid gap-8 lg:grid-cols-[0.72fr_1fr] lg:items-start">

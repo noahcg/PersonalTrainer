@@ -38,10 +38,10 @@ const pricingCards = [
 export default function PricingPage() {
   return (
     <PublicSiteShell>
-      <section className="px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
+      <section className="py-12 lg:py-16">
         <div className="max-w-4xl">
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-bronze-600">Pricing</p>
-          <h1 className="mt-5 font-serif text-5xl font-semibold leading-[0.95] text-charcoal-950 sm:text-6xl">
+          <h1 className="mt-5 font-serif text-4xl font-semibold leading-tight text-charcoal-950 sm:text-5xl">
             Personal training packages built around steady, focused work.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
@@ -50,7 +50,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section className="px-5 pb-12 sm:px-8 lg:px-10 lg:pb-16">
+      <section className="pb-12 lg:pb-16">
         <div className="grid gap-5 lg:grid-cols-3 lg:items-stretch">
           {pricingCards.map((card) => (
             <article
