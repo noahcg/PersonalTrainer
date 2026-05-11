@@ -84,7 +84,7 @@ export function SetupAccountForm() {
       }
 
       const role: Role = payload.role ?? "client";
-      router.push(role === "trainer" ? "/trainer/dashboard" : "/client/home");
+      router.push(role === "trainer" ? "/trainer/dashboard" : "/client/intake");
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to finish account setup.");

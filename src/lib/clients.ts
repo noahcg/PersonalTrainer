@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { clientSessions as demoClientSessions, clients as demoClients, plans } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/auth-server";
+import { getTrainerClientIntake } from "@/lib/client-intake";
 import { normalizePricingTier } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase-server";
 import type { Client, ClientSession, CoachingEntry, Plan } from "@/lib/types";
@@ -16,6 +17,7 @@ type ClientRow = {
   notes: string | null;
   preferred_training_style: string | null;
   availability: string | null;
+  intake_completed_at: string | null;
   start_date: string | null;
   status: Client["status"];
   pricing_tier: string | null;
@@ -55,7 +57,7 @@ type ClientSessionRow = {
 };
 
 const clientSelect =
-  "id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status, pricing_tier, package_session_limit, invite_sent_at";
+  "id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, intake_completed_at, start_date, status, pricing_tier, package_session_limit, invite_sent_at";
 const legacyClientSelect =
   "id, profile_id, full_name, email, profile_photo_url, goals, fitness_level, injuries_limitations, notes, preferred_training_style, availability, start_date, status, pricing_tier, invite_sent_at";
 
@@ -86,10 +88,11 @@ function formatRelativeDate(value: string | null) {
   return formatDistanceToNow(new Date(value), { addSuffix: true });
 }
 
-function withLegacySessionPackage<T extends Omit<ClientRow, "package_session_limit">>(row: T): ClientRow {
+function withLegacySessionPackage<T extends Omit<ClientRow, "package_session_limit" | "intake_completed_at"> & Partial<Pick<ClientRow, "intake_completed_at">>>(row: T): ClientRow {
   return {
     ...row,
     package_session_limit: null,
+    intake_completed_at: "intake_completed_at" in row ? row.intake_completed_at ?? null : null,
   };
 }
 
@@ -252,6 +255,7 @@ export async function getTrainerClientProfile(id: string) {
     return {
       mode: "demo" as const,
       client,
+      intake: null,
       coachingNotes: [] as CoachingEntry[],
       sessions: demoClientSessions.filter((session) => session.clientId === id),
       assignedPlan: plans[0],
@@ -281,8 +285,9 @@ export async function getTrainerClientProfile(id: string) {
 
   if (!clientRow) return null;
 
-  const [client, notesResponse, sessionsResponse, assignmentResponse] = await Promise.all([
+  const [client, intake, notesResponse, sessionsResponse, assignmentResponse] = await Promise.all([
     hydrateClient(clientRow, supabase),
+    getTrainerClientIntake(id),
     supabase
       .from("messages")
       .select("id, body, created_at")
@@ -339,6 +344,7 @@ export async function getTrainerClientProfile(id: string) {
   return {
     mode: "supabase" as const,
     client,
+    intake,
     coachingNotes,
     sessions,
     assignedPlan,

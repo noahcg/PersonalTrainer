@@ -47,7 +47,7 @@ export default function LoginPage() {
 
       let destination = searchParams.get("next");
 
-      if (!destination && user) {
+      if (user) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("role")
@@ -55,7 +55,21 @@ export default function LoginPage() {
           .maybeSingle<Pick<Profile, "role">>();
 
         const resolvedRole: Role = profile?.role ?? role;
-        destination = resolvedRole === "trainer" ? "/trainer/dashboard" : "/client/home";
+        if (resolvedRole === "client") {
+          const { data: client } = await supabase
+            .from("clients")
+            .select("intake_completed_at")
+            .eq("profile_id", user.id)
+            .maybeSingle<{ intake_completed_at: string | null }>();
+
+          if (!client?.intake_completed_at) {
+            destination = "/client/intake";
+          }
+        }
+
+        if (!destination) {
+          destination = resolvedRole === "trainer" ? "/trainer/dashboard" : "/client/home";
+        }
       }
 
       router.push(destination ?? (role === "trainer" ? "/trainer/dashboard" : "/client/home"));

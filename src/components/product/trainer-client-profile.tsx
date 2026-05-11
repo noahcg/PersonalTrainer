@@ -18,16 +18,18 @@ import { deleteStoredDemoClient, readStoredDemoClientProfile, syncDemoClientReco
 import { defaultInviteMessage, defaultInviteSubject } from "@/lib/invitations";
 import { pricingTierDetail, pricingTierLabel, pricingTierOptions } from "@/lib/pricing";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
-import type { Client, ClientSession, ClientStatus, CoachingEntry, Plan, PricingTier } from "@/lib/types";
+import type { Client, ClientIntake, ClientSession, ClientStatus, CoachingEntry, Plan, PricingTier } from "@/lib/types";
 
 export function TrainerClientProfile({
   initialClient,
+  intake,
   assignedPlan,
   initialCoachingNotes,
   initialSessions,
   mode,
 }: {
   initialClient: Client;
+  intake: ClientIntake | null;
   assignedPlan: Plan;
   initialCoachingNotes: CoachingEntry[];
   initialSessions: ClientSession[];
@@ -688,6 +690,33 @@ export function TrainerClientProfile({
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden p-0">
+            <CardHeader className="border-b border-border bg-white/35">
+              <CardTitle>Intake summary</CardTitle>
+              <p className="text-sm leading-6 text-stone-500">
+                First-login answers from the client, including readiness context and emergency contact details.
+              </p>
+            </CardHeader>
+            <CardContent className="p-0">
+              {intake?.completedAt ? (
+                <div className="grid divide-y divide-border">
+                  <ProfileContextRow title="Submitted" body={new Date(intake.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} />
+                  <ProfileContextRow title="Success marker" body={intake.goals.success || "Not provided"} />
+                  <ProfileContextRow title="Training background" body={intake.training.experience || intake.training.currentActivity || "Not provided"} />
+                  <ProfileContextRow title="Equipment / location" body={[intake.training.equipmentAccess, intake.training.preferredLocation].filter(Boolean).join(" · ") || "Not provided"} />
+                  <ProfileContextRow title="Readiness flags" body={intake.readiness.parqFlags.length ? intake.readiness.parqFlags.join(", ") : "None selected"} />
+                  <ProfileContextRow title="Current pain" body={intake.readiness.currentPain || "Not provided"} />
+                  <ProfileContextRow title="Sleep / stress" body={[intake.lifestyle.sleep, intake.lifestyle.stress].filter(Boolean).join(" · ") || "Not provided"} />
+                  <ProfileContextRow title="Emergency contact" body={[intake.emergencyContact.name, intake.emergencyContact.phone, intake.emergencyContact.relationship].filter(Boolean).join(" · ") || "Not provided"} />
+                </div>
+              ) : (
+                <div className="p-5 text-sm leading-6 text-stone-600 sm:p-6">
+                  Intake has not been completed yet. This client will be sent to the intake form the next time they open the client workspace.
+                </div>
+              )}
             </CardContent>
           </Card>
 

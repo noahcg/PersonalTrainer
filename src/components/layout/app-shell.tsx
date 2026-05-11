@@ -66,18 +66,21 @@ export function AppShell({
   title,
   subtitle,
   dynamicGreetingName,
+  navLocked = false,
   children,
 }: {
   role: Role;
   title: string;
   subtitle: string;
   dynamicGreetingName?: string;
+  navLocked?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const nav = role === "trainer" ? trainerNav : clientNav;
   const homeHref = role === "trainer" ? "/trainer/dashboard" : "/client/home";
+  const logoHref = navLocked ? pathname : homeHref;
   const [greetingHour, setGreetingHour] = useState<number | null>(null);
   const [identity, setIdentity] = useState({
     name: role === "trainer" ? brand.app.trainerViewLabel : "Mara Lee",
@@ -234,27 +237,33 @@ export function AppShell({
       </a>
       <div className="mx-auto grid max-w-[1500px] gap-5 lg:grid-cols-[238px_1fr]">
         <aside className="sticky top-5 hidden h-[calc(100vh-2.5rem)] flex-col overflow-hidden rounded-[2rem] border border-white/8 bg-charcoal-950 px-4 py-5 text-ivory-50 shadow-soft lg:flex">
-          <Link href={homeHref} className="block w-full rounded-[1.25rem]">
+          <Link href={logoHref} aria-disabled={navLocked} className="block w-full rounded-[1.25rem]">
             <NGLogoLockup tone="light" subtext="Training" className="max-w-full" />
           </Link>
           <nav suppressHydrationWarning className="no-scrollbar mt-6 flex-1 space-y-2 overflow-y-auto px-2 py-2">
-            {nav.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-ivory-50/68 transition focus-visible:outline-offset-2",
-                    active ? "bg-white/10 text-white shadow-inner-soft" : "hover:bg-white/6 hover:text-white",
-                  )}
-                >
-                  <Icon className={cn("size-4", active ? "text-bronze-200" : "text-ivory-50/40 group-hover:text-bronze-200")} />
-                  {item.label}
-                </Link>
-              );
-            })}
+            {navLocked ? (
+              <div className="rounded-2xl border border-white/10 bg-white/6 px-4 py-4 text-sm leading-6 text-ivory-50/64">
+                Complete your intake before opening the rest of your workspace.
+              </div>
+            ) : (
+              nav.map((item) => {
+                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-ivory-50/68 transition focus-visible:outline-offset-2",
+                      active ? "bg-white/10 text-white shadow-inner-soft" : "hover:bg-white/6 hover:text-white",
+                    )}
+                  >
+                    <Icon className={cn("size-4", active ? "text-bronze-200" : "text-ivory-50/40 group-hover:text-bronze-200")} />
+                    {item.label}
+                  </Link>
+                );
+              })
+            )}
           </nav>
           <div className="mt-4 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-[11px] uppercase tracking-[0.22em] text-ivory-50/42">
             Version {appVersion}
@@ -301,29 +310,31 @@ export function AppShell({
         </main>
       </div>
 
-      <nav
-        suppressHydrationWarning
-        aria-label={`${role} navigation`}
-        className="no-scrollbar fixed inset-x-3 bottom-3 z-50 flex gap-1 overflow-x-auto overscroll-x-contain rounded-full border border-white/70 bg-charcoal-950/92 p-2 shadow-soft backdrop-blur-xl lg:hidden"
-      >
-        {nav.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex min-w-[4.75rem] flex-none flex-col items-center gap-1 rounded-full px-3 py-2 text-center text-[10px] text-ivory-50/55",
-                active && "bg-white/12 text-white",
-              )}
-            >
-              <Icon className="size-4" />
-              {getMobileNavLabel(item.label)}
-            </Link>
-          );
-        })}
-      </nav>
+      {navLocked ? null : (
+        <nav
+          suppressHydrationWarning
+          aria-label={`${role} navigation`}
+          className="no-scrollbar fixed inset-x-3 bottom-3 z-50 flex gap-1 overflow-x-auto overscroll-x-contain rounded-full border border-white/70 bg-charcoal-950/92 p-2 shadow-soft backdrop-blur-xl lg:hidden"
+        >
+          {nav.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex min-w-[4.75rem] flex-none flex-col items-center gap-1 rounded-full px-3 py-2 text-center text-[10px] text-ivory-50/55",
+                  active && "bg-white/12 text-white",
+                )}
+              >
+                <Icon className="size-4" />
+                {getMobileNavLabel(item.label)}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 }

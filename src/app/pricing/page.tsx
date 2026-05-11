@@ -3,7 +3,7 @@ import { PublicSiteShell } from "@/components/marketing/public-site-shell";
 
 const pricingCards = [
   {
-    eyebrow: "Packages",
+    eyebrow: "Most Flexible",
     name: "Session Bundles",
     description: "Prepaid one-on-one training for clients who want flexibility with a clear bank of sessions.",
     price: "$1,100",
@@ -12,7 +12,7 @@ const pricingCards = [
     features: ["Flexible scheduling", "One-on-one coaching", "Strength work matched to your goals"],
   },
   {
-    eyebrow: "Best fit",
+    eyebrow: "Best Price",
     name: "Monthly Training",
     description: "A consistent weekly training rhythm for clients who want structure, accountability, and momentum.",
     price: "$840",
@@ -98,10 +98,6 @@ export default function PricingPage() {
                     <p className={`text-sm leading-6 ${card.featured ? "text-ivory-50/78" : "text-stone-700"}`}>{feature}</p>
                   </div>
                 ))}
-              </div>
-
-              <div className={`mt-auto pt-8 text-xs leading-5 ${card.featured ? "text-ivory-50/54" : "text-stone-500"}`}>
-                Pricing reflects in-person training sessions with Nick Glushien Training.
               </div>
             </article>
           ))}

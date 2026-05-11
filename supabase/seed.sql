@@ -23,12 +23,25 @@ on conflict (id) do nothing;
 
 insert into public.clients (
   id, trainer_id, profile_id, full_name, email, profile_photo_url, goals, fitness_level,
-  injuries_limitations, notes, preferred_training_style, availability, pricing_tier, package_session_limit, invite_sent_at, start_date, status
+  injuries_limitations, notes, preferred_training_style, availability, intake_completed_at, pricing_tier, package_session_limit, invite_sent_at, start_date, status
 )
 values
-  ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', 'Mara Lee', 'mara@example.com', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330', 'Build confident strength, improve posture, and train for a fall half marathon.', 'Intermediate', 'Occasional right hip tightness.', 'Responds well to concise weekly priorities.', 'Strength-first, calm coaching, measurable progression.', 'Mon/Wed/Fri mornings, Sunday mobility.', 'ongoing_coaching', 12, '2026-01-12T12:00:00Z', '2026-01-12', 'active'),
-  ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', null, 'Eli Brooks', 'eli@example.com', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e', 'Return to pain-free lifting and rebuild work capacity.', 'Foundation', 'History of shoulder impingement.', 'Needs reminders to log RPE and sleep.', 'Technique-focused, low ego, mobility emphasis.', 'Tue/Thu evenings, Saturday morning.', 'intro_session', 1, '2026-02-03T12:00:00Z', '2026-02-03', 'needs_attention')
+  ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', 'Mara Lee', 'mara@example.com', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330', 'Build confident strength, improve posture, and train for a fall half marathon.', 'Intermediate', 'Occasional right hip tightness.', 'Responds well to concise weekly priorities.', 'Strength-first, calm coaching, measurable progression.', 'Mon/Wed/Fri mornings, Sunday mobility.', '2026-01-12T12:00:00Z', 'ongoing_coaching', 12, '2026-01-12T12:00:00Z', '2026-01-12', 'active'),
+  ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', null, 'Eli Brooks', 'eli@example.com', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e', 'Return to pain-free lifting and rebuild work capacity.', 'Foundation', 'History of shoulder impingement.', 'Needs reminders to log RPE and sleep.', 'Technique-focused, low ego, mobility emphasis.', 'Tue/Thu evenings, Saturday morning.', null, 'intro_session', 1, '2026-02-03T12:00:00Z', '2026-02-03', 'needs_attention')
 on conflict (id) do nothing;
+
+insert into public.client_intakes (client_id, emergency_contact, goals, training, readiness, lifestyle, metrics, completed_at)
+values (
+  '30000000-0000-0000-0000-000000000001',
+  '{"name":"Jon Lee","phone":"555-0103","relationship":"Spouse"}',
+  '{"primary":"Build confident strength, improve posture, and train for a fall half marathon.","success":"Consistent training weeks and stronger long runs.","timeline":"Fall race season.","barriers":"Busy work blocks and occasional hip tightness."}',
+  '{"experience":"Several years of recreational running and strength training.","currentActivity":"Runs three days per week and lifts twice per week.","equipmentAccess":"Full gym plus dumbbells at home.","preferredLocation":"Studio and home workouts.","likes":"Structured strength work and clear progressions.","dislikes":"High-pressure group classes.","fitnessLevel":"Intermediate"}',
+  '{"injuries":"Occasional right hip tightness.","currentPain":"No current acute pain.","surgeries":"","conditions":"","medications":"","parqFlags":[],"medicalClearance":"No clearance needed at this time."}',
+  '{"sleep":"7 hours on most nights.","stress":"Moderate work stress.","nutrition":"Generally consistent meals, wants simpler protein targets.","hydration":"Carries a bottle during the day.","schedule":"Mon/Wed/Fri mornings, Sunday mobility.","coachingStyle":"Strength-first, calm coaching, measurable progression.","communication":"Weekly priorities with concise check-ins."}',
+  '{"height":"5 ft 7 in","weight":"","measurements":"","progressPhotos":"Open to monthly progress photos."}',
+  '2026-01-12T12:00:00Z'
+)
+on conflict (client_id) do nothing;
 
 insert into public.client_sessions (id, client_id, started_at, completed_at, status, location, notes, duration_minutes, created_by)
 values

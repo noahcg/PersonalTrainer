@@ -69,6 +69,56 @@ export type Client = {
   };
 };
 
+export type ClientIntake = {
+  id: string;
+  clientId: string;
+  completedAt: string | null;
+  emergencyContact: {
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+  goals: {
+    primary: string;
+    success: string;
+    timeline: string;
+    barriers: string;
+  };
+  training: {
+    experience: string;
+    currentActivity: string;
+    equipmentAccess: string;
+    preferredLocation: string;
+    likes: string;
+    dislikes: string;
+    fitnessLevel: Client["level"];
+  };
+  readiness: {
+    injuries: string;
+    currentPain: string;
+    surgeries: string;
+    conditions: string;
+    medications: string;
+    parqFlags: string[];
+    medicalClearance: string;
+  };
+  lifestyle: {
+    sleep: string;
+    stress: string;
+    nutrition: string;
+    hydration: string;
+    schedule: string;
+    coachingStyle: string;
+    communication: string;
+  };
+  metrics: {
+    height: string;
+    weight: string;
+    measurements: string;
+    progressPhotos: string;
+  };
+};
+
 export type Exercise = {
   id: string;
   name: string;
