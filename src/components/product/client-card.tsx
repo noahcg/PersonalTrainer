@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertCircle, CalendarDays } from "lucide-react";
+import { AlertCircle, CalendarDays, Package } from "lucide-react";
 import { clientAccessLabel } from "@/lib/client-access";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,12 @@ export function ClientCard({
             <div className="mt-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-rose-500">
               <AlertCircle className="size-3.5" />
               Needs review
+            </div>
+          ) : null}
+          {client.partnerPackage ? (
+            <div className="mt-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-bronze-600">
+              <Package className="size-3.5" />
+              Partner training with {client.partnerPackage.partnerName}
             </div>
           ) : null}
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-stone-500">{client.goals}</p>

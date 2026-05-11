@@ -20,6 +20,11 @@ export type ClientAccessStatus = "account_active" | "invite_pending" | "not_invi
 export type PricingTier = "intro_session" | "ongoing_coaching" | "high_touch_coaching";
 
 export type ClientSessionStatus = "active" | "completed" | "cancelled";
+export type TrainingPackageKind = "one_on_one" | "partner_training";
+export type TrainingPackageStatus = "pending" | "active" | "paused" | "completed" | "cancelled";
+export type PackageAppointmentStatus = "completed" | "cancelled";
+export type PackageAttendanceStatus = "attending" | "absent" | "late_cancelled" | "excused";
+export type PackageDebitPolicy = "charged" | "not_charged" | "converted_to_one_on_one";
 
 export type ClientSession = {
   id: string;
@@ -43,6 +48,66 @@ export type ClientSessionPackage = {
   lastSessionAt: string | null;
 };
 
+export type TrainingPackageMember = {
+  clientId: string;
+  name: string;
+  email: string;
+  photo: string;
+};
+
+export type PackageAppointment = {
+  id: string;
+  packageId: string;
+  status: PackageAppointmentStatus;
+  startedAtIso: string;
+  startedAt: string;
+  completedAtIso: string | null;
+  completedAt: string | null;
+  location: string;
+  notes: string;
+  debitPolicy: PackageDebitPolicy;
+  attendance: Array<{
+    clientId: string;
+    status: PackageAttendanceStatus;
+  }>;
+};
+
+export type TrainingPackage = {
+  id: string;
+  kind: TrainingPackageKind;
+  status: TrainingPackageStatus;
+  title: string;
+  totalSessions: number | null;
+  usedSessions: number;
+  remainingSessions: number | null;
+  priceCents: number | null;
+  currency: string;
+  billingTerms: string;
+  sharedLocation: string;
+  sharedSchedule: string;
+  policyNotes: string;
+  internalNotes: string;
+  startedOn: string;
+  createdAt: string;
+  members: TrainingPackageMember[];
+  appointments: PackageAppointment[];
+};
+
+export type PackageType = {
+  id: string;
+  kind: TrainingPackageKind;
+  name: string;
+  sessionCount: number | null;
+  priceCents: number | null;
+  currency: string;
+  billingTerms: string;
+  policyNotes: string;
+  internalNotes: string;
+  defaultLocation: string;
+  defaultSchedule: string;
+  active: boolean;
+};
+
 export type Client = {
   id: string;
   name: string;
@@ -60,6 +125,9 @@ export type Client = {
   inviteSentAt: string | null;
   pricingTier: PricingTier;
   sessionPackage: ClientSessionPackage;
+  partnerPackage?: Pick<TrainingPackage, "id" | "title" | "status" | "totalSessions" | "usedSessions" | "remainingSessions" | "sharedLocation" | "sharedSchedule"> & {
+    partnerName: string;
+  };
   adherence: number;
   metrics: {
     bodyWeight: string;

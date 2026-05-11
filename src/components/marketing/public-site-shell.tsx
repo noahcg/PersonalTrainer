@@ -35,7 +35,7 @@ export function PublicSiteShell({
                 <Link href="/pricing">Pricing</Link>
               </Button>
               <Button asChild variant="warm" className="h-10 px-4">
-                <Link href="/login">Client login</Link>
+                <Link href="/login">Login</Link>
               </Button>
             </nav>
           </div>
@@ -55,7 +55,7 @@ export function PublicSiteShell({
         {[
           { href: "/about", label: "Trainer", icon: UserRound },
           { href: "/pricing", label: "Pricing", icon: BadgeDollarSign },
-          { href: "/login", label: "Client login", icon: LogIn, featured: true },
+          { href: "/login", label: "Login", icon: LogIn, featured: true },
         ].map(({ href, label, icon: Icon, featured }) => (
           <Link
             key={href}

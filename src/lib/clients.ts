@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/auth-server";
 import { getTrainerClientIntake } from "@/lib/client-intake";
 import { normalizePricingTier } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase-server";
+import { getPartnerPackagesByClientIds } from "@/lib/training-packages";
 import type { Client, ClientSession, CoachingEntry, Plan } from "@/lib/types";
 
 type ClientRow = {
@@ -245,7 +246,27 @@ export async function getTrainerClients() {
   }
 
   const hydrated = await Promise.all(rows.map((row) => hydrateClient(row, supabase)));
-  return { mode: "supabase" as const, clients: hydrated };
+  const packagesByClient = await getPartnerPackagesByClientIds(hydrated.map((client) => client.id));
+  const clients = hydrated.map((client) => {
+    const partnerPackage = packagesByClient.get(client.id);
+    if (!partnerPackage) return client;
+    const partner = partnerPackage.members.find((member) => member.clientId !== client.id);
+    return {
+      ...client,
+      partnerPackage: {
+        id: partnerPackage.id,
+        title: partnerPackage.title,
+        status: partnerPackage.status,
+        totalSessions: partnerPackage.totalSessions,
+        usedSessions: partnerPackage.usedSessions,
+        remainingSessions: partnerPackage.remainingSessions,
+        sharedLocation: partnerPackage.sharedLocation,
+        sharedSchedule: partnerPackage.sharedSchedule,
+        partnerName: partner?.name ?? "Training partner",
+      },
+    };
+  });
+  return { mode: "supabase" as const, clients };
 }
 
 export async function getTrainerClientProfile(id: string) {
@@ -285,9 +306,10 @@ export async function getTrainerClientProfile(id: string) {
 
   if (!clientRow) return null;
 
-  const [client, intake, notesResponse, sessionsResponse, assignmentResponse] = await Promise.all([
+  const [client, intake, partnerPackagesByClient, notesResponse, sessionsResponse, assignmentResponse] = await Promise.all([
     hydrateClient(clientRow, supabase),
     getTrainerClientIntake(id),
+    getPartnerPackagesByClientIds([id]),
     supabase
       .from("messages")
       .select("id, body, created_at")
@@ -325,6 +347,24 @@ export async function getTrainerClientProfile(id: string) {
   const sessions = ((sessionsResponse.data ?? []) as ClientSessionRow[]).map(toClientSession);
 
   const assignedPlanRow = assignmentResponse.data?.training_plans;
+  const partnerPackage = partnerPackagesByClient.get(id);
+  const partner = partnerPackage?.members.find((member) => member.clientId !== id);
+  const clientWithPackage = partnerPackage
+    ? {
+        ...client,
+        partnerPackage: {
+          id: partnerPackage.id,
+          title: partnerPackage.title,
+          status: partnerPackage.status,
+          totalSessions: partnerPackage.totalSessions,
+          usedSessions: partnerPackage.usedSessions,
+          remainingSessions: partnerPackage.remainingSessions,
+          sharedLocation: partnerPackage.sharedLocation,
+          sharedSchedule: partnerPackage.sharedSchedule,
+          partnerName: partner?.name ?? "Training partner",
+        },
+      }
+    : client;
   const assignedPlan: Plan =
     assignedPlanRow
       ? {
@@ -343,7 +383,7 @@ export async function getTrainerClientProfile(id: string) {
 
   return {
     mode: "supabase" as const,
-    client,
+    client: clientWithPackage,
     intake,
     coachingNotes,
     sessions,

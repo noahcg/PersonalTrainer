@@ -2,9 +2,8 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { motion } from "motion/react";
-import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, ExternalLink, Mail, PencilLine, PlayCircle, Save, StickyNote, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, ExternalLink, Mail, Package, PencilLine, PlayCircle, Save, StickyNote, Trash2, X } from "lucide-react";
+import { forwardRef, type HTMLAttributes, useEffect, useMemo, useState } from "react";
 import { clientAccessDetail, clientAccessLabel } from "@/lib/client-access";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
 import { Avatar } from "@/components/ui/avatar";
@@ -16,9 +15,9 @@ import { Progress } from "@/components/ui/progress";
 import { clients as demoClients } from "@/lib/demo-data";
 import { deleteStoredDemoClient, readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
 import { defaultInviteMessage, defaultInviteSubject } from "@/lib/invitations";
-import { pricingTierDetail, pricingTierLabel, pricingTierOptions } from "@/lib/pricing";
+import { pricingTierDetail, pricingTierLabel } from "@/lib/pricing";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
-import type { Client, ClientIntake, ClientSession, ClientStatus, CoachingEntry, Plan, PricingTier } from "@/lib/types";
+import type { Client, ClientIntake, ClientSession, ClientStatus, CoachingEntry, PackageType, Plan, PricingTier } from "@/lib/types";
 
 export function TrainerClientProfile({
   initialClient,
@@ -26,6 +25,7 @@ export function TrainerClientProfile({
   assignedPlan,
   initialCoachingNotes,
   initialSessions,
+  packageTypes,
   mode,
 }: {
   initialClient: Client;
@@ -33,6 +33,7 @@ export function TrainerClientProfile({
   assignedPlan: Plan;
   initialCoachingNotes: CoachingEntry[];
   initialSessions: ClientSession[];
+  packageTypes: PackageType[];
   mode: "demo" | "supabase";
 }) {
   const [client, setClient] = useState(initialClient);
@@ -43,6 +44,7 @@ export function TrainerClientProfile({
   const [inviteOpen, setInviteOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(initialClient);
+  const [draftPackageTypeId, setDraftPackageTypeId] = useState("");
   const [draftNote, setDraftNote] = useState("");
   const [sessionLocation, setSessionLocation] = useState("In person");
   const [sessionNotes, setSessionNotes] = useState("");
@@ -111,6 +113,7 @@ export function TrainerClientProfile({
   async function saveProfile() {
     setBusy(true);
     setMessage(null);
+    let nextClient = draftClient;
 
     try {
       if (mode === "supabase") {
@@ -152,12 +155,51 @@ export function TrainerClientProfile({
         }
 
         if (error) throw error;
+
+        if (draftPackageTypeId) {
+          const response = await fetch(`/api/trainer/clients/${client.id}/package`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ packageTypeId: draftPackageTypeId }),
+          });
+          const payload = (await response.json()) as { error?: string; sessionCount?: number | null; packageName?: string };
+          if (!response.ok) throw new Error(payload.error ?? "Unable to assign package.");
+          nextClient = {
+            ...nextClient,
+            style: payload.packageName ?? nextClient.style,
+            sessionPackage: {
+              ...nextClient.sessionPackage,
+              total: payload.sessionCount ?? null,
+              remaining:
+                payload.sessionCount === null || payload.sessionCount === undefined
+                  ? null
+                  : Math.max(payload.sessionCount - nextClient.sessionPackage.used, 0),
+            },
+          };
+        }
       } else {
-        persist(draftClient, coachingNotes);
+        const packageType = packageTypes.find((item) => item.id === draftPackageTypeId);
+        if (packageType) {
+          nextClient = {
+            ...nextClient,
+            style: packageType.name,
+            sessionPackage: {
+              ...nextClient.sessionPackage,
+              total: packageType.sessionCount,
+              remaining:
+                packageType.sessionCount === null
+                  ? null
+                  : Math.max(packageType.sessionCount - nextClient.sessionPackage.used, 0),
+            },
+          };
+        }
+        persist(nextClient, coachingNotes);
       }
 
-      setClient(draftClient);
+      setClient(nextClient);
+      setDraftClient(nextClient);
       setEditOpen(false);
+      setDraftPackageTypeId("");
       setMessage("Profile saved.");
       window.setTimeout(() => setMessage(null), 2400);
     } catch (error) {
@@ -554,6 +596,9 @@ export function TrainerClientProfile({
     [client],
   );
   const activeSession = sessions.find((session) => session.status === "active") ?? null;
+  const partnerPackage = client.partnerPackage;
+  const assignablePackageTypes = partnerPackage ? [] : packageTypes.filter((packageType) => packageType.kind === "one_on_one" && packageType.active);
+  const selectedDraftPackageType = assignablePackageTypes.find((item) => item.id === draftPackageTypeId) ?? null;
 
   return (
     <>
@@ -579,6 +624,7 @@ export function TrainerClientProfile({
                     <Badge variant={client.status === "needs_attention" ? "alert" : client.status === "archived" ? "default" : "bronze"}>
                       {client.status.replace("_", " ")}
                     </Badge>
+                    {partnerPackage ? <Badge variant="bronze">Partner Training</Badge> : null}
                   </div>
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">{clientAccessDetail(client.accessStatus, client.inviteSentAt)}</p>
                 </div>
@@ -661,6 +707,43 @@ export function TrainerClientProfile({
                 </Link>
               </Button>
             </div>
+          </Card>
+        ) : null}
+
+        {partnerPackage ? (
+          <Card className="overflow-hidden p-0">
+            <CardHeader className="border-b border-border bg-white/35">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <CardTitle>Partner Training package</CardTitle>
+                  <p className="text-sm leading-6 text-stone-500">
+                    Shared package with {partnerPackage.partnerName}. Shared sessions are recorded once for both clients.
+                  </p>
+                </div>
+                <Button asChild variant="warm" size="sm">
+                  <Link href="/trainer/packages">
+                    <Package className="size-4" />
+                    Open packages
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-5 lg:grid-cols-[1fr_22rem]">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <MetricTile label="Shared package" value={partnerPackage.totalSessions === null ? "Open" : String(partnerPackage.totalSessions)} />
+                <MetricTile label="Shared used" value={String(partnerPackage.usedSessions)} />
+                <MetricTile
+                  label="Shared left"
+                  value={partnerPackage.remainingSessions === null ? "Open" : String(partnerPackage.remainingSessions)}
+                />
+              </div>
+              <div className="rounded-[1.25rem] bg-stone-50 p-4">
+                <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Shared terms</p>
+                <p className="mt-3 text-sm leading-6 text-stone-700">
+                  {[partnerPackage.sharedLocation, partnerPackage.sharedSchedule].filter(Boolean).join(" · ") || "Location and schedule not set"}
+                </p>
+              </div>
+            </CardContent>
           </Card>
         ) : null}
 
@@ -867,28 +950,6 @@ export function TrainerClientProfile({
                       <option value="archived">Archived</option>
                     </select>
                   </Field>
-                  <Field label="Pricing package">
-                    <select
-                      value={draftClient.pricingTier}
-                      onChange={(event) => updateDraft("pricingTier", event.target.value as PricingTier)}
-                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
-                    >
-                      {pricingTierOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="In-person session package">
-                    <Input
-                      type="number"
-                      min="0"
-                      value={draftClient.sessionPackage.total ?? ""}
-                      onChange={(event) => updateDraftSessionLimit(event.target.value)}
-                      placeholder="Leave blank for open-ended"
-                    />
-                  </Field>
                   <Field label="Fitness level">
                     <select
                       value={draftClient.level}
@@ -900,6 +961,76 @@ export function TrainerClientProfile({
                       <option value="Advanced">Advanced</option>
                     </select>
                   </Field>
+                </div>
+                <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50/70 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-[0.66rem] uppercase tracking-[0.22em] text-bronze-600">Package</p>
+                      <p className="mt-2 text-sm leading-6 text-stone-600">
+                        {partnerPackage
+                          ? `Currently shared with ${partnerPackage.partnerName}.`
+                          : `Current balance: ${draftClient.sessionPackage.remaining === null ? "open" : `${draftClient.sessionPackage.remaining} left`}.`}
+                      </p>
+                    </div>
+                    <Badge variant={partnerPackage ? "bronze" : "dark"}>
+                      {partnerPackage ? "Shared package" : draftClient.style}
+                    </Badge>
+                  </div>
+
+                  {partnerPackage ? (
+                    <div className="mt-4 rounded-[1.25rem] border border-bronze-200 bg-white/80 p-4 text-sm leading-6 text-stone-700">
+                      Complete or convert the shared package before assigning an individual package type.
+                    </div>
+                  ) : (
+                    <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_12rem]">
+                      <Field label="Assign package type">
+                        <select
+                          value={draftPackageTypeId}
+                          onChange={(event) => {
+                            const packageType = assignablePackageTypes.find((item) => item.id === event.target.value);
+                            setDraftPackageTypeId(event.target.value);
+                            if (packageType) {
+                              setDraftClient((current) => ({
+                                ...current,
+                                style: packageType.name,
+                                availability: current.availability || packageType.defaultSchedule,
+                                sessionPackage: {
+                                  ...current.sessionPackage,
+                                  total: packageType.sessionCount,
+                                  remaining:
+                                    packageType.sessionCount === null
+                                      ? null
+                                      : Math.max(packageType.sessionCount - current.sessionPackage.used, 0),
+                                },
+                              }));
+                            }
+                          }}
+                          className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
+                        >
+                          <option value="">Keep current package</option>
+                          {assignablePackageTypes.map((packageType) => (
+                            <option key={packageType.id} value={packageType.id}>
+                              {packageType.name} · {packageType.sessionCount === null ? "Open" : `${packageType.sessionCount} sessions`}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Sessions">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={draftClient.sessionPackage.total ?? ""}
+                          onChange={(event) => updateDraftSessionLimit(event.target.value)}
+                          placeholder="Open"
+                        />
+                      </Field>
+                    </div>
+                  )}
+                  {selectedDraftPackageType ? (
+                    <p className="mt-3 text-xs leading-5 text-stone-500">
+                      {selectedDraftPackageType.billingTerms || selectedDraftPackageType.policyNotes || "Package terms can be edited from Packages."}
+                    </p>
+                  ) : null}
                 </div>
                 <Field label="Goals">
                   <Textarea value={draftClient.goals} onChange={(event) => updateDraft("goals", event.target.value)} />
@@ -1032,21 +1163,19 @@ function ProfileContextRow({ title, body }: { title: string; body: string }) {
   );
 }
 
-function ModalShell({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
+const ModalShell = forwardRef<
+  HTMLDivElement,
+  HTMLAttributes<HTMLDivElement> & {
+    title: string;
+    description: string;
+    children: React.ReactNode;
+  }
+>(function ModalShell({ title, description, children, ...props }, ref) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.98 }}
-      className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[2rem] border border-white/70 bg-ivory-50 p-5 shadow-soft outline-none sm:p-7"
+    <div
+      ref={ref}
+      className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100vh-2rem)] w-[calc(100vw-1.5rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-ivory-50 p-5 shadow-soft outline-none sm:p-7"
+      {...props}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -1059,10 +1188,10 @@ function ModalShell({
           </Button>
         </Dialog.Close>
       </div>
-      <div className="mt-6">{children}</div>
-    </motion.div>
+      <div className="mt-6 overflow-y-auto pr-1">{children}</div>
+    </div>
   );
-}
+});
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
