@@ -1,4 +1,5 @@
 import { getClientSelfProfile } from "@/lib/clients";
+import { clientPortalAccessFromStatus } from "@/lib/client-portal-access";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProgressChart } from "@/components/product/progress-chart";
 import { StatCard } from "@/components/product/stat-card";
@@ -11,10 +12,11 @@ function parseWeight(value: string) {
 
 export default async function ClientProgressPage() {
   const { client } = await getClientSelfProfile();
+  const clientPortalAccess = clientPortalAccessFromStatus(client?.status);
 
   if (!client) {
     return (
-      <AppShell role="client" title="Your progress" subtitle="Consistency, milestones, and body metrics will appear here as you start logging.">
+      <AppShell role="client" title="Your progress" subtitle="Consistency, milestones, and body metrics will appear here as you start logging." clientPortalAccess={clientPortalAccess}>
         <Card className="max-w-3xl p-8">
           <p className="font-serif text-4xl font-semibold text-charcoal-950">No progress data yet.</p>
           <p className="mt-3 text-sm leading-6 text-stone-600">
@@ -38,7 +40,12 @@ export default async function ClientProgressPage() {
       : [];
 
   return (
-    <AppShell role="client" title="Your progress" subtitle="Consistency, body weight trends, personal records, milestones, and photo metadata in one calm view.">
+    <AppShell
+      role="client"
+      title="Your progress"
+      subtitle="Consistency, body weight trends, personal records, milestones, and photo metadata in one calm view."
+      clientPortalAccess={clientPortalAccess}
+    >
       <div className="grid gap-5 md:grid-cols-3">
         <StatCard label="Body weight" value={client.metrics.bodyWeight} detail="Latest recorded metric" />
         <StatCard label="Adherence" value={`${client.adherence}%`} detail={`${client.metrics.workouts} workouts completed`} tone="sage" />

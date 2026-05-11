@@ -12,16 +12,18 @@ import { clients as demoClients } from "@/lib/demo-data";
 import { readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
 import { dispatchProfileUpdated, readImageFileAsDataUrl, uploadProfilePhoto } from "@/lib/profile-identity";
 import { pricingTierDetail, pricingTierLabel } from "@/lib/pricing";
-import type { Client, ClientSession } from "@/lib/types";
+import type { Client, ClientPortalAccess, ClientSession } from "@/lib/types";
 
 export function ClientProfileEditor({
   initialClient,
   initialSessions,
   mode,
+  clientPortalAccess = "full",
 }: {
   initialClient: Client;
   initialSessions: ClientSession[];
   mode: "demo" | "supabase";
+  clientPortalAccess?: ClientPortalAccess;
 }) {
   const [profile, setProfile] = useState({
     goals: initialClient.goals,
@@ -132,7 +134,12 @@ export function ClientProfileEditor({
   }
 
   return (
-    <AppShell role="client" title="Profile" subtitle="Keep your goals, limitations, schedule, and preferences current for better coaching.">
+    <AppShell
+      role="client"
+      title="Profile"
+      subtitle="Keep your goals, limitations, schedule, and preferences current for better coaching."
+      clientPortalAccess={clientPortalAccess}
+    >
       <div className="space-y-5">
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {[

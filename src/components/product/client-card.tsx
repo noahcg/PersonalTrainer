@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlertCircle, CalendarDays, Package } from "lucide-react";
-import { clientAccessLabel } from "@/lib/client-access";
+import { clientAccessLabel, clientStatusLabel } from "@/lib/client-access";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -21,6 +21,7 @@ export function ClientCard({
   onToggleSelect?: (id: string) => void;
 }) {
   const needsAttention = client.status === "needs_attention";
+  const isInactive = client.status === "archived";
   const primaryStatus = clientAccessLabel(client.accessStatus);
   const primaryVariant = client.accessStatus === "account_active" ? "sage" : "default";
   const cardBody = (
@@ -46,6 +47,12 @@ export function ClientCard({
             <div className="mt-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-rose-500">
               <AlertCircle className="size-3.5" />
               Needs review
+            </div>
+          ) : null}
+          {isInactive ? (
+            <div className="mt-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+              <AlertCircle className="size-3.5" />
+              {clientStatusLabel(client.status)}
             </div>
           ) : null}
           {client.partnerPackage ? (

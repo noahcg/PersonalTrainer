@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
+import { clientStatusLabel } from "@/lib/client-access";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Client, Plan } from "@/lib/types";
 
@@ -565,10 +566,12 @@ export function TrainerPlansManager({
               <div className="space-y-3">
                 {clients.map((client) => {
                   const selected = selectedClientIds.includes(client.id);
+                  const inactive = client.status === "archived";
                   return (
                     <button
                       key={client.id}
                       type="button"
+                      disabled={inactive}
                       onClick={() =>
                         setSelectedClientIds((current) =>
                           selected ? current.filter((id) => id !== client.id) : [...current, client.id],
@@ -576,7 +579,7 @@ export function TrainerPlansManager({
                       }
                       className={`flex w-full items-center justify-between rounded-[1.35rem] border px-4 py-4 text-left transition ${
                         selected ? "border-bronze-300 bg-bronze-50" : "border-stone-200 bg-white/80"
-                      }`}
+                      } disabled:cursor-not-allowed disabled:opacity-55`}
                     >
                       <span className="flex items-center gap-3">
                         <span className="grid size-10 place-items-center rounded-full bg-stone-100 text-stone-600">
@@ -584,10 +587,10 @@ export function TrainerPlansManager({
                         </span>
                         <span>
                           <span className="block font-semibold text-charcoal-950">{client.name}</span>
-                          <span className="text-sm text-stone-500">{client.status.replace("_", " ")}</span>
+                          <span className="text-sm text-stone-500">{clientStatusLabel(client.status)}</span>
                         </span>
                       </span>
-                      {selected ? <Badge variant="bronze">Selected</Badge> : null}
+                      {inactive ? <Badge variant="default">Inactive</Badge> : selected ? <Badge variant="bronze">Selected</Badge> : null}
                     </button>
                   );
                 })}

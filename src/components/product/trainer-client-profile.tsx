@@ -4,7 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
 import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, ExternalLink, Mail, Package, PencilLine, PlayCircle, Save, StickyNote, Trash2, X } from "lucide-react";
 import { forwardRef, type HTMLAttributes, useEffect, useMemo, useState } from "react";
-import { clientAccessDetail, clientAccessLabel } from "@/lib/client-access";
+import { clientAccessDetail, clientAccessLabel, clientStatusLabel } from "@/lib/client-access";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -545,7 +545,7 @@ export function TrainerClientProfile({
 
       setClient(nextClient);
       setDraftClient(nextClient);
-      setMessage(nextStatus === "archived" ? "Client archived." : "Client reactivated.");
+      setMessage(nextStatus === "archived" ? "Client marked inactive." : "Client reactivated.");
       window.setTimeout(() => setMessage(null), 2400);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to update client status.");
@@ -622,11 +622,15 @@ export function TrainerClientProfile({
                     <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
                     <Badge variant="default">{clientAccessLabel(client.accessStatus)}</Badge>
                     <Badge variant={client.status === "needs_attention" ? "alert" : client.status === "archived" ? "default" : "bronze"}>
-                      {client.status.replace("_", " ")}
+                      {clientStatusLabel(client.status)}
                     </Badge>
                     {partnerPackage ? <Badge variant="bronze">Partner Training</Badge> : null}
                   </div>
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">{clientAccessDetail(client.accessStatus, client.inviteSentAt)}</p>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
+                    {client.status === "archived"
+                      ? "Client can log in with data-only access to profile, progress, and recorded history."
+                      : clientAccessDetail(client.accessStatus, client.inviteSentAt)}
+                  </p>
                 </div>
               </div>
 
@@ -641,9 +645,9 @@ export function TrainerClientProfile({
                   <StickyNote className="size-4" />
                   Leave coaching note
                 </Button>
-                <Button variant="warm" onClick={() => void startInPersonSession()} disabled={busy || Boolean(activeSession)}>
+                <Button variant="warm" onClick={() => void startInPersonSession()} disabled={busy || Boolean(activeSession) || client.status === "archived"}>
                   <PlayCircle className="size-4" />
-                  {activeSession ? "Session active" : "Start in-person session"}
+                  {client.status === "archived" ? "Client inactive" : activeSession ? "Session active" : "Start in-person session"}
                 </Button>
                 <Button variant="secondary" onClick={() => setEditOpen(true)}>
                   <PencilLine className="size-4" />
@@ -669,7 +673,7 @@ export function TrainerClientProfile({
             <div className="grid content-start gap-3">
               <Button variant="ghost" onClick={deactivateClient} disabled={busy}>
                 <Ban className="size-4" />
-                {client.status === "archived" ? "Reactivate client" : "Deactivate client"}
+                {client.status === "archived" ? "Reactivate client" : "Mark inactive"}
               </Button>
               <Button
                 variant="ghost"
@@ -947,7 +951,7 @@ export function TrainerClientProfile({
                       <option value="active">Active</option>
                       <option value="needs_attention">Needs attention</option>
                       <option value="paused">Paused</option>
-                      <option value="archived">Archived</option>
+                      <option value="archived">Inactive</option>
                     </select>
                   </Field>
                   <Field label="Fitness level">

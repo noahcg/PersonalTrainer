@@ -25,7 +25,7 @@ import { profileUpdatedEventName, readDemoTrainerSettings } from "@/lib/profile-
 import { createClient as createBrowserClient, hasSupabaseEnv } from "@/lib/supabase-browser";
 import { cn } from "@/lib/utils";
 import { appVersion } from "@/lib/version";
-import type { Role } from "@/lib/types";
+import type { ClientPortalAccess, Role } from "@/lib/types";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { NGLogoLockup } from "@/components/brand/ng-logo";
@@ -55,6 +55,10 @@ const clientNav = [
   { href: "/client/profile", label: "Profile", icon: Users },
 ];
 
+const dataOnlyClientNav = clientNav.filter((item) =>
+  ["/client/home", "/client/progress", "/client/profile"].includes(item.href),
+);
+
 function getMobileNavLabel(label: string) {
   if (label.startsWith("My ")) {
     return label.replace("My ", "");
@@ -69,6 +73,7 @@ export function AppShell({
   subtitle,
   dynamicGreetingName,
   navLocked = false,
+  clientPortalAccess = "full",
   children,
 }: {
   role: Role;
@@ -76,11 +81,12 @@ export function AppShell({
   subtitle: string;
   dynamicGreetingName?: string;
   navLocked?: boolean;
+  clientPortalAccess?: ClientPortalAccess;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const nav = role === "trainer" ? trainerNav : clientNav;
+  const nav = role === "trainer" ? trainerNav : clientPortalAccess === "data_only" ? dataOnlyClientNav : clientNav;
   const homeHref = role === "trainer" ? "/trainer/dashboard" : "/client/home";
   const logoHref = navLocked ? pathname : homeHref;
   const [greetingHour, setGreetingHour] = useState<number | null>(null);

@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     if (selectedClientIds.length) {
       const { data: clients, error: clientsError } = await admin
         .from("clients")
-        .select("id")
+        .select("id, status")
         .eq("trainer_id", trainer.id)
         .in("id", selectedClientIds);
 
@@ -68,6 +68,10 @@ export async function POST(request: Request) {
 
       if ((clients ?? []).length !== selectedClientIds.length) {
         return NextResponse.json({ error: "One or more selected clients were not found." }, { status: 404 });
+      }
+
+      if ((clients ?? []).some((client) => client.status === "archived")) {
+        return NextResponse.json({ error: "Inactive clients cannot receive active training plans." }, { status: 400 });
       }
     }
 

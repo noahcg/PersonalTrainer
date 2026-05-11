@@ -16,6 +16,7 @@ export type CoachingEntry = {
 
 export type ClientStatus = "active" | "needs_attention" | "paused" | "archived";
 export type ClientAccessStatus = "account_active" | "invite_pending" | "not_invited";
+export type ClientPortalAccess = "full" | "data_only";
 
 export type PricingTier = "intro_session" | "ongoing_coaching" | "high_touch_coaching";
 

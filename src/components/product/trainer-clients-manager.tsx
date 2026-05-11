@@ -10,6 +10,7 @@ import { InviteComposeDialog } from "@/components/product/invite-compose-dialog"
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
+import { clientStatusLabel } from "@/lib/client-access";
 import { demoClientsStorageKey } from "@/lib/demo-client-storage";
 import { defaultInviteMessage, defaultInviteSubject } from "@/lib/invitations";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
@@ -116,7 +117,7 @@ export function TrainerClientsManager({
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) return clients;
     return clients.filter((client) =>
-      [client.name, client.email, client.goals, client.status.replace("_", " "), client.accessStatus.replace("_", " ")]
+      [client.name, client.email, client.goals, clientStatusLabel(client.status), client.accessStatus.replace("_", " ")]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery),
@@ -412,10 +413,10 @@ export function TrainerClientsManager({
       setClients(nextClients);
       persist(nextClients);
       setSelectedIds([]);
-      setMessage("Selected clients archived.");
+      setMessage("Selected clients marked inactive.");
       window.setTimeout(() => setMessage(null), 2200);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to archive selected clients.");
+      setMessage(error instanceof Error ? error.message : "Unable to mark selected clients inactive.");
     } finally {
       setBusy(false);
     }
@@ -529,7 +530,7 @@ export function TrainerClientsManager({
               <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Roster workspace</p>
               <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">Client operations at a glance.</h2>
               <p className="mt-3 text-sm leading-6 text-stone-600">
-                Search the roster, track account access, and handle invite or archive actions without opening every profile.
+                Search the roster, track account access, and handle invite or inactive-status actions without opening every profile.
               </p>
             </div>
             <div className="flex flex-wrap gap-2 text-sm text-stone-600">
@@ -575,7 +576,7 @@ export function TrainerClientsManager({
               </Button>
               <Button variant="secondary" onClick={() => void archiveSelected()} disabled={busy || selectedIds.length === 0}>
                 <Archive className="size-4" />
-                Archive selected
+                Mark inactive
               </Button>
             </div>
           </div>

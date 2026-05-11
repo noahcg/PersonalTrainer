@@ -373,7 +373,7 @@ export function TrainerResourcesManager({
                       className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100 disabled:opacity-50"
                     >
                       <option value="">Select client</option>
-                      {clients.map((client) => (
+                      {clients.filter((client) => client.status !== "archived").map((client) => (
                         <option key={client.id} value={client.id}>
                           {client.name}
                         </option>
