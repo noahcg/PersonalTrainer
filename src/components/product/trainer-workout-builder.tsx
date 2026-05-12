@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import type { ComponentType, Dispatch, SetStateAction } from "react";
 import { useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
@@ -389,26 +388,22 @@ export function TrainerWorkoutBuilder({
         <WorkoutList workouts={workouts} onNewWorkout={startNewWorkout} onEditWorkout={editWorkout} />
       ) : (
         <div className="space-y-5">
-          <div className="flex flex-col gap-4 rounded-[1.5rem] border border-stone-200/80 bg-white/74 p-4 shadow-soft backdrop-blur-xl sm:p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <button type="button" onClick={() => setView("list")} className="inline-flex items-center gap-2 text-xs font-semibold text-bronze-600">
-                  <ArrowLeft className="size-3.5" />
-                  Back to workouts
-                </button>
-                <h2 className="mt-3 font-serif text-3xl font-semibold leading-tight text-charcoal-950">Workout Builder</h2>
-                <p className="mt-1 text-sm text-stone-600">Follow the required template: warm up, three sections, then cooldown.</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="secondary" onClick={() => setView("list")}>Cancel</Button>
-                <Button variant="warm" onClick={() => void saveWorkout()} disabled={busy || !isWorkoutComplete}>
+          <div className="rounded-[1.25rem] border border-stone-200/80 bg-white/78 p-4 shadow-soft backdrop-blur-xl sm:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <button type="button" onClick={() => setView("list")} className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-bronze-600">
+                <ArrowLeft className="size-3.5" />
+                Back to workouts
+              </button>
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                <Button variant="secondary" size="sm" onClick={() => setView("list")}>Cancel</Button>
+                <Button variant="warm" size="sm" onClick={() => void saveWorkout()} disabled={busy || !isWorkoutComplete}>
                   <Save className="size-4" />
                   {busy ? "Saving..." : "Save Workout"}
                 </Button>
               </div>
             </div>
 
-            <div className="grid gap-2 border-y border-stone-200/80 py-3 md:grid-cols-5">
+            <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto md:grid md:grid-cols-5 md:overflow-visible">
               {wizardSteps.map((step, index) => {
                 const isActive = step.id === activeStepId;
                 const isComplete = completedSteps.has(step.id);
@@ -425,7 +420,7 @@ export function TrainerWorkoutBuilder({
                       setQuery("");
                     }}
                     className={cn(
-                      "flex min-w-0 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition",
+                      "flex min-w-[10.5rem] items-center gap-3 rounded-2xl border px-3 py-3 text-left transition md:min-w-0",
                       isActive && "border-bronze-300 bg-bronze-50",
                       !isActive && isComplete && "border-sage-200 bg-sage-50",
                       !isActive && !isComplete && "border-stone-200 bg-white/72",
@@ -445,29 +440,27 @@ export function TrainerWorkoutBuilder({
             </div>
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-            <Card className="overflow-hidden rounded-[1.5rem] bg-white/82 shadow-soft">
-              <div className="grid min-h-[620px] lg:grid-cols-[360px_minmax(0,1fr)]">
-                <section className="border-b border-stone-200/80 p-4 lg:border-b-0 lg:border-r">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-bronze-600">Exercise selection</p>
-                      <h3 className="mt-2 font-serif text-2xl font-semibold">{activeStep.title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-stone-600">{activeStep.helper}</p>
+          <div className="grid gap-5 xl:grid-cols-[300px_minmax(520px,1fr)_300px]">
+            <Card className="flex h-[620px] min-h-0 flex-col overflow-hidden rounded-[1.25rem] bg-white/84 shadow-soft">
+                  <div className="p-6 pb-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-bronze-600">Exercise selection</p>
+                        <h3 className="mt-2 font-serif text-2xl font-semibold">{activeStep.title}</h3>
+                        <p className="mt-2 text-sm leading-6 text-stone-600">{activeStep.helper}</p>
+                      </div>
                     </div>
-                    <Badge variant={activeBlock.exercises.length ? "sage" : "default"}>
-                      {activeBlock.exercises.length ? "Complete" : "Required"}
-                    </Badge>
+
+                    <div className="relative mt-4">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+                      <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${activeStep.title.toLowerCase()} exercises...`} className="pl-9" />
+                    </div>
+                    <div className="mt-3 text-xs text-stone-500">{recommendedExercises.length} exercise options</div>
                   </div>
 
-                  <div className="relative mt-5">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
-                    <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${activeStep.title.toLowerCase()} exercises...`} className="pl-9" />
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    {recommendedExercises.slice(0, 18).map((exercise) => (
-                      <ExerciseChoice key={exercise.id} exercise={exercise} score={exerciseScoreForStep(exercise, activeStepId)} onAdd={() => addExercise(exercise)} />
+                  <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-10">
+                    {recommendedExercises.map((exercise) => (
+                      <ExerciseChoice key={exercise.id} exercise={exercise} onAdd={() => addExercise(exercise)} />
                     ))}
                     {!recommendedExercises.length ? (
                       <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50/80 p-4 text-sm text-stone-500">
@@ -475,13 +468,17 @@ export function TrainerWorkoutBuilder({
                       </div>
                     ) : null}
                   </div>
-                </section>
+            </Card>
 
-                <section className="p-4">
-                  <div className="flex flex-col gap-4 border-b border-stone-200/80 pb-4 lg:flex-row lg:items-start lg:justify-between">
+            <Card className="h-[620px] overflow-hidden rounded-[1.25rem] bg-white/84 p-6 shadow-soft">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <h3 className="font-serif text-2xl font-semibold">{activeStep.title}</h3>
-                      <p className="mt-2 text-sm text-stone-600">Add at least one exercise before moving to the next step.</p>
+                      <p className="mt-2 text-sm text-stone-600">
+                        {activeBlock.exercises.length
+                          ? `${activeBlock.exercises.length} selected. Adjust the prescription inline.`
+                          : "Add at least one exercise before moving to the next step."}
+                      </p>
                     </div>
                     <Button variant="secondary" onClick={goNext} disabled={!completedSteps.has(activeStepId) || activeStepIndex === wizardSteps.length - 1}>
                       Next
@@ -489,7 +486,7 @@ export function TrainerWorkoutBuilder({
                     </Button>
                   </div>
 
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-4 max-h-[500px] space-y-3 overflow-y-auto pr-1">
                     {activeBlock.exercises.map((exercise, index) => (
                       <SelectedExerciseRow
                         key={exercise.id}
@@ -501,7 +498,7 @@ export function TrainerWorkoutBuilder({
                       />
                     ))}
                     {!activeBlock.exercises.length ? (
-                      <div className="grid min-h-64 place-items-center rounded-2xl border border-dashed border-stone-300 bg-stone-50/60 p-8 text-center">
+                      <div className="grid min-h-72 place-items-center rounded-2xl border border-dashed border-stone-300 bg-stone-50/60 p-8 text-center">
                         <div>
                           <Dumbbell className="mx-auto size-8 text-stone-400" />
                           <p className="mt-3 font-semibold text-charcoal-950">No exercises selected yet.</p>
@@ -510,20 +507,14 @@ export function TrainerWorkoutBuilder({
                       </div>
                     ) : null}
                   </div>
-                </section>
-              </div>
             </Card>
 
             <WizardSummary
               draft={draft}
               plans={plans}
-              activeStepId={activeStepId}
-              completedSteps={completedSteps}
               totalSets={totalSets}
               isWorkoutComplete={isWorkoutComplete}
               onDraftChange={setDraft}
-              onSave={() => void saveWorkout()}
-              busy={busy}
             />
           </div>
         </div>
@@ -553,16 +544,18 @@ function WorkoutList({
   );
 
   return (
-    <Card className="overflow-hidden rounded-[1.5rem] bg-white/82 shadow-soft">
+    <Card className="overflow-hidden rounded-[1.25rem] bg-white/82 shadow-soft">
       <div className="flex flex-col gap-4 border-b border-stone-200/80 p-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="font-serif text-3xl font-semibold text-charcoal-950">Workouts</h2>
           <p className="mt-2 text-sm text-stone-600">View saved template workouts or start a new one.</p>
         </div>
-        <Button variant="warm" onClick={onNewWorkout}>
-          <Plus className="size-4" />
-          New Workout
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="warm" size="sm" onClick={onNewWorkout}>
+            <Plus className="size-4" />
+            New Workout
+          </Button>
+        </div>
       </div>
 
       <div className="p-5">
@@ -571,7 +564,7 @@ function WorkoutList({
           <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search workouts..." className="pl-9" />
         </div>
 
-        <div className="mt-5 overflow-hidden rounded-2xl border border-stone-200 bg-white">
+        <div className="mt-5 overflow-hidden rounded-2xl border border-stone-200 bg-white/92">
           <div className="hidden grid-cols-[minmax(0,1fr)_8rem_8rem_8rem_3rem] gap-4 bg-stone-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400 md:grid">
             <span>Workout</span>
             <span>Template</span>
@@ -587,7 +580,9 @@ function WorkoutList({
               className="grid w-full gap-3 border-t border-stone-200 px-4 py-4 text-left transition first:border-t-0 hover:bg-stone-50 md:grid-cols-[minmax(0,1fr)_8rem_8rem_8rem_3rem] md:items-center"
             >
               <span>
-                <span className="block font-semibold text-charcoal-950">{workout.name}</span>
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-charcoal-950">{workout.name}</span>
+                </span>
                 <span className="mt-1 line-clamp-1 text-xs text-stone-500">{workout.coachNotes || "No notes yet."}</span>
               </span>
               <span className="text-sm text-stone-600">5 steps</span>
@@ -617,31 +612,27 @@ function WorkoutList({
 function WizardSummary({
   draft,
   plans,
-  activeStepId,
-  completedSteps,
   totalSets,
   isWorkoutComplete,
   onDraftChange,
-  onSave,
-  busy,
 }: {
   draft: DraftWorkout;
   plans: Array<Pick<Plan, "id" | "title">>;
-  activeStepId: WizardStepId;
-  completedSteps: Set<WizardStepId>;
   totalSets: number;
   isWorkoutComplete: boolean;
   onDraftChange: Dispatch<SetStateAction<DraftWorkout>>;
-  onSave: () => void;
-  busy: boolean;
 }) {
-  const activeStep = wizardSteps.find((step) => step.id === activeStepId) ?? wizardSteps[0];
-
   return (
-    <aside className="space-y-5">
-      <Card className="rounded-[1.5rem] bg-white/82 p-5 shadow-soft">
-        <h3 className="font-serif text-xl font-semibold">Workout Details</h3>
-        <div className="mt-4 space-y-4">
+    <aside className="self-start">
+      <Card className="rounded-[1.25rem] bg-white/84 p-5 shadow-soft">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="font-serif text-xl font-semibold">Workout Details</h3>
+            <p className="mt-1 text-sm text-stone-500">Name the workout, connect it to a plan if needed, and save once every section is complete.</p>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-3">
           <Field label="Workout name">
             <Input value={draft.name} onChange={(event) => onDraftChange((current) => ({ ...current, name: event.target.value }))} placeholder="Lower Body Strength" />
           </Field>
@@ -663,65 +654,37 @@ function WizardSummary({
             </select>
           </Field>
           <Field label="Trainer notes">
-            <Textarea value={draft.coachNotes} onChange={(event) => onDraftChange((current) => ({ ...current, coachNotes: event.target.value }))} placeholder="Coaching emphasis, load guidance, or client-specific notes." />
+            <Textarea className="min-h-20" value={draft.coachNotes} onChange={(event) => onDraftChange((current) => ({ ...current, coachNotes: event.target.value }))} placeholder="Coaching emphasis, load guidance, or client-specific notes." />
           </Field>
         </div>
-      </Card>
 
-      <Card className="rounded-[1.5rem] bg-white/82 p-5 shadow-soft">
-        <h3 className="font-serif text-xl font-semibold">Wizard Progress</h3>
-        <div className="mt-4 space-y-3">
-          {wizardSteps.map((step) => {
-            const isComplete = completedSteps.has(step.id);
-            const isActive = step.id === activeStepId;
-
-            return (
-              <div key={step.id} className={cn("flex items-center gap-3 rounded-2xl border px-3 py-3", isActive ? "border-bronze-300 bg-bronze-50" : "border-stone-200 bg-white/76")}>
-                <span className={cn("grid size-7 place-items-center rounded-full", isComplete ? "bg-sage-700 text-white" : "bg-stone-100 text-stone-500")}>
-                  {isComplete ? <Check className="size-4" /> : <step.icon className="size-4" />}
-                </span>
-                <span className="flex-1 text-sm font-semibold text-charcoal-950">{step.title}</span>
-                <span className="text-xs text-stone-500">{draft.blocks.find((block) => block.id === step.id)?.exercises.length ?? 0}</span>
-              </div>
-            );
-          })}
-        </div>
-        <div className="mt-5 grid gap-3 text-sm text-stone-600">
+        <div className="mt-4 grid gap-2.5 rounded-2xl bg-stone-50/80 p-3.5 text-sm text-stone-600">
           <SummaryLine icon={Dumbbell} label="Exercises" value={String(draft.blocks.reduce((sum, block) => sum + block.exercises.length, 0))} />
-          <SummaryLine icon={ListChecks} label="Total sets" value={String(totalSets)} />
-          <SummaryLine icon={Clock3} label="Est. time" value={draft.duration} />
+          <SummaryLine icon={ListChecks} label="Sets" value={String(totalSets)} />
+          <SummaryLine icon={Clock3} label="Time" value={draft.duration} />
         </div>
-        <Button className="mt-5 w-full" variant="warm" onClick={onSave} disabled={!isWorkoutComplete || busy}>
-          <Save className="size-4" />
-          {busy ? "Saving..." : "Save Workout"}
-        </Button>
-      </Card>
 
-      <Card className="rounded-[1.5rem] bg-bronze-50 p-5 shadow-none">
-        <div className="flex items-center gap-2 font-semibold text-bronze-800">
-          <Sparkles className="size-4" />
-          Current step
-        </div>
-        <p className="mt-3 text-sm leading-6 text-stone-600">{activeStep.helper}</p>
+        {!isWorkoutComplete ? (
+          <p className="mt-3 text-center text-xs leading-5 text-stone-500">Complete each section and add a workout name to save.</p>
+        ) : null}
       </Card>
     </aside>
   );
 }
 
-function ExerciseChoice({ exercise, score, onAdd }: { exercise: Exercise; score: number; onAdd: () => void }) {
+function ExerciseChoice({ exercise, onAdd }: { exercise: Exercise; onAdd: () => void }) {
   return (
-    <div className="grid grid-cols-[3.25rem_1fr_auto] items-center gap-3 rounded-2xl border border-stone-200 bg-white/84 p-2 transition hover:bg-stone-50">
+    <div className="grid grid-cols-[2.75rem_1fr_auto] items-center gap-3 rounded-xl border border-stone-200 bg-white/84 p-2 transition hover:border-bronze-200 hover:bg-bronze-50/35">
       <ExerciseThumb exercise={exercise} />
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-2">
           <p className="truncate text-sm font-semibold text-charcoal-950">{exercise.name}</p>
-          {score > 0 ? <Badge variant="bronze" className="hidden shrink-0 sm:inline-flex">Recommended</Badge> : null}
         </div>
         <p className="mt-1 truncate text-xs text-stone-500">
           {compactCategory(exercise.category)} <span className="px-1">•</span> {exercise.pattern}
         </p>
       </div>
-      <Button variant="secondary" size="icon" aria-label={`Add ${exercise.name}`} onClick={onAdd}>
+      <Button variant="secondary" size="icon" className="size-9" aria-label={`Add ${exercise.name}`} onClick={onAdd}>
         <Plus className="size-4" />
       </Button>
     </div>
@@ -742,7 +705,7 @@ function SelectedExerciseRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="grid gap-3 rounded-2xl border border-stone-200 bg-white/84 p-3 shadow-inner-soft md:grid-cols-[1rem_3.25rem_1.75rem_minmax(0,1fr)_4.5rem_5rem_4.5rem_2.5rem] md:items-center">
+    <div className="grid gap-3 rounded-2xl border border-stone-200 bg-white/88 p-3 shadow-inner-soft transition hover:border-bronze-200 md:grid-cols-[1rem_3rem_1.75rem_minmax(0,1fr)_4.5rem_5rem_4.5rem_2.5rem] md:items-center">
       <GripVertical className="hidden size-4 text-stone-400 md:block" />
       <ExerciseThumb exercise={source} />
       <span className="grid size-7 place-items-center rounded-full bg-stone-100 text-xs font-semibold text-stone-500">{index + 1}</span>
@@ -768,15 +731,15 @@ function ExerciseThumb({ exercise }: { exercise?: Exercise }) {
       <Image
         src={exercise.demoUrl}
         alt=""
-        width={48}
-        height={48}
-        className="size-12 rounded-xl border border-stone-200 bg-stone-50 object-cover"
+        width={44}
+        height={44}
+        className="size-11 rounded-xl border border-stone-200 bg-stone-50 object-cover"
       />
     );
   }
 
   return (
-    <div className="grid size-12 place-items-center rounded-xl border border-stone-200 bg-stone-50 text-bronze-600">
+    <div className="grid size-11 place-items-center rounded-xl border border-stone-200 bg-stone-50 text-bronze-600">
       <Dumbbell className="size-5" />
     </div>
   );
@@ -789,7 +752,7 @@ function MiniInput({ label, value, onChange }: { label: string; value: string; o
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full rounded-lg border border-stone-200 bg-white px-2 text-sm text-charcoal-950 shadow-inner-soft focus-visible:border-bronze-300"
+        className="h-9 w-full rounded-lg border border-stone-200 bg-white px-2 text-sm text-charcoal-950 shadow-inner-soft transition focus-visible:border-bronze-300"
       />
     </label>
   );
