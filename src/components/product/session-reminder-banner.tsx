@@ -8,9 +8,9 @@ import { Card } from "@/components/ui/card";
 import { applyStoredReminderSettings, filterArchivedBulletins } from "@/lib/bulletin-reminder-storage";
 import type { BulletinPost, Role } from "@/lib/types";
 
-const bulletinStorageKey = "aurelian-bulletins";
-const rsvpStorageKey = "aurelian-bulletin-rsvps";
-const dismissedStorageKey = "aurelian-session-reminders-dismissed";
+const bulletinStorageKey = "nick-glushien-bulletins";
+const rsvpStorageKey = "nick-glushien-bulletin-rsvps";
+const dismissedStorageKey = "nick-glushien-session-reminders-dismissed";
 const demoClient = { id: "mara-lee", name: "Mara Lee" };
 
 function formatSessionDate(value?: string | null) {

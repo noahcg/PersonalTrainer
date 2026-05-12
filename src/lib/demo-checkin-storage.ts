@@ -2,7 +2,7 @@
 
 import type { CheckIn } from "@/lib/types";
 
-const demoCheckinsStorageKey = "aurelian-trainer-checkins";
+const demoCheckinsStorageKey = "nick-glushien-trainer-checkins";
 
 export function readDemoCheckIns(fallback: CheckIn[]) {
   const stored = window.localStorage.getItem(demoCheckinsStorageKey);

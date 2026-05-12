@@ -18,7 +18,7 @@ values
 on conflict (id) do update set full_name = excluded.full_name, role = excluded.role;
 
 insert into public.trainers (id, profile_id, business_name, coaching_bio)
-values ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Aurelian Coach', 'Calm, precise strength coaching for durable progress.')
+values ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Nick Glushien Training', 'Calm, precise strength coaching for durable progress.')
 on conflict (id) do nothing;
 
 insert into public.clients (

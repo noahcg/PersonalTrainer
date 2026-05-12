@@ -15,7 +15,7 @@ import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Exercise } from "@/lib/types";
 
 const filters = ["All", "Warm Up", "Cool Down", "Gym", "Free Weights", "Bodyweight", "Calisthenics", "Conditioning"];
-const storageKey = "aurelian-demo-exercises";
+const storageKey = "nick-glushien-demo-exercises";
 const fallbackDemoUrl =
   "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80";
 
@@ -469,7 +469,7 @@ export function ExerciseLibrary({
 
                     <div className="flex flex-col-reverse gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:justify-between">
                       <div className="text-sm text-stone-500">
-                        {mode === "supabase" ? "Saving to Supabase" : "Saving in local demo mode"}
+                        {editingId ? "Review the changes before saving." : "Add the details your clients need to follow this exercise."}
                       </div>
                       <div className="flex flex-col-reverse gap-3 sm:flex-row">
                       <Dialog.Close asChild>

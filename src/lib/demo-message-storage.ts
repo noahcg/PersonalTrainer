@@ -2,8 +2,8 @@
 
 import type { Message } from "@/lib/types";
 
-const sharedMessagesStorageKey = "aurelian-shared-messages";
-const legacyClientMessagesStorageKey = "aurelian-client-messages";
+const sharedMessagesStorageKey = "nick-glushien-shared-messages";
+const legacyClientMessagesStorageKey = "nick-glushien-client-messages";
 
 export function readDemoMessages(fallback: Message[]) {
   const primary = window.localStorage.getItem(sharedMessagesStorageKey);

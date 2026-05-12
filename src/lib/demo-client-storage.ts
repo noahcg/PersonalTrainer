@@ -2,7 +2,7 @@
 
 import type { Client, ClientSession, CoachingEntry } from "@/lib/types";
 
-export const demoClientsStorageKey = "aurelian-demo-clients";
+export const demoClientsStorageKey = "nick-glushien-demo-clients";
 
 export type StoredTrainerClientProfile = {
   client: Client;
@@ -11,7 +11,7 @@ export type StoredTrainerClientProfile = {
 };
 
 export function demoClientProfileStorageKey(clientId: string) {
-  return `aurelian-client-profile-${clientId}`;
+  return `nick-glushien-client-profile-${clientId}`;
 }
 
 export function readStoredDemoClientProfile(clientId: string) {

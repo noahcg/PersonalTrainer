@@ -11,8 +11,8 @@ import { applyStoredReminderSettings, filterArchivedBulletins } from "@/lib/bull
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { BulletinPost } from "@/lib/types";
 
-const storageKey = "aurelian-bulletins";
-const rsvpStorageKey = "aurelian-bulletin-rsvps";
+const storageKey = "nick-glushien-bulletins";
+const rsvpStorageKey = "nick-glushien-bulletin-rsvps";
 const demoClient = { id: "mara-lee", name: "Mara Lee" };
 
 function formatSessionDate(value?: string | null) {

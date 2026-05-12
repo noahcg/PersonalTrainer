@@ -1,4 +1,4 @@
--- Aurelian Coach Supabase schema
+-- Nick Glushien Training Supabase schema
 -- Run in the Supabase SQL editor or with `supabase db push`.
 
 create extension if not exists "pgcrypto";

@@ -1,7 +1,7 @@
 import type { BulletinPost } from "@/lib/types";
 
-const reminderStorageKey = "aurelian-bulletin-reminder-settings";
-const archivedBulletinsStorageKey = "aurelian-archived-bulletins";
+const reminderStorageKey = "nick-glushien-bulletin-reminder-settings";
+const archivedBulletinsStorageKey = "nick-glushien-archived-bulletins";
 
 type StoredReminderSettings = Pick<
   BulletinPost,

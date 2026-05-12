@@ -11,7 +11,7 @@ import { clientStatusLabel } from "@/lib/client-access";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Client, Plan } from "@/lib/types";
 
-const storageKey = "aurelian-demo-plans";
+const storageKey = "nick-glushien-demo-plans";
 
 type DraftPlan = {
   title: string;

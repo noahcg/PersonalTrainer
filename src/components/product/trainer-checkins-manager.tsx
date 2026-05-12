@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/input";
 import { checkIns as initialCheckIns } from "@/lib/demo-data";
 import type { CheckIn } from "@/lib/types";
 
-const storageKey = "aurelian-trainer-checkins";
+const storageKey = "nick-glushien-trainer-checkins";
 
 export function TrainerCheckinsManager() {
   const [checkIns, setCheckIns] = useState<CheckIn[]>(initialCheckIns);

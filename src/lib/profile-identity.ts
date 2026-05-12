@@ -1,4 +1,4 @@
-export const trainerSettingsStorageKey = "aurelian-trainer-settings";
+export const trainerSettingsStorageKey = "nick-glushien-trainer-settings";
 export const profileUpdatedEventName = "app-profile-updated";
 
 export type DemoTrainerSettings = {

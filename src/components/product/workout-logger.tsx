@@ -24,7 +24,7 @@ type SetEntry = {
 
 type SetState = Record<string, SetEntry>;
 
-const demoStorageKey = (workoutId: string) => `aurelian-demo-workout-log-${workoutId}`;
+const demoStorageKey = (workoutId: string) => `nick-glushien-demo-workout-log-${workoutId}`;
 
 function isSupabaseReady() {
   return Boolean(

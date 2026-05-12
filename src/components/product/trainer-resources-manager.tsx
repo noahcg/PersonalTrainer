@@ -14,7 +14,7 @@ import { encodeResourceAudience } from "@/lib/resource-audience";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Client, Resource } from "@/lib/types";
 
-const storageKey = "aurelian-trainer-resources";
+const storageKey = "nick-glushien-trainer-resources";
 
 type DraftResource = {
   title: string;
