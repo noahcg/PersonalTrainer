@@ -135,6 +135,10 @@ export function TrainerClientsManager({
 
   const activeClients = useMemo(() => clients.filter((client) => client.status === "active").length, [clients]);
   const needsAttention = useMemo(() => clients.filter((client) => client.status === "needs_attention").length, [clients]);
+  const selectedActiveIds = useMemo(
+    () => selectedIds.filter((id) => clients.some((client) => client.id === id && client.status !== "archived")),
+    [clients, selectedIds],
+  );
   const matchingPackageTypes = useMemo(
     () => initialPackageTypes.filter((packageType) => packageType.kind === signupKind && packageType.active),
     [initialPackageTypes, signupKind],
@@ -148,6 +152,8 @@ export function TrainerClientsManager({
   }
 
   function toggleSelect(id: string) {
+    const client = clients.find((item) => item.id === id);
+    if (client?.status === "archived") return;
     setSelectedIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
   }
 
@@ -397,18 +403,18 @@ export function TrainerClientsManager({
   }
 
   async function archiveSelected() {
-    if (!selectedIds.length) return;
+    if (!selectedActiveIds.length) return;
     setBusy(true);
     setMessage(null);
     try {
       if (mode === "supabase") {
         const supabase = createBrowserClient();
-        const { error } = await supabase.from("clients").update({ status: "archived" }).in("id", selectedIds);
+        const { error } = await supabase.from("clients").update({ status: "archived" }).in("id", selectedActiveIds);
         if (error) throw error;
       }
 
       const nextClients = clients.map((client) =>
-        selectedIds.includes(client.id) ? { ...client, status: "archived" as ClientStatus } : client,
+        selectedActiveIds.includes(client.id) ? { ...client, status: "archived" as ClientStatus } : client,
       );
       setClients(nextClients);
       persist(nextClients);
@@ -574,7 +580,7 @@ export function TrainerClientsManager({
                 <Mail className="size-4" />
                 Send invites
               </Button>
-              <Button variant="secondary" onClick={() => void archiveSelected()} disabled={busy || selectedIds.length === 0}>
+              <Button variant="secondary" onClick={() => void archiveSelected()} disabled={busy || selectedActiveIds.length === 0}>
                 <Archive className="size-4" />
                 Mark inactive
               </Button>

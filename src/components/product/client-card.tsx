@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AlertCircle, CalendarDays, Package } from "lucide-react";
-import { clientAccessLabel, clientStatusLabel } from "@/lib/client-access";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -22,8 +21,9 @@ export function ClientCard({
 }) {
   const needsAttention = client.status === "needs_attention";
   const isInactive = client.status === "archived";
-  const primaryStatus = clientAccessLabel(client.accessStatus);
-  const primaryVariant = client.accessStatus === "account_active" ? "sage" : "default";
+  const primaryStatus = isInactive ? "Inactive" : "Active";
+  const primaryVariant = isInactive ? "default" : "sage";
+  const selectionDisabled = selectable && isInactive;
   const cardBody = (
     <Card
       className={cn(
@@ -47,12 +47,6 @@ export function ClientCard({
             <div className="mt-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-rose-500">
               <AlertCircle className="size-3.5" />
               Needs review
-            </div>
-          ) : null}
-          {isInactive ? (
-            <div className="mt-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
-              <AlertCircle className="size-3.5" />
-              {clientStatusLabel(client.status)}
             </div>
           ) : null}
           {client.partnerPackage ? (
@@ -95,16 +89,22 @@ export function ClientCard({
   if (selectable) {
     return (
       <div className="min-w-0 space-y-3">
-        <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-stone-200 bg-white/60 px-4 py-2.5 text-sm text-stone-600">
+        <label
+          className={cn(
+            "flex items-center justify-between rounded-2xl border border-stone-200 bg-white/60 px-4 py-2.5 text-sm text-stone-600",
+            selectionDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+          )}
+        >
           <span className="font-medium text-charcoal-950">Select client</span>
           <span className="flex items-center gap-3">
-            <span className="text-xs text-stone-500">{selected ? "Included" : "Not selected"}</span>
+            <span className="text-xs text-stone-500">{selectionDisabled ? "Inactive" : selected ? "Included" : "Not selected"}</span>
             <input
               type="checkbox"
-              checked={selected}
+              checked={!selectionDisabled && selected}
+              disabled={selectionDisabled}
               onChange={() => onToggleSelect?.(client.id)}
               onClick={(event) => event.stopPropagation()}
-              className="size-4 rounded border-stone-300 text-bronze-500 focus-visible:ring-bronze-300"
+              className="size-4 rounded border-stone-300 text-bronze-500 focus-visible:ring-bronze-300 disabled:cursor-not-allowed"
               aria-label={`Select ${client.name}`}
             />
           </span>

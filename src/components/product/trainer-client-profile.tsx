@@ -4,7 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
 import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, ExternalLink, Mail, Package, PencilLine, PlayCircle, Save, StickyNote, Trash2, X } from "lucide-react";
 import { forwardRef, type HTMLAttributes, useEffect, useMemo, useState } from "react";
-import { clientAccessDetail, clientAccessLabel, clientStatusLabel } from "@/lib/client-access";
+import { clientAccessDetail } from "@/lib/client-access";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -620,16 +620,17 @@ export function TrainerClientProfile({
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Badge variant="sage">{client.level}</Badge>
                     <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
-                    <Badge variant="default">{clientAccessLabel(client.accessStatus)}</Badge>
-                    <Badge variant={client.status === "needs_attention" ? "alert" : client.status === "archived" ? "default" : "bronze"}>
-                      {clientStatusLabel(client.status)}
+                    <Badge variant={client.status === "archived" ? "default" : "sage"}>
+                      {client.status === "archived" ? "Inactive" : "Active"}
                     </Badge>
                     {partnerPackage ? <Badge variant="bronze">Partner Training</Badge> : null}
                   </div>
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
                     {client.status === "archived"
                       ? "Client can log in with data-only access to profile, progress, and recorded history."
-                      : clientAccessDetail(client.accessStatus, client.inviteSentAt)}
+                      : client.accessStatus === "account_active"
+                        ? "Client has full training access."
+                        : clientAccessDetail(client.accessStatus, client.inviteSentAt)}
                   </p>
                 </div>
               </div>
