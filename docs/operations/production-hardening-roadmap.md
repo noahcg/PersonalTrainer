@@ -1,6 +1,8 @@
-# SaaS Hardening Roadmap
+# Production Hardening Roadmap
 
-This document is the long-term plan for taking `PersonalTrainer` from a strong custom prototype into a fully hardened SaaS product.
+This document is the long-term plan for taking `PersonalTrainer` from a strong custom prototype into a production-grade hosted platform for one trainer and many clients.
+
+This is not a SaaS marketplace or a multi-trainer platform. It is a single-trainer business application for Nick Glushien Training. The trainer can manage as many clients as needed, and each client can have their own secure portal.
 
 It is written for two readers:
 
@@ -8,6 +10,27 @@ It is written for two readers:
 - Codex should be able to pick up a phase, inspect the right parts of the project, and help execute it safely.
 
 Do not treat this document as permission to execute every item at once. Use it as the working roadmap. Each task should still be implemented in small, reviewable changes.
+
+## Product Definition
+
+This app is best defined as a production-grade, single-tenant training business platform.
+
+The intended model:
+
+- one trainer business: Nick Glushien Training
+- one private trainer workspace
+- many client accounts
+- each client only sees their own assigned workouts, plans, resources, messages, check-ins, and profile data
+- the trainer can manage all clients from one authenticated workspace
+- the application is hosted on a real production domain
+- the app is operated like a real production system with backups, monitoring, deployment discipline, and security checks
+
+What this app is not:
+
+- not a public SaaS platform for other trainers to sign up
+- not a marketplace
+- not a multi-tenant trainer subscription product
+- not an app that needs organization provisioning, trainer self-signup, or trainer-to-trainer tenant isolation
 
 ## Current App State
 
@@ -30,16 +53,17 @@ The application is already much more than a static mockup. It includes:
 - profile photo upload
 - client workout views and logging
 
-The current app should be thought of as a strong custom prototype or early production candidate. It is not yet fully hardened SaaS because the production operating layer still needs more proof and structure:
+The current app should be thought of as a strong custom prototype or early production candidate. It is not yet fully production-hardened because the production operating layer still needs more proof and structure:
 
 - production deployment needs to be finalized
 - monitoring needs to be connected and verified
 - backup and recovery expectations need to be documented
 - Supabase row-level security needs a focused audit
+- client data isolation needs to be verified with real client accounts
 - demo fallback behavior needs to be clearly separated from production behavior
 - migrations need to become more disciplined
 - automated tests need broader workflow coverage
-- billing and account lifecycle need a clear decision if payments move into the app
+- payment handling needs a clear decision if client billing moves into the app
 
 Existing related docs:
 
@@ -55,9 +79,10 @@ A conservative freelancer build estimate for the current application is roughly 
 
 That estimate assumes a competent freelancer or small senior contractor building:
 
-- a custom SaaS-style Next.js application
+- a custom Next.js web application
 - a branded public site
-- trainer and client portals
+- a private trainer workspace
+- secure client portals
 - Supabase auth and database workflows
 - invite-based onboarding
 - CRUD workflows across clients, workouts, exercises, plans, packages, resources, check-ins, and messages
@@ -66,16 +91,17 @@ That estimate assumes a competent freelancer or small senior contractor building
 
 This is not an invoice, appraisal, or promise of market value. It is a practical planning estimate based on the amount of custom product, engineering, integration, and polish already present.
 
-The cost to reach fully hardened SaaS depends on launch scope. A careful path from here should prioritize stability, security, deployment discipline, and core workflow coverage before adding large new features.
+The cost to make the app production-grade from here depends on launch scope. A careful path should prioritize stability, client data privacy, deployment discipline, and core workflow coverage before adding large new features.
 
-## Definition Of Fully Hardened SaaS
+## Definition Of Production-Grade
 
-For this project, fully hardened SaaS means:
+For this project, production-grade means:
 
 - the app runs on a real production domain
 - production environment variables are managed only through the hosting provider
 - Supabase auth redirects are configured for the production domain
-- trainer and client data isolation is verified with real accounts
+- the trainer account can access the full trainer workspace
+- each client account can only access its own client data
 - RLS policies are reviewed and tested for every sensitive table
 - no critical production workflow depends on demo data
 - email delivery works reliably through the production sender domain
@@ -85,12 +111,12 @@ For this project, fully hardened SaaS means:
 - migrations are tracked and applied intentionally
 - core trainer and client workflows have regression coverage
 - launch and rollback steps are documented
-- billing and subscription lifecycle are clear if payments are handled inside the app
+- client billing rules are clear if payments are handled inside the app
 - the product can be maintained without relying on memory or undocumented assumptions
 
 ## Phase 1: Stabilize The Current Product
 
-Goal: make the current product dependable before adding more platform complexity.
+Goal: make the current product dependable before adding more operational complexity.
 
 - [ ] Review all pages for outdated placeholder names, temporary copy, and demo-only language.
 - [ ] Confirm that production-facing dialogs do not mention implementation details such as Supabase.
@@ -104,7 +130,7 @@ Goal: make the current product dependable before adding more platform complexity
 
 Acceptance criteria:
 
-- A trainer can use the core product without seeing temporary naming, implementation-specific copy, or obvious prototype seams.
+- The trainer can use the core product without seeing temporary naming, implementation-specific copy, or obvious prototype seams.
 - Known demo/static areas are documented instead of hidden.
 - No launch-blocking UI issue is left vague.
 
@@ -132,17 +158,17 @@ Acceptance criteria:
 - Auth, invite links, email sending, and profile photo storage work outside local development.
 - There is at least one way to know when production is broken.
 
-## Phase 3: Supabase, Security, And Data Isolation
+## Phase 3: Supabase, Security, And Client Data Isolation
 
-Goal: prove that each trainer and client can only access the correct data.
+Goal: prove that clients can only access their own data and that trainer-only capabilities stay private to the trainer.
 
 - [ ] Inventory all Supabase tables used by the app.
 - [ ] Identify which tables contain trainer-owned data, client-owned data, shared data, and global seed data.
 - [ ] Review RLS policies for every sensitive table.
-- [ ] Test trainer account A cannot access trainer account B data.
+- [ ] Test the trainer account can access all expected trainer workspace data.
 - [ ] Test client account A cannot access client account B data.
 - [ ] Test a client cannot access trainer-only routes or APIs.
-- [ ] Test a trainer cannot accidentally reuse their own trainer email as a client account.
+- [ ] Test a trainer cannot accidentally reuse the trainer email as a client account.
 - [ ] Verify service-role usage is limited to server routes that truly require it.
 - [ ] Verify server routes validate ownership before insert, update, or delete operations.
 - [ ] Document any tables that intentionally allow public or global reads.
@@ -151,7 +177,8 @@ Acceptance criteria:
 
 - Access rules are explicit and tested.
 - Sensitive server routes validate both authentication and ownership.
-- There is no known path for one trainer or client to read another user's private data.
+- There is no known path for one client to read another client's private data.
+- There is no known path for a client to access trainer-only functionality.
 
 ## Phase 4: Testing And Regression Protection
 
@@ -194,25 +221,24 @@ Acceptance criteria:
 - Production schema changes are not dependent on memory.
 - Risky database changes have a recovery plan before they are applied.
 
-## Phase 6: Billing And Account Lifecycle
+## Phase 6: Client Billing Decision
 
-Goal: decide whether the app itself handles money and subscription status.
+Goal: decide whether the app itself handles client payments.
 
 This phase can wait until the business model is clear. If billing stays outside the app, document that decision and keep this phase small.
 
-- [ ] Decide whether subscriptions will be handled inside the app.
+- [ ] Decide whether client payments will be handled inside the app.
 - [ ] If billing is in-app, choose Stripe as the default provider unless there is a strong reason not to.
-- [ ] Define subscription states such as trialing, active, past due, canceled, and comped.
-- [ ] Decide what happens when a trainer subscription is inactive.
-- [ ] Decide whether clients are billed directly, indirectly through trainers, or not at all.
+- [ ] Decide whether clients pay for packages, subscriptions, invoices, or offline arrangements.
+- [ ] Decide whether unpaid clients lose portal access or are handled manually.
 - [ ] Add billing tables only after the product rules are clear.
-- [ ] Add Stripe webhooks only after account lifecycle rules are written down.
-- [ ] Add admin visibility for subscription state if needed.
+- [ ] Add Stripe webhooks only after payment lifecycle rules are written down.
+- [ ] Add trainer visibility for client payment state if needed.
 
 Acceptance criteria:
 
 - The app has a clear billing decision.
-- If payments move into the product, account access and billing states are predictable.
+- If payments move into the product, client access and payment states are predictable.
 - Billing implementation does not begin before business rules are settled.
 
 ## Phase 7: Observability, Support, And Operations
@@ -237,20 +263,20 @@ Acceptance criteria:
 
 ## Phase 8: Scale Readiness And Maintenance
 
-Goal: prepare the app to grow without becoming fragile.
+Goal: prepare the app to support many clients without becoming fragile.
 
 - [ ] Review slow pages and expensive data loading patterns.
-- [ ] Add pagination or filtering where lists can grow large.
+- [ ] Add pagination or filtering where client, message, workout, resource, or check-in lists can grow large.
 - [ ] Review image and file storage usage.
 - [ ] Review database indexes for common queries.
 - [ ] Review API routes for duplicate validation or repeated ownership checks.
 - [ ] Extract shared helpers only when duplication is causing real risk.
 - [ ] Keep versioning disciplined and reserve `1.0.0` for intentional launch.
-- [ ] Maintain a changelog or release notes once real users depend on the app.
+- [ ] Maintain a changelog or release notes once real clients depend on the app.
 
 Acceptance criteria:
 
-- Larger data sets do not make common pages difficult to use.
+- Larger client lists and workout history do not make common pages difficult to use.
 - Maintenance work is guided by measured problems instead of speculative rewrites.
 - The app has a clear path for ongoing releases.
 
@@ -299,7 +325,8 @@ When using Codex to execute this roadmap:
 - [ ] Audit RLS policies.
 - [ ] Audit server routes using the service-role key.
 - [ ] Add ownership checks where missing.
-- [ ] Test cross-trainer and cross-client access attempts.
+- [ ] Test cross-client access attempts.
+- [ ] Test client attempts to access trainer-only APIs.
 - [ ] Confirm sensitive environment variables are not exposed client-side.
 
 ### Testing
@@ -333,10 +360,10 @@ When using Codex to execute this roadmap:
 
 ### Billing
 
-- [ ] Decide whether billing belongs inside the app.
-- [ ] Define billing states before implementation.
+- [ ] Decide whether client billing belongs inside the app.
+- [ ] Define payment states before implementation.
 - [ ] Add Stripe only after the lifecycle rules are clear.
-- [ ] Decide what happens to clients when trainer billing is inactive.
+- [ ] Decide what happens to a client's portal access when payment is overdue.
 
 ### Documentation
 
@@ -357,4 +384,4 @@ For each future Codex session:
 4. Run the documented checks.
 5. Update this roadmap or the launch checklist when reality changes.
 
-The goal is not to make the app complicated. The goal is to make it dependable enough that real trainers and clients can use it without the product relying on fragile assumptions.
+The goal is not to make the app complicated. The goal is to make it dependable enough that the trainer and real clients can use it without the product relying on fragile assumptions.
