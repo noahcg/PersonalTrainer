@@ -14,7 +14,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Exercise } from "@/lib/types";
 
-const filters = ["All", "Gym", "Free Weights", "Bodyweight", "Calisthenics", "Conditioning"];
+const filters = ["All", "Warm Up", "Cool Down", "Gym", "Free Weights", "Bodyweight", "Calisthenics", "Conditioning"];
 const storageKey = "aurelian-demo-exercises";
 const fallbackDemoUrl =
   "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80";
@@ -113,6 +113,8 @@ export function ExerciseLibrary({
         (activeFilter === "Bodyweight" && exercise.category === "Bodyweight (Beginner-Friendly)") ||
         (activeFilter === "Calisthenics" && exercise.category === "Calisthenics (Progression-Based Bodyweight)") ||
         (activeFilter === "Conditioning" && exercise.category === "Cardio / Conditioning") ||
+        (activeFilter === "Warm Up" && exercise.category === "Warm Up") ||
+        (activeFilter === "Cool Down" && exercise.category === "Cool Down") ||
         searchable.includes(activeFilter.toLowerCase()) ||
         exercise.difficulty.toLowerCase() === activeFilter.toLowerCase();
 
