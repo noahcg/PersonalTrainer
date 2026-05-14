@@ -33,19 +33,24 @@ export default function AboutPage() {
             <h1 className="mt-5 max-w-3xl font-serif text-4xl font-semibold leading-tight text-charcoal-950 sm:text-5xl">
               Calm, precise personal training built around real progress.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
-              Nick works with people who want to feel stronger, steadier, and more capable without being forced into
-              a gym routine that does not fit their life. Most sessions happen in the client&apos;s home, with training
-              shaped around the space, equipment, energy, and starting point they actually have.
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-stone-600">
+              With over 10 years of experience in the fitness industry, I specialize in helping adults 50+ build
+              strength, improve mobility, and feel confident in their everyday lives.
             </p>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-stone-600">
-              He often works with adults who want to feel more capable in everyday life, including clients navigating
-              stiffness, changing mobility, previous aches, or the simple reality that training needs to respect where
-              their body is right now. Sessions are designed to build strength with patience and intent, not pressure.
+            <p className="mt-5 max-w-3xl text-base leading-8 text-stone-600">
+              My journey began in Boston at Beacon Hill Athletic Clubs, where I worked my way from the front desk to
+              becoming a certified personal trainer, assistant manager, and group fitness instructor. In 2015, I moved
+              to San Diego and continued helping clients achieve lasting results through personalized training programs
+              designed around their individual goals and needs.
             </p>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-stone-600">
-              The goal is not to chase a one-size-fits-all workout. It is to create a plan that helps someone move
-              better, trust their body more, and make progress at a pace that actually fits their life.
+            <p className="mt-5 max-w-3xl text-base leading-8 text-stone-600">
+              As a husband, father of two, and dedicated coach, I understand how important it is to stay strong,
+              healthy, and active at every stage of life. My approach is personal, supportive, and focused on what works
+              best for you &mdash; not a one-size-fits-all workout.
+            </p>
+            <p className="mt-5 max-w-3xl text-base leading-8 text-stone-600">
+              Whether your goal is weight loss, strength, balance, mobility, or simply feeling better day to day,
+              I&apos;m here to help you succeed.
             </p>
           </div>
           <div className="grid min-w-0 gap-5 md:w-full md:max-w-[420px] md:justify-self-end">
