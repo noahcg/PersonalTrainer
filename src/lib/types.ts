@@ -308,6 +308,37 @@ export type Resource = {
   updatedAt: string;
 };
 
+export type TrainerAppointmentStatus = "scheduled" | "completed" | "cancelled";
+
+export type TrainerAppointment = {
+  id: string;
+  trainerId?: string | null;
+  clientId: string | null;
+  clientName: string | null;
+  title: string;
+  startsAtIso: string;
+  durationMinutes: number;
+  location: string;
+  notes: string;
+  status: TrainerAppointmentStatus;
+  createdAt: string;
+};
+
+export type CalendarEventType = "appointment" | "bulletin_session" | "in_person_session";
+
+export type CalendarEvent = {
+  id: string;
+  type: CalendarEventType;
+  title: string;
+  startsAtIso: string;
+  durationMinutes: number | null;
+  location: string;
+  clientId: string | null;
+  clientName: string | null;
+  notes: string;
+  status: string;
+};
+
 export type BulletinPost = {
   id: string;
   title: string;

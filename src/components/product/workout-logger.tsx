@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { Check, Eye, LoaderCircle, MessageSquare, PlayCircle, Save, X } from "lucide-react";
+import { Check, Eye, LoaderCircle, MessageSquare, Save, X } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,6 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
   const [logId, setLogId] = useState<string | null>(null);
   const [planAssignmentId, setPlanAssignmentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [starting, setStarting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -291,22 +290,6 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
     return inserted.id;
   }
 
-  async function startSession() {
-    setStarting(true);
-    setMessage(null);
-    try {
-      if (readyForPersistence) {
-        await ensureWorkoutLog();
-      }
-      setMessage("Workout started.");
-      window.setTimeout(() => setMessage(null), 1800);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to start workout.");
-    } finally {
-      setStarting(false);
-    }
-  }
-
   async function saveExerciseProgress(exercise: WorkoutExercise) {
     setSaving(true);
     setMessage(null);
@@ -409,21 +392,15 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
     <div className="space-y-5">
       <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
         <div className="p-5 sm:p-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
-              <h2 className="mt-4 font-serif text-4xl font-semibold">{workout.name}</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-ivory-50/65">{workout.coachNotes}</p>
-              <div className="mt-5 flex flex-wrap gap-3 text-sm text-ivory-50/70">
-                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{workout.dayLabel}</div>
-                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{total} exercises</div>
-                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{brand.tagline}</div>
-              </div>
+          <div>
+            <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
+            <h2 className="mt-4 font-serif text-4xl font-semibold">{workout.name}</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-ivory-50/65">{workout.coachNotes}</p>
+            <div className="mt-5 flex flex-wrap gap-3 text-sm text-ivory-50/70">
+              <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{workout.dayLabel}</div>
+              <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{total} exercises</div>
+              <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{brand.tagline}</div>
             </div>
-            <Button variant="warm" size="lg" onClick={startSession} disabled={starting || saving}>
-              <PlayCircle className="size-5" />
-              {starting ? "Starting..." : logId ? "Workout active" : "Start workout"}
-            </Button>
           </div>
           <div className="mt-7">
             <div className="mb-2 flex justify-between text-xs text-ivory-50/55">

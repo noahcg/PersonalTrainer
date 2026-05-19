@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Activity, ArrowRight, CalendarCheck, MessageCircle, Plus, Users } from "lucide-react";
+import { ArrowRight, CalendarCheck, CalendarDays, Clock, MapPin, MessageCircle, Plus, UserRound, Users } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
-import { StatCard } from "@/components/product/stat-card";
 import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
 import { TrainerSessionOverview } from "@/components/product/trainer-session-overview";
 import { Avatar } from "@/components/ui/avatar";
@@ -9,29 +8,45 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { getTrainerCalendarData } from "@/lib/appointments";
 import { getTrainerBulletins } from "@/lib/bulletins";
 import { getTrainerCheckInData } from "@/lib/checkins";
 import { getTrainerClients } from "@/lib/clients";
+import type { CalendarEvent } from "@/lib/types";
+
+const eventTypeLabel: Record<CalendarEvent["type"], string> = {
+  appointment: "Appointment",
+  bulletin_session: "Bulletin session",
+  in_person_session: "In-person session",
+};
+
+function formatNextAppointmentDate(iso: string) {
+  return new Date(iso).toLocaleString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export default async function TrainerDashboardPage() {
-  const [{ bulletins, mode }, { clients }, { checkIns }] = await Promise.all([
+  const [{ bulletins, mode }, { clients }, { checkIns }, calendarData] = await Promise.all([
     getTrainerBulletins(),
     getTrainerClients(),
     getTrainerCheckInData(),
+    getTrainerCalendarData(),
   ]);
   const activeClients = clients.filter((client) => client.status !== "archived");
   const clientsNeedingAttention = activeClients
     .filter((client) => client.status === "needs_attention" || client.adherence < 75)
     .slice(0, 4);
-  const averageAdherence = activeClients.length
-    ? Math.round(activeClients.reduce((total, client) => total + client.adherence, 0) / activeClients.length)
-    : 0;
-  const completedWorkouts = activeClients.reduce((total, client) => total + client.metrics.workouts, 0);
-  const pendingCheckIns = checkIns.filter((checkIn) => !checkIn.reviewed);
-  const focusClient = clientsNeedingAttention[0] ?? activeClients[0] ?? null;
-  const recentCompletionSignals = activeClients
-    .filter((client) => client.metrics.workouts > 0)
-    .slice(0, 3);
+  // eslint-disable-next-line react-hooks/purity -- server component, evaluated once per request
+  const nowMs = Date.now();
+  const nextEvent =
+    [...calendarData.events]
+      .filter((event) => new Date(event.startsAtIso).getTime() >= nowMs)
+      .sort((a, b) => new Date(a.startsAtIso).getTime() - new Date(b.startsAtIso).getTime())[0] ?? null;
 
   return (
     <AppShell
@@ -43,12 +58,59 @@ export default async function TrainerDashboardPage() {
       <SessionReminderBanner initialBulletins={bulletins} mode={mode} role="trainer" />
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <section className="min-w-0 space-y-5">
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Active clients" value={String(activeClients.length)} detail="Current roster" tone="dark" />
-            <StatCard label="Weekly adherence" value={`${averageAdherence}%`} detail="Across active clients" tone="sage" />
-            <StatCard label="Completed workouts" value={String(completedWorkouts)} detail="Logged by clients" />
-            <StatCard label="Check-ins waiting" value={String(pendingCheckIns.length)} detail="Awaiting review" />
-          </div>
+          <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 p-5 text-ivory-50 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="grid size-10 place-items-center rounded-full bg-bronze-500/20 text-bronze-200">
+                  <CalendarDays className="size-5" />
+                </div>
+                <div>
+                  <p className="text-[0.66rem] font-semibold uppercase tracking-[0.3em] text-bronze-200">Next appointment</p>
+                  <p className="mt-1 font-serif text-xl font-semibold">
+                    {nextEvent ? eventTypeLabel[nextEvent.type] : "Nothing scheduled"}
+                  </p>
+                </div>
+              </div>
+              <Button asChild variant="warm" size="sm">
+                <Link href="/trainer/calendar">
+                  Open calendar
+                  <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+            </div>
+
+            {nextEvent ? (
+              <div className="mt-5 space-y-4">
+                <p className="font-serif text-3xl font-semibold leading-tight sm:text-4xl">{nextEvent.title}</p>
+                <div className="grid gap-2 text-sm text-ivory-50/75 sm:grid-cols-2">
+                  <span className="inline-flex items-center gap-2">
+                    <Clock className="size-4 text-bronze-200" />
+                    {formatNextAppointmentDate(nextEvent.startsAtIso)}
+                    {nextEvent.durationMinutes ? ` · ${nextEvent.durationMinutes} min` : ""}
+                  </span>
+                  {nextEvent.clientName ? (
+                    <span className="inline-flex items-center gap-2">
+                      <UserRound className="size-4 text-bronze-200" />
+                      {nextEvent.clientName}
+                    </span>
+                  ) : null}
+                  {nextEvent.location ? (
+                    <span className="inline-flex items-center gap-2">
+                      <MapPin className="size-4 text-bronze-200" />
+                      {nextEvent.location}
+                    </span>
+                  ) : null}
+                </div>
+                {nextEvent.notes ? (
+                  <p className="line-clamp-3 text-sm leading-6 text-ivory-50/65">{nextEvent.notes}</p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-5 max-w-xl text-sm leading-6 text-ivory-50/65">
+                Your calendar is open. Add a client appointment or schedule a session to see it here.
+              </p>
+            )}
+          </Card>
 
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-col items-start justify-between gap-4 sm:flex-row">
@@ -84,71 +146,29 @@ export default async function TrainerDashboardPage() {
           </Card>
 
           <TrainerSessionOverview initialBulletins={bulletins} mode={mode} />
-
-          <div className="grid gap-5 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent completions</CardTitle>
-                <CardDescription>Workout logs with useful coaching signal.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {recentCompletionSignals.length ? (
-                  recentCompletionSignals.map((client) => (
-                    <div key={client.id} className="flex gap-3 rounded-[1.35rem] bg-stone-50/82 p-4">
-                      <Activity className="mt-0.5 size-5 text-sage-500" />
-                      <p className="text-sm leading-6 text-stone-700">
-                        {client.name} has {client.metrics.workouts} completed workouts logged.
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-[1.35rem] bg-stone-50/82 p-4 text-sm leading-6 text-stone-600">
-                    Completed client workouts will appear here once clients begin logging sessions.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick actions</CardTitle>
-                <CardDescription>High-frequency coach workflows.</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-3">
-                {[
-                  ["Create client", "/trainer/clients", Users],
-                  ["Build workout", "/trainer/workouts", Plus],
-                  ["Assign plan", "/trainer/plans", CalendarCheck],
-                  ["Review check-ins", "/trainer/check-ins", MessageCircle],
-                ].map(([label, href, Icon]) => (
-                  <Button key={label as string} asChild variant="secondary" className="w-full justify-between rounded-[1.25rem]">
-                    <Link href={href as string}>
-                      <span className="flex min-w-0 items-center gap-2"><Icon className="size-4 shrink-0" />{label as string}</span>
-                      <ArrowRight className="size-4" />
-                    </Link>
-                  </Button>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
         </section>
 
         <aside className="min-w-0 space-y-5">
-          <Card className="rounded-[1.9rem] border-charcoal-950 bg-charcoal-950 p-5 sm:p-6 text-ivory-50">
-            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-200">Focus this week</p>
-            <p className="mt-5 text-wrap font-serif text-[2rem] font-semibold leading-[1.04] sm:text-[2.4rem] sm:leading-[1.02]">
-              {focusClient ? `${focusClient.name} is your next coaching focus.` : "Build your first client roster."}
-            </p>
-            <p className="mt-4 text-sm leading-6 text-ivory-50/65">
-              {focusClient
-                ? "Review their profile, recent adherence, and notes before your next coaching touchpoint."
-                : "Create a client, send an invite, and their coaching signals will start appearing here."}
-            </p>
-            <Button asChild className="mt-6" variant="warm">
-              <Link href={focusClient ? `/trainer/clients/${focusClient.id}` : "/trainer/clients"}>
-                {focusClient ? "Open profile" : "Open roster"}
-              </Link>
-            </Button>
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick actions</CardTitle>
+              <CardDescription>High-frequency coach workflows.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {[
+                ["Create client", "/trainer/clients", Users],
+                ["Build workout", "/trainer/workouts", Plus],
+                ["Assign plan", "/trainer/plans", CalendarCheck],
+                ["Review check-ins", "/trainer/check-ins", MessageCircle],
+              ].map(([label, href, Icon]) => (
+                <Button key={label as string} asChild variant="secondary" className="w-full justify-between rounded-[1.25rem]">
+                  <Link href={href as string}>
+                    <span className="flex min-w-0 items-center gap-2"><Icon className="size-4 shrink-0" />{label as string}</span>
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              ))}
+            </CardContent>
           </Card>
           <Card>
             <CardHeader>

@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import {
   BookOpen,
   CalendarCheck,
+  CalendarDays,
   Dumbbell,
   Home,
   Library,
@@ -32,6 +33,7 @@ import { NGLogoLockup } from "@/components/brand/ng-logo";
 
 const trainerNav = [
   { href: "/trainer/dashboard", label: "Dashboard", icon: Home },
+  { href: "/trainer/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/trainer/bulletin", label: "Bulletin Board", icon: Megaphone },
   { href: "/trainer/clients", label: "Clients", icon: Users },
   { href: "/trainer/packages", label: "Packages", icon: Package },
