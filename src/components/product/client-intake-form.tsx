@@ -94,21 +94,29 @@ export function ClientIntakeForm({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const requiredFields = useMemo(
+  const requiredByStep = useMemo<Array<{ label: string; value: string }[]>>(
     () => [
-      draft.goals.primary.trim(),
-      draft.training.currentActivity.trim(),
-      draft.readiness.medicalClearance.trim(),
-      draft.lifestyle.schedule.trim(),
-      draft.emergencyContact.name.trim(),
-      draft.emergencyContact.phone.trim(),
+      [{ label: "Primary goal", value: draft.goals.primary.trim() }],
+      [{ label: "Current activity", value: draft.training.currentActivity.trim() }],
+      [{ label: "Medical clearance status", value: draft.readiness.medicalClearance.trim() }],
+      [
+        { label: "Weekly availability", value: draft.lifestyle.schedule.trim() },
+        { label: "Emergency contact", value: draft.emergencyContact.name.trim() },
+        { label: "Emergency phone", value: draft.emergencyContact.phone.trim() },
+      ],
+      [],
     ],
     [draft],
   );
+  const currentStepMissing = useMemo(
+    () => (requiredByStep[step] ?? []).filter((field) => !field.value).map((field) => field.label),
+    [requiredByStep, step],
+  );
+  const canAdvance = currentStepMissing.length === 0;
   const progress = Math.round((furthestStep / (stepLabels.length - 1)) * 100);
   const canSubmit = useMemo(
-    () => requiredFields.every(Boolean),
-    [requiredFields],
+    () => requiredByStep.every((stepFields) => stepFields.every((field) => Boolean(field.value))),
+    [requiredByStep],
   );
 
   function updateSection<Section extends keyof IntakeDraft, Field extends keyof IntakeDraft[Section]>(
@@ -353,6 +361,12 @@ export function ClientIntakeForm({
 
             {message ? <p className="mt-5 rounded-[1rem] bg-stone-100 px-4 py-3 text-sm text-stone-700">{message}</p> : null}
 
+            {currentStepMissing.length ? (
+              <p className="mt-5 rounded-[1rem] bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                Required to continue: {currentStepMissing.join(", ")}.
+              </p>
+            ) : null}
+
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               <Button variant="secondary" onClick={() => setStep((current) => Math.max(current - 1, 0))} disabled={step === 0 || saving}>
                 <ArrowLeft className="size-4" />
@@ -361,6 +375,7 @@ export function ClientIntakeForm({
               {step < stepLabels.length - 1 ? (
                 <Button
                   variant="warm"
+                  disabled={!canAdvance}
                   onClick={() => {
                     const nextStep = Math.min(step + 1, stepLabels.length - 1);
                     setStep(nextStep);
