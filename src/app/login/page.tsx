@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Mail } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { createClient, hasSupabaseEnv } from "@/lib/supabase-browser";
 import { NGLogoLockup } from "@/components/brand/ng-logo";
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("trainer@example.com");
   const [password, setPassword] = useState("demo-password");
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState("Enter your email and password to continue.");
 
   function roleDestination(role: Role) {
@@ -88,6 +90,33 @@ export default function LoginPage() {
     }
   }
 
+  async function sendPasswordReset() {
+    if (!email) {
+      setMessage("Enter your email first, then request a reset link.");
+      return;
+    }
+
+    if (!hasSupabaseEnv()) {
+      setMessage("Supabase is not connected. Password reset is unavailable from this form.");
+      return;
+    }
+
+    setResetting(true);
+    setMessage("Sending reset email...");
+
+    try {
+      const supabase = createClient();
+      const redirectTo = `${window.location.origin}/auth/callback?next=/reset-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) throw error;
+      setMessage("Password reset email sent. Open the link in that email to choose a new password.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to send reset email.");
+    } finally {
+      setResetting(false);
+    }
+  }
+
   return (
     <main suppressHydrationWarning className="grid min-h-screen place-items-center px-5 py-10">
       <Card className="w-full max-w-xl p-5 sm:p-8">
@@ -104,6 +133,10 @@ export default function LoginPage() {
             {loading ? "Logging in..." : "Log in"}
           </Button>
         </form>
+        <Button disabled={loading || resetting} type="button" variant="ghost" className="mt-4 w-full" onClick={() => void sendPasswordReset()}>
+          <Mail className="size-4" />
+          {resetting ? "Sending..." : "Send password reset email"}
+        </Button>
       </Card>
     </main>
   );

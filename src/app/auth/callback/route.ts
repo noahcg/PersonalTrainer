@@ -7,7 +7,8 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type");
-  const next = url.searchParams.get("next") ?? "/";
+  const requestedNext = url.searchParams.get("next");
+  const next = requestedNext?.startsWith("/") ? requestedNext : type === "recovery" ? "/reset-password" : "/";
 
   const supabase = await createClient();
   let authError: Error | null = null;
@@ -29,9 +30,9 @@ export async function GET(request: Request) {
 
   if (authError) {
     await supabase.auth.signOut();
-    const setupUrl = new URL("/setup-account", url.origin);
-    setupUrl.searchParams.set("error", "invite_expired");
-    return NextResponse.redirect(setupUrl);
+    const errorUrl = new URL(type === "recovery" ? "/reset-password" : "/setup-account", url.origin);
+    errorUrl.searchParams.set("error", type === "recovery" ? "recovery_expired" : "invite_expired");
+    return NextResponse.redirect(errorUrl);
   }
 
   return NextResponse.redirect(new URL(next, url.origin));
