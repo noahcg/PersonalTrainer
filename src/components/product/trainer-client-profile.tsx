@@ -2,8 +2,8 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, ExternalLink, Mail, Package, PencilLine, PlayCircle, Save, StickyNote, Trash2, X } from "lucide-react";
-import { forwardRef, type HTMLAttributes, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, Dumbbell, ExternalLink, Mail, NotebookPen, Package, PencilLine, PlayCircle, Save, StickyNote, Trash2, X } from "lucide-react";
+import { forwardRef, type HTMLAttributes, useEffect, useMemo, useRef, useState } from "react";
 import { clientAccessDetail } from "@/lib/client-access";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
 import { Avatar } from "@/components/ui/avatar";
@@ -653,56 +653,68 @@ export function TrainerClientProfile({
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:w-[21rem] lg:grid-cols-1">
+              <div className="grid gap-3 rounded-[1.75rem] border border-stone-200 bg-white/70 p-3 shadow-inner-soft lg:w-[22rem]">
                 {client.accessStatus !== "account_active" ? (
-                  <Button variant="secondary" onClick={() => setInviteOpen(true)} disabled={busy}>
+                  <Button variant="secondary" onClick={() => setInviteOpen(true)} disabled={busy} className="bg-white">
                     <Mail className="size-4" />
                     {client.accessStatus === "invite_pending" ? "Resend access invite" : "Send access invite"}
                   </Button>
                 ) : null}
-                <Button variant="warm" onClick={() => setNoteOpen(true)}>
-                  <StickyNote className="size-4" />
-                  Leave coaching note
-                </Button>
-                <Button variant="warm" onClick={() => void startInPersonSession()} disabled={busy || Boolean(activeSession) || client.status === "archived"}>
+                <Button
+                  variant="warm"
+                  onClick={() => void startInPersonSession()}
+                  disabled={busy || Boolean(activeSession) || client.status === "archived"}
+                  className="shadow-warm"
+                >
                   <PlayCircle className="size-4" />
                   {client.status === "archived" ? "Client inactive" : activeSession ? "Session active" : "Start in-person session"}
                 </Button>
-                <Button variant="secondary" onClick={() => setEditOpen(true)}>
+                <Button variant="secondary" onClick={() => setEditOpen(true)} className="bg-ivory-50">
                   <PencilLine className="size-4" />
                   Edit profile
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={deactivateClient}
+                  disabled={busy}
+                  className="h-10 rounded-2xl bg-stone-50/80 px-4 text-stone-700 ring-1 ring-stone-200/80 hover:bg-white"
+                >
+                  <Ban className="size-4" />
+                  {client.status === "archived" ? "Reactivate client" : "Mark inactive"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setDeleteOpen(true)}
+                  disabled={busy}
+                  className="h-10 rounded-2xl bg-rose-50/70 px-4 text-rose-600 ring-1 ring-rose-100 hover:bg-rose-50 hover:text-rose-700"
+                >
+                  <Trash2 className="size-4" />
+                  Delete client
                 </Button>
               </div>
             </div>
           </div>
 
-          <div className="grid gap-5 p-5 lg:grid-cols-[1fr_18rem] sm:p-6">
-            <div>
-              <div className="mb-2 flex justify-between text-sm text-stone-500">
-                <span>Adherence</span>
-                <span>{client.adherence}%</span>
+          <div className="border-t border-border bg-stone-50/35 p-5 sm:p-6">
+            <div className="flex w-fit max-w-full flex-col gap-4 xl:flex-row xl:items-stretch">
+              <div className="w-full max-w-md rounded-[1.5rem] border border-stone-200 bg-white/75 p-4 shadow-inner-soft sm:p-5 xl:w-[28rem]">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Progress</p>
+                    <p className="mt-1 text-sm font-medium text-charcoal-950">Adherence</p>
+                  </div>
+                  <div className="rounded-full bg-sage-50 px-3 py-1 text-sm font-semibold text-sage-700">{client.adherence}%</div>
+                </div>
+                <Progress value={client.adherence} className="mt-4 h-2.5 bg-stone-100" />
               </div>
-              <Progress value={client.adherence} />
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                <MetricTile label="Workouts" value={String(client.metrics.workouts)} />
-                <MetricTile label="In-person sessions" value={`${client.sessionPackage.used}/${client.sessionPackage.total ?? "∞"}`} />
-                <MetricTile label="Remaining" value={client.sessionPackage.remaining === null ? "∞" : String(client.sessionPackage.remaining)} />
+              <div className="grid w-fit gap-3 sm:grid-cols-2">
+                <ProfileSummaryMetric icon={<Dumbbell className="size-4" />} label="Workouts" value={String(client.metrics.workouts)} />
+                <ProfileSummaryMetric
+                  icon={<NotebookPen className="size-4" />}
+                  label="In-person sessions"
+                  value={`${client.sessionPackage.used}/${client.sessionPackage.total ?? "∞"}`}
+                />
               </div>
-            </div>
-            <div className="grid content-start gap-3">
-              <Button variant="ghost" onClick={deactivateClient} disabled={busy}>
-                <Ban className="size-4" />
-                {client.status === "archived" ? "Reactivate client" : "Mark inactive"}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setDeleteOpen(true)}
-                disabled={busy}
-                className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-              >
-                <Trash2 className="size-4" />
-                Delete client
-              </Button>
             </div>
           </div>
         </Card>
@@ -792,10 +804,7 @@ export function TrainerClientProfile({
           </CardHeader>
           <CardContent className="p-0">
             {detailTab === "context" ? (
-              <div className="grid divide-y divide-border lg:grid-cols-2 lg:divide-x lg:divide-y-0">
-                <ContextGroup title="Profile" description="Current profile details used for programming and support." rows={profileContextRows} />
-                <ContextGroup title="Intake info" description="Onboarding answers that give helpful starting context." rows={intakeContextRows} />
-              </div>
+              <OverviewContextPanel profileRows={profileContextRows} intakeRows={intakeContextRows} />
             ) : null}
 
             {detailTab === "coaching" ? (
@@ -1144,6 +1153,18 @@ function MetricTile({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ProfileSummaryMetric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex min-h-20 items-center gap-3 rounded-[1.25rem] border border-stone-200 bg-white/65 px-4 py-3 shadow-inner-soft">
+      <div className="grid size-10 shrink-0 place-items-center rounded-full bg-bronze-50 text-bronze-700">{icon}</div>
+      <div>
+        <p className="text-2xl font-semibold leading-none text-charcoal-950">{value}</p>
+        <p className="mt-1 text-sm text-stone-500">{label}</p>
+      </div>
+    </div>
+  );
+}
+
 function DetailTabButton({
   active,
   onClick,
@@ -1165,6 +1186,86 @@ function DetailTabButton({
     >
       {children}
     </button>
+  );
+}
+
+const OVERVIEW_COLLAPSED_HEIGHT = 600;
+
+function OverviewContextPanel({
+  profileRows,
+  intakeRows,
+}: {
+  profileRows: Array<[string, string]>;
+  intakeRows: Array<[string, string]>;
+}) {
+  return (
+    <div className="grid divide-y divide-border lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+      <CollapsibleContextColumn title="Profile" description="Current profile details used for programming and support." rows={profileRows} />
+      <CollapsibleContextColumn title="Intake info" description="Onboarding answers that give helpful starting context." rows={intakeRows} />
+    </div>
+  );
+}
+
+function CollapsibleContextColumn({
+  title,
+  description,
+  rows,
+}: {
+  title: string;
+  description: string;
+  rows: Array<[string, string]>;
+}) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [canExpand, setCanExpand] = useState(false);
+
+  useEffect(() => {
+    function measureColumn() {
+      const nextCanExpand = (contentRef.current?.scrollHeight ?? 0) > OVERVIEW_COLLAPSED_HEIGHT;
+
+      setCanExpand(nextCanExpand);
+      if (!nextCanExpand) {
+        setExpanded(false);
+      }
+    }
+
+    measureColumn();
+
+    const resizeObserver = new ResizeObserver(measureColumn);
+    if (contentRef.current) resizeObserver.observe(contentRef.current);
+
+    window.addEventListener("resize", measureColumn);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measureColumn);
+    };
+  }, [rows]);
+
+  return (
+    <div>
+      <div
+        ref={contentRef}
+        className={canExpand && !expanded ? "overflow-hidden transition-[max-height] duration-300 ease-out" : "transition-[max-height] duration-300 ease-out"}
+        style={canExpand && !expanded ? { maxHeight: OVERVIEW_COLLAPSED_HEIGHT } : undefined}
+      >
+        <ContextGroup title={title} description={description} rows={rows} />
+      </div>
+
+      {canExpand ? (
+        <div className={`${expanded ? "" : "-mt-14 bg-gradient-to-t from-ivory-50 via-ivory-50/95 to-transparent"} relative p-5 sm:p-6`}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setExpanded((current) => !current)}
+            className="bg-white shadow-soft"
+          >
+            {expanded ? "Show less" : "Show more"}
+          </Button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
