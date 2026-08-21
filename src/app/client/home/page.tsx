@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarCheck, CheckCircle2, HeartPulse, NotebookPen, TrendingUp, UserRound } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { AppShell } from "@/components/layout/app-shell";
-import { ClientUpcomingAppointments } from "@/components/product/client-upcoming-appointments";
+import { AppointmentReminderBanner, ClientUpcomingAppointments } from "@/components/product/client-upcoming-appointments";
 import { ProgressChart } from "@/components/product/progress-chart";
 import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
 import { Badge } from "@/components/ui/badge";
@@ -159,6 +159,7 @@ export default async function ClientHomePage() {
         clientPortalAccess={clientPortalAccess}
       >
         <SessionReminderBanner initialBulletins={bulletins} mode={mode} role="client" />
+        <AppointmentReminderBanner appointments={appointments} />
         <Card className="max-w-4xl p-8">
           <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
           <h2 className="mt-5 font-serif text-4xl font-semibold text-charcoal-950">Your workspace is ready for your coach to personalize.</h2>
@@ -189,6 +190,7 @@ export default async function ClientHomePage() {
       clientPortalAccess={clientPortalAccess}
     >
       <SessionReminderBanner initialBulletins={bulletins} mode={mode} role="client" />
+      <AppointmentReminderBanner appointments={appointments} />
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <section className="space-y-5">
           <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">

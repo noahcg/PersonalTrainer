@@ -17,10 +17,14 @@ create table if not exists public.trainer_appointments (
   duration_minutes int not null default 60 check (duration_minutes > 0),
   location text,
   notes text,
+  reminder_offsets_minutes int[] not null default '{}'::int[],
   status public.trainer_appointment_status not null default 'scheduled',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.trainer_appointments
+  add column if not exists reminder_offsets_minutes int[] not null default '{}'::int[];
 
 create index if not exists trainer_appointments_trainer_idx
   on public.trainer_appointments(trainer_id, starts_at);

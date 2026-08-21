@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Megaphone, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
+import { BellRing, CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Megaphone, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,19 @@ type AppointmentInput = {
   durationMinutes: number;
   location: string;
   notes: string;
+  reminderOffsetsMinutes: number[];
 };
 
 const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const reminderOptions = [
+  { label: "At time", minutes: 0 },
+  { label: "5 min", minutes: 5 },
+  { label: "15 min", minutes: 15 },
+  { label: "30 min", minutes: 30 },
+  { label: "1 hr", minutes: 60 },
+  { label: "2 hr", minutes: 120 },
+  { label: "1 day", minutes: 1440 },
+];
 
 const eventTypeMeta: Record<
   CalendarEvent["type"],
@@ -86,6 +96,19 @@ function localTimeZoneLabel() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone.replaceAll("_", " ");
 }
 
+function formatReminderLead(minutes: number) {
+  if (minutes === 0) return "at start time";
+  if (minutes >= 1440) return `${minutes / 1440} day${minutes === 1440 ? "" : "s"} before`;
+  if (minutes >= 60) return `${minutes / 60} hr${minutes === 60 ? "" : "s"} before`;
+  return `${minutes} min before`;
+}
+
+function normalizeReminderOffsets(values: number[]) {
+  return [...new Set(values)]
+    .filter((value) => Number.isFinite(value) && value >= 0)
+    .sort((a, b) => a - b);
+}
+
 function formatLongDate(date: Date) {
   return date.toLocaleDateString("en-US", {
     weekday: "long",
@@ -121,6 +144,7 @@ function appointmentToEvent(appointment: TrainerAppointment): CalendarEvent {
     clientId: appointment.clientId,
     clientName: appointment.clientName,
     notes: appointment.notes,
+    reminderOffsetsMinutes: appointment.reminderOffsetsMinutes,
     status: appointment.status,
   };
 }
@@ -249,6 +273,7 @@ export function TrainerCalendar({
           durationMinutes: input.durationMinutes,
           location: input.location,
           notes: input.notes,
+          reminderOffsetsMinutes: input.reminderOffsetsMinutes,
           status: "scheduled",
           createdAt: new Date().toISOString(),
         };
@@ -277,9 +302,10 @@ export function TrainerCalendar({
             duration_minutes: input.durationMinutes,
             location: input.location || null,
             notes: input.notes || null,
+            reminder_offsets_minutes: input.reminderOffsetsMinutes,
             status: "scheduled",
           })
-          .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, status, created_at")
+          .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at")
           .single<{
             id: string;
             trainer_id: string;
@@ -289,6 +315,7 @@ export function TrainerCalendar({
             duration_minutes: number;
             location: string | null;
             notes: string | null;
+            reminder_offsets_minutes: number[] | null;
             status: TrainerAppointment["status"];
             created_at: string;
           }>();
@@ -297,6 +324,11 @@ export function TrainerCalendar({
           if (/relation .* does not exist|trainer_appointments/i.test(message)) {
             throw new Error(
               "The trainer_appointments table is missing. Run supabase/trainer-appointments-migration.sql in your Supabase project.",
+            );
+          }
+          if (/reminder_offsets_minutes/i.test(message)) {
+            throw new Error(
+              "Appointment reminders need a database upgrade. Re-run supabase/trainer-appointments-migration.sql in your Supabase project.",
             );
           }
           throw error ?? new Error("Unable to save appointment.");
@@ -312,6 +344,7 @@ export function TrainerCalendar({
           durationMinutes: inserted.duration_minutes,
           location: inserted.location ?? "",
           notes: inserted.notes ?? "",
+          reminderOffsetsMinutes: inserted.reminder_offsets_minutes ?? input.reminderOffsetsMinutes,
           status: inserted.status,
           createdAt: inserted.created_at,
         };
@@ -346,9 +379,10 @@ export function TrainerCalendar({
             duration_minutes: input.durationMinutes,
             location: input.location || null,
             notes: input.notes || null,
+            reminder_offsets_minutes: input.reminderOffsetsMinutes,
           })
           .eq("id", appointmentId)
-          .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, status, created_at")
+          .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at")
           .single<{
             id: string;
             trainer_id: string;
@@ -358,11 +392,17 @@ export function TrainerCalendar({
             duration_minutes: number;
             location: string | null;
             notes: string | null;
+            reminder_offsets_minutes: number[] | null;
             status: TrainerAppointment["status"];
             created_at: string;
           }>();
 
         if (error || !updated) {
+          if (error?.message && /reminder_offsets_minutes/i.test(error.message)) {
+            throw new Error(
+              "Appointment reminders need a database upgrade. Re-run supabase/trainer-appointments-migration.sql in your Supabase project.",
+            );
+          }
           throw error ?? new Error("Unable to update appointment.");
         }
 
@@ -376,6 +416,7 @@ export function TrainerCalendar({
           durationMinutes: updated.duration_minutes,
           location: updated.location ?? "",
           notes: updated.notes ?? "",
+          reminderOffsetsMinutes: updated.reminder_offsets_minutes ?? input.reminderOffsetsMinutes,
           status: updated.status,
           createdAt: updated.created_at,
         };
@@ -395,6 +436,7 @@ export function TrainerCalendar({
           durationMinutes: input.durationMinutes,
           location: input.location,
           notes: input.notes,
+          reminderOffsetsMinutes: input.reminderOffsetsMinutes,
         };
         await persistAppointments(appointments.map((appointment) => (appointment.id === appointmentId ? nextAppointment : appointment)));
       }
@@ -669,6 +711,12 @@ function EventRow({
                 Bulletin invite
               </span>
             ) : null}
+            {isAppointment && event.clientId && event.reminderOffsetsMinutes?.length ? (
+              <span className="inline-flex items-center gap-1.5">
+                <BellRing className="size-3.5" />
+                Client reminder {event.reminderOffsetsMinutes.map(formatReminderLead).join(", ")}
+              </span>
+            ) : null}
           </div>
           {event.notes ? <p className="mt-3 text-sm leading-6 text-stone-600">{event.notes}</p> : null}
         </div>
@@ -749,6 +797,7 @@ function AppointmentDialog({
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [clientId, setClientId] = useState<string>("");
+  const [reminderOffsets, setReminderOffsets] = useState<number[]>([60]);
   const [error, setError] = useState<string | null>(null);
 
   const resetForm = useEffectEvent(() => {
@@ -761,6 +810,7 @@ function AppointmentDialog({
       setLocation(appointment.location);
       setNotes(appointment.notes);
       setClientId(appointment.clientId ?? "");
+      setReminderOffsets(normalizeReminderOffsets(appointment.reminderOffsetsMinutes ?? []));
       setError(null);
       return;
     }
@@ -772,6 +822,7 @@ function AppointmentDialog({
     setLocation("");
     setNotes("");
     setClientId("");
+    setReminderOffsets([60]);
     setError(null);
   });
 
@@ -782,6 +833,15 @@ function AppointmentDialog({
   }, [open]);
 
   const selectedClient = clientOptions.find((option) => option.id === clientId) ?? null;
+
+  function toggleReminderOffset(minutes: number) {
+    setReminderOffsets((current) => {
+      const next = current.includes(minutes)
+        ? current.filter((value) => value !== minutes)
+        : [...current, minutes];
+      return normalizeReminderOffsets(next);
+    });
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -810,6 +870,7 @@ function AppointmentDialog({
       durationMinutes,
       location: location.trim(),
       notes: notes.trim(),
+      reminderOffsetsMinutes: selectedClient ? normalizeReminderOffsets(reminderOffsets) : [],
     });
 
     if (!result.ok) {
@@ -934,6 +995,41 @@ function AppointmentDialog({
                     onChange={(e) => setNotes(e.target.value)}
                     className="mt-2"
                   />
+                </div>
+
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                      Client reminders
+                    </label>
+                    <span className="text-xs text-stone-500">
+                      {selectedClient ? selectedClient.name : "Select a client to enable"}
+                    </span>
+                  </div>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                    {reminderOptions.map((option) => {
+                      const selected = reminderOffsets.includes(option.minutes);
+                      return (
+                        <button
+                          key={option.minutes}
+                          type="button"
+                          disabled={!selectedClient}
+                          onClick={() => toggleReminderOffset(option.minutes)}
+                          className={cn(
+                            "inline-flex min-h-11 items-center justify-center rounded-2xl border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze-300 disabled:cursor-not-allowed disabled:opacity-45",
+                            selected
+                              ? "border-bronze-300 bg-bronze-50 text-bronze-800"
+                              : "border-stone-200 bg-white/70 text-stone-600 hover:bg-white",
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-stone-500">
+                    Reminders appear in the client portal during the selected window before the appointment.
+                  </p>
                 </div>
 
                 {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
