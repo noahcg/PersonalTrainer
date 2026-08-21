@@ -6,6 +6,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
+import { TrainerNotificationSettings } from "@/components/product/trainer-notification-settings";
 import { createClient as createBrowserClient, hasSupabaseEnv } from "@/lib/supabase-browser";
 import {
   defaultDemoTrainerSettings,
@@ -113,6 +114,8 @@ export function TrainerSettingsForm() {
 
   return (
     <AppShell role="trainer" title="Studio settings" subtitle="Manage profile, coaching voice, notification defaults, and account preferences.">
+      <TrainerNotificationSettings />
+
       <Card className="max-w-3xl">
         <CardHeader><CardTitle>Trainer profile</CardTitle></CardHeader>
         <CardContent className="space-y-4">

@@ -192,6 +192,28 @@ create table public.trainer_appointments (
   updated_at timestamptz not null default now()
 );
 
+create table public.trainer_push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  trainer_id uuid not null references public.trainers(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh_key text not null,
+  auth_key text not null,
+  user_agent text,
+  disabled_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.trainer_push_reminder_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  trainer_id uuid not null references public.trainers(id) on delete cascade,
+  appointment_id uuid not null references public.trainer_appointments(id) on delete cascade,
+  reminder_offset_minutes int not null check (reminder_offset_minutes >= 0),
+  sent_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (appointment_id, reminder_offset_minutes)
+);
+
 create table public.training_packages (
   id uuid primary key default gen_random_uuid(),
   trainer_id uuid not null references public.trainers(id) on delete cascade,
@@ -390,6 +412,8 @@ create index plan_assignments_client_idx on public.plan_assignments(client_id, s
 create index workout_logs_client_idx on public.workout_logs(client_id, status);
 create index client_sessions_client_idx on public.client_sessions(client_id, status, started_at desc);
 create index trainer_appointments_trainer_idx on public.trainer_appointments(trainer_id, starts_at);
+create index trainer_push_subscriptions_trainer_idx on public.trainer_push_subscriptions(trainer_id) where disabled_at is null;
+create index trainer_push_reminder_deliveries_trainer_idx on public.trainer_push_reminder_deliveries(trainer_id, sent_at desc);
 create index training_packages_trainer_idx on public.training_packages(trainer_id, status, created_at desc);
 create index training_package_types_trainer_idx on public.training_package_types(trainer_id, active, created_at desc);
 create index package_members_client_idx on public.training_package_members(client_id);
@@ -411,6 +435,8 @@ alter table public.plan_assignments enable row level security;
 alter table public.workout_logs enable row level security;
 alter table public.client_sessions enable row level security;
 alter table public.trainer_appointments enable row level security;
+alter table public.trainer_push_subscriptions enable row level security;
+alter table public.trainer_push_reminder_deliveries enable row level security;
 alter table public.training_packages enable row level security;
 alter table public.training_package_types enable row level security;
 alter table public.training_package_members enable row level security;
@@ -466,6 +492,8 @@ create policy "client sessions trainer writes" on public.client_sessions for all
 create policy "client sessions client starts own" on public.client_sessions for insert with check (client_id = public.current_client_id() and created_by = 'client');
 create policy "trainer appointments visible" on public.trainer_appointments for select using (trainer_id = public.current_trainer_id() or client_id = public.current_client_id());
 create policy "trainer appointments trainer writes" on public.trainer_appointments for all using (trainer_id = public.current_trainer_id()) with check (trainer_id = public.current_trainer_id());
+create policy "trainer push subscriptions own row" on public.trainer_push_subscriptions for all using (trainer_id = public.current_trainer_id()) with check (trainer_id = public.current_trainer_id());
+create policy "trainer push deliveries own row" on public.trainer_push_reminder_deliveries for select using (trainer_id = public.current_trainer_id());
 
 create or replace function public.package_belongs_to_current_trainer(package_id uuid)
 returns boolean
