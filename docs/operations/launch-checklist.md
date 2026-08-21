@@ -110,6 +110,7 @@ Use this as the working execution checklist when preparing the app for productio
 - [ ] perform a fresh end-to-end trainer flow in production-like conditions
 - [ ] perform a fresh end-to-end client flow in an incognito window
 - [ ] choose the next version number
+- [ ] run `npm run version:check`
 - [ ] keep version below `1.0.0` until true launch
 - [ ] only set `1.0.0` when launch is intentional
 

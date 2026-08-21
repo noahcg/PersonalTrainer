@@ -137,6 +137,7 @@ Before calling the app launch-ready:
 
 - Keep `1.0.0` reserved for actual launch.
 - Until launch, keep semver below `1.0.0`.
+- Keep `package.json`, `package-lock.json`, and `CHANGELOG.md` aligned; run `npm run version:check` after release metadata changes.
 - Treat production auth/invite flows as high-risk; verify them in a fresh browser session after any related change.
 - Never reuse trainer emails for client accounts.
 - Any server route touching `auth.users`, `profiles`, or client deletion should be treated as sensitive and re-tested after changes.
