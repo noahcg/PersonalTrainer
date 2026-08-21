@@ -101,6 +101,10 @@ SUPABASE_SERVICE_ROLE_KEY=
 RESEND_API_KEY=
 INVITE_FROM_EMAIL=
 INVITE_REPLY_TO_EMAIL=
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=
+CRON_SECRET=
 ```
 
 Notes:
@@ -108,6 +112,8 @@ Notes:
 - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` enable Supabase mode.
 - `SUPABASE_SERVICE_ROLE_KEY` is required for server-side invite generation.
 - `RESEND_API_KEY`, `INVITE_FROM_EMAIL`, and optional `INVITE_REPLY_TO_EMAIL` are required for custom invite emails.
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` enable Web Push appointment reminders.
+- `CRON_SECRET` protects the scheduled reminder endpoint at `/api/cron/trainer-appointment-reminders`.
 
 ## Supabase Setup
 
@@ -117,6 +123,16 @@ Notes:
 4. Run `supabase/schema.sql` in the Supabase SQL editor.
 5. Run `supabase/seed.sql` if you want starter data.
 6. Configure auth redirect URLs so invite/setup flows can return to your app.
+
+For existing Supabase projects, run `supabase/trainer-push-notifications-migration.sql` to add trainer push notification tables.
+
+## Trainer Appointment Push Reminders
+
+1. Generate VAPID keys with `npx web-push generate-vapid-keys`.
+2. Add the public key, private key, and a subject such as `mailto:you@example.com` to the environment.
+3. Run `supabase/trainer-push-notifications-migration.sql` in Supabase.
+4. Schedule `GET /api/cron/trainer-appointment-reminders` every few minutes with an `Authorization: Bearer $CRON_SECRET` header.
+5. In the trainer app, open `/trainer/settings`, enable notifications on the device, and use `Send test` to confirm delivery.
 
 ## Invite Flow
 
