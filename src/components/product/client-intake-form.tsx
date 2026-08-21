@@ -2,25 +2,32 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, CheckCircle2, HeartPulse, ShieldCheck } from "lucide-react";
+import { CalendarDays, CheckCircle2, Dumbbell, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
-import type { Client, ClientIntake } from "@/lib/types";
+import type { ClientIntake } from "@/lib/types";
 
 type IntakeDraft = Omit<ClientIntake, "id" | "clientId" | "completedAt">;
 
-const parqOptions = [
-  "Heart condition or high blood pressure",
-  "Chest pain at rest or during activity",
-  "Dizziness, balance loss, or fainting",
-  "Chronic medical condition",
-  "Currently pregnant or recently gave birth",
-  "Bone, joint, or soft tissue issue",
-  "Told to exercise only with medical supervision",
+const workoutStyles = [
+  "Strength training",
+  "Conditioning",
+  "Mobility",
+  "Athletic / sport",
+  "Classes / group",
+  "Outdoor cardio",
+  "Not sure yet",
 ];
 
-const stepLabels = ["Goals", "Training", "Readiness", "Lifestyle", "Review"];
+const lastWorkoutOptions = [
+  "This week",
+  "In the last month",
+  "1-3 months ago",
+  "3-6 months ago",
+  "6+ months ago",
+  "I have not worked out recently",
+];
 
 function text(value: unknown) {
   return typeof value === "string" ? value : "";
@@ -42,6 +49,8 @@ function normalizeDraft(intake: ClientIntake): IntakeDraft {
     training: {
       experience: text(intake.training?.experience),
       currentActivity: text(intake.training?.currentActivity),
+      lastWorkoutWhen: text(intake.training?.lastWorkoutWhen),
+      lastWorkoutWhat: text(intake.training?.lastWorkoutWhat),
       equipmentAccess: text(intake.training?.equipmentAccess),
       preferredLocation: text(intake.training?.preferredLocation),
       likes: text(intake.training?.likes),
@@ -72,6 +81,7 @@ function normalizeDraft(intake: ClientIntake): IntakeDraft {
       communication: text(intake.lifestyle?.communication),
     },
     metrics: {
+      age: text(intake.metrics?.age),
       height: text(intake.metrics?.height),
       weight: text(intake.metrics?.weight),
       measurements: text(intake.metrics?.measurements),
@@ -88,36 +98,22 @@ export function ClientIntakeForm({
   mode: "demo" | "supabase";
 }) {
   const router = useRouter();
-  const [step, setStep] = useState(0);
-  const [furthestStep, setFurthestStep] = useState(0);
   const [draft, setDraft] = useState<IntakeDraft>(() => normalizeDraft(initialIntake));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const requiredByStep = useMemo<Array<{ label: string; value: string }[]>>(
-    () => [
-      [{ label: "Primary goal", value: draft.goals.primary.trim() }],
-      [{ label: "Current activity", value: draft.training.currentActivity.trim() }],
-      [{ label: "Medical clearance status", value: draft.readiness.medicalClearance.trim() }],
+  const missingFields = useMemo(
+    () =>
       [
-        { label: "Weekly availability", value: draft.lifestyle.schedule.trim() },
-        { label: "Emergency contact", value: draft.emergencyContact.name.trim() },
-        { label: "Emergency phone", value: draft.emergencyContact.phone.trim() },
-      ],
-      [],
-    ],
+        { label: "Age", value: draft.metrics.age.trim() },
+        { label: "Last workout timing", value: draft.training.lastWorkoutWhen.trim() },
+        { label: "Last workout details", value: draft.training.lastWorkoutWhat.trim() },
+        { label: "Workout style", value: draft.training.likes.trim() },
+        { label: "Goals", value: draft.goals.primary.trim() },
+      ].filter((field) => !field.value),
     [draft],
   );
-  const currentStepMissing = useMemo(
-    () => (requiredByStep[step] ?? []).filter((field) => !field.value).map((field) => field.label),
-    [requiredByStep, step],
-  );
-  const canAdvance = currentStepMissing.length === 0;
-  const progress = Math.round((furthestStep / (stepLabels.length - 1)) * 100);
-  const canSubmit = useMemo(
-    () => requiredByStep.every((stepFields) => stepFields.every((field) => Boolean(field.value))),
-    [requiredByStep],
-  );
+  const canSubmit = missingFields.length === 0;
 
   function updateSection<Section extends keyof IntakeDraft, Field extends keyof IntakeDraft[Section]>(
     section: Section,
@@ -133,17 +129,19 @@ export function ClientIntakeForm({
     }));
   }
 
-  function toggleParqFlag(flag: string) {
+  function toggleWorkoutStyle(style: string) {
     setDraft((current) => {
-      const flags = current.readiness.parqFlags.includes(flag)
-        ? current.readiness.parqFlags.filter((item) => item !== flag)
-        : [...current.readiness.parqFlags, flag];
+      const styles = current.training.likes
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+      const nextStyles = styles.includes(style) ? styles.filter((item) => item !== style) : [...styles, style];
 
       return {
         ...current,
-        readiness: {
-          ...current.readiness,
-          parqFlags: flags,
+        training: {
+          ...current.training,
+          likes: nextStyles.join(", "),
         },
       };
     });
@@ -151,7 +149,7 @@ export function ClientIntakeForm({
 
   async function submit() {
     if (!canSubmit) {
-      setMessage("Complete the required fields before submitting.");
+      setMessage(`Please complete: ${missingFields.map((field) => field.label).join(", ")}.`);
       return;
     }
 
@@ -184,250 +182,122 @@ export function ClientIntakeForm({
     }
   }
 
+  const selectedStyles = draft.training.likes
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
   return (
-    <div className="grid gap-5 xl:grid-cols-[1fr_22rem]">
-      <section className="space-y-5">
-        <Card className="overflow-hidden p-0">
-          <CardHeader className="border-b border-border bg-white/35">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <CardTitle className="font-serif text-4xl">Client intake</CardTitle>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
-                  Share the training context your coach needs before programming starts.
-                </p>
-              </div>
-              <div className="rounded-full bg-stone-100 px-4 py-2 text-sm font-medium text-charcoal-950">{progress}%</div>
+    <div className="grid gap-5 xl:grid-cols-[1fr_20rem]">
+      <Card className="overflow-hidden p-0">
+        <CardHeader className="border-b border-border bg-white/35">
+          <CardTitle className="font-serif text-4xl">Client intake</CardTitle>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
+            A few quick answers help your trainer meet you where you are without making setup feel like homework.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-5 p-5 sm:p-6">
+          <div className="grid gap-4 md:grid-cols-[12rem_1fr]">
+            <Field label="Age" required>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={13}
+                max={120}
+                value={draft.metrics.age}
+                onChange={(event) => updateSection("metrics", "age", event.target.value)}
+              />
+            </Field>
+            <Field label="When was your last workout?" required>
+              <select
+                value={draft.training.lastWorkoutWhen}
+                onChange={(event) => updateSection("training", "lastWorkoutWhen", event.target.value)}
+                className="h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm text-charcoal-950 shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
+              >
+                <option value="">Select one</option>
+                {lastWorkoutOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+
+          <Field label="What was the workout?" required>
+            <Textarea
+              value={draft.training.lastWorkoutWhat}
+              onChange={(event) => updateSection("training", "lastWorkoutWhat", event.target.value)}
+              placeholder="Example: 30-minute walk, upper body machines, yoga class, basketball, or no recent structured workout."
+            />
+          </Field>
+
+          <div>
+            <p className="text-sm font-medium text-charcoal-950">
+              What style of working out do you like? <span className="text-bronze-600">*</span>
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {workoutStyles.map((style) => (
+                <label key={style} className="flex items-center gap-3 rounded-[1rem] border border-stone-200 bg-white/70 p-3 text-sm text-stone-700">
+                  <input
+                    type="checkbox"
+                    checked={selectedStyles.includes(style)}
+                    onChange={() => toggleWorkoutStyle(style)}
+                    className="size-4 accent-bronze-500"
+                  />
+                  <span>{style}</span>
+                </label>
+              ))}
             </div>
-            <div className="mt-4 h-2 rounded-full bg-stone-100">
-              <div className="h-full rounded-full bg-bronze-500 transition-all" style={{ width: `${progress}%` }} />
-            </div>
-          </CardHeader>
-          <CardContent className="p-5 sm:p-6">
-            {step === 0 ? (
-              <div className="grid gap-4">
-                <Field label="Primary goal" required>
-                  <Textarea value={draft.goals.primary} onChange={(event) => updateSection("goals", "primary", event.target.value)} />
-                </Field>
-                <Field label="What would success look like?">
-                  <Textarea value={draft.goals.success} onChange={(event) => updateSection("goals", "success", event.target.value)} />
-                </Field>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Timeline">
-                    <Input value={draft.goals.timeline} onChange={(event) => updateSection("goals", "timeline", event.target.value)} />
-                  </Field>
-                  <Field label="Barriers">
-                    <Input value={draft.goals.barriers} onChange={(event) => updateSection("goals", "barriers", event.target.value)} />
-                  </Field>
-                </div>
-              </div>
-            ) : null}
+          </div>
 
-            {step === 1 ? (
-              <div className="grid gap-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Fitness level">
-                    <select
-                      value={draft.training.fitnessLevel}
-                      onChange={(event) => updateSection("training", "fitnessLevel", event.target.value as Client["level"])}
-                      className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
-                    >
-                      <option value="Foundation">Foundation</option>
-                      <option value="Intermediate">Intermediate</option>
-                      <option value="Advanced">Advanced</option>
-                    </select>
-                  </Field>
-                  <Field label="Current activity" required>
-                    <Input value={draft.training.currentActivity} onChange={(event) => updateSection("training", "currentActivity", event.target.value)} />
-                  </Field>
-                </div>
-                <Field label="Training experience">
-                  <Textarea value={draft.training.experience} onChange={(event) => updateSection("training", "experience", event.target.value)} />
-                </Field>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Equipment access">
-                    <Input value={draft.training.equipmentAccess} onChange={(event) => updateSection("training", "equipmentAccess", event.target.value)} />
-                  </Field>
-                  <Field label="Preferred location">
-                    <Input value={draft.training.preferredLocation} onChange={(event) => updateSection("training", "preferredLocation", event.target.value)} />
-                  </Field>
-                  <Field label="Exercises you like">
-                    <Input value={draft.training.likes} onChange={(event) => updateSection("training", "likes", event.target.value)} />
-                  </Field>
-                  <Field label="Exercises you dislike">
-                    <Input value={draft.training.dislikes} onChange={(event) => updateSection("training", "dislikes", event.target.value)} />
-                  </Field>
-                </div>
-              </div>
-            ) : null}
+          <Field label="Goals, briefly" required>
+            <Textarea
+              value={draft.goals.primary}
+              onChange={(event) => updateSection("goals", "primary", event.target.value)}
+              placeholder="A sentence or two is enough."
+            />
+          </Field>
 
-            {step === 2 ? (
-              <div className="grid gap-4">
-                <div className="rounded-[1.25rem] border border-bronze-200 bg-bronze-50/60 p-4 text-sm leading-6 text-stone-700">
-                  This form gives your coach context for exercise planning. It is not medical diagnosis or clearance.
-                </div>
-                <Field label="Injuries or limitations">
-                  <Textarea value={draft.readiness.injuries} onChange={(event) => updateSection("readiness", "injuries", event.target.value)} />
-                </Field>
-                <Field label="Current pain">
-                  <Input value={draft.readiness.currentPain} onChange={(event) => updateSection("readiness", "currentPain", event.target.value)} />
-                </Field>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Surgeries">
-                    <Input value={draft.readiness.surgeries} onChange={(event) => updateSection("readiness", "surgeries", event.target.value)} />
-                  </Field>
-                  <Field label="Conditions">
-                    <Input value={draft.readiness.conditions} onChange={(event) => updateSection("readiness", "conditions", event.target.value)} />
-                  </Field>
-                </div>
-                <Field label="Medications that may affect exercise">
-                  <Input value={draft.readiness.medications} onChange={(event) => updateSection("readiness", "medications", event.target.value)} />
-                </Field>
-                <div>
-                  <p className="text-sm font-medium text-charcoal-950">Readiness flags</p>
-                  <div className="mt-3 grid gap-2">
-                    {parqOptions.map((option) => (
-                      <label key={option} className="flex items-start gap-3 rounded-[1rem] border border-stone-200 bg-white/70 p-3 text-sm text-stone-700">
-                        <input
-                          type="checkbox"
-                          checked={draft.readiness.parqFlags.includes(option)}
-                          onChange={() => toggleParqFlag(option)}
-                          className="mt-1 size-4 accent-bronze-500"
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <Field label="Medical clearance status" required>
-                  <Textarea value={draft.readiness.medicalClearance} onChange={(event) => updateSection("readiness", "medicalClearance", event.target.value)} />
-                </Field>
-              </div>
-            ) : null}
+          {message ? <p className="rounded-[1rem] bg-stone-100 px-4 py-3 text-sm text-stone-700">{message}</p> : null}
 
-            {step === 3 ? (
-              <div className="grid gap-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Sleep">
-                    <Input value={draft.lifestyle.sleep} onChange={(event) => updateSection("lifestyle", "sleep", event.target.value)} />
-                  </Field>
-                  <Field label="Stress">
-                    <Input value={draft.lifestyle.stress} onChange={(event) => updateSection("lifestyle", "stress", event.target.value)} />
-                  </Field>
-                  <Field label="Nutrition habits">
-                    <Input value={draft.lifestyle.nutrition} onChange={(event) => updateSection("lifestyle", "nutrition", event.target.value)} />
-                  </Field>
-                  <Field label="Hydration">
-                    <Input value={draft.lifestyle.hydration} onChange={(event) => updateSection("lifestyle", "hydration", event.target.value)} />
-                  </Field>
-                </div>
-                <Field label="Weekly availability" required>
-                  <Textarea value={draft.lifestyle.schedule} onChange={(event) => updateSection("lifestyle", "schedule", event.target.value)} />
-                </Field>
-                <Field label="Coaching style">
-                  <Input value={draft.lifestyle.coachingStyle} onChange={(event) => updateSection("lifestyle", "coachingStyle", event.target.value)} />
-                </Field>
-                <Field label="Communication preference">
-                  <Input value={draft.lifestyle.communication} onChange={(event) => updateSection("lifestyle", "communication", event.target.value)} />
-                </Field>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Height">
-                    <Input value={draft.metrics.height} onChange={(event) => updateSection("metrics", "height", event.target.value)} />
-                  </Field>
-                  <Field label="Body weight">
-                    <Input value={draft.metrics.weight} onChange={(event) => updateSection("metrics", "weight", event.target.value)} />
-                  </Field>
-                  <Field label="Measurements">
-                    <Input value={draft.metrics.measurements} onChange={(event) => updateSection("metrics", "measurements", event.target.value)} />
-                  </Field>
-                  <Field label="Progress photo preference">
-                    <Input value={draft.metrics.progressPhotos} onChange={(event) => updateSection("metrics", "progressPhotos", event.target.value)} />
-                  </Field>
-                </div>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <Field label="Emergency contact" required>
-                    <Input value={draft.emergencyContact.name} onChange={(event) => updateSection("emergencyContact", "name", event.target.value)} />
-                  </Field>
-                  <Field label="Emergency phone" required>
-                    <Input value={draft.emergencyContact.phone} onChange={(event) => updateSection("emergencyContact", "phone", event.target.value)} />
-                  </Field>
-                  <Field label="Relationship">
-                    <Input value={draft.emergencyContact.relationship} onChange={(event) => updateSection("emergencyContact", "relationship", event.target.value)} />
-                  </Field>
-                </div>
-              </div>
-            ) : null}
+          {missingFields.length ? (
+            <p className="rounded-[1rem] bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              Required before submitting: {missingFields.map((field) => field.label).join(", ")}.
+            </p>
+          ) : null}
 
-            {step === 4 ? <Review draft={draft} /> : null}
-
-            {message ? <p className="mt-5 rounded-[1rem] bg-stone-100 px-4 py-3 text-sm text-stone-700">{message}</p> : null}
-
-            {currentStepMissing.length ? (
-              <p className="mt-5 rounded-[1rem] bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                Required to continue: {currentStepMissing.join(", ")}.
-              </p>
-            ) : null}
-
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-              <Button variant="secondary" onClick={() => setStep((current) => Math.max(current - 1, 0))} disabled={step === 0 || saving}>
-                <ArrowLeft className="size-4" />
-                Back
-              </Button>
-              {step < stepLabels.length - 1 ? (
-                <Button
-                  variant="warm"
-                  disabled={!canAdvance}
-                  onClick={() => {
-                    const nextStep = Math.min(step + 1, stepLabels.length - 1);
-                    setStep(nextStep);
-                    setFurthestStep((current) => Math.max(current, nextStep));
-                  }}
-                >
-                  Next
-                  <ArrowRight className="size-4" />
-                </Button>
-              ) : (
-                <Button variant="warm" onClick={() => void submit()} disabled={saving || !canSubmit}>
-                  <CheckCircle2 className="size-4" />
-                  {saving ? "Submitting..." : "Submit intake"}
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+          <div className="flex justify-end">
+            <Button variant="warm" onClick={() => void submit()} disabled={saving || !canSubmit}>
+              <CheckCircle2 className="size-4" />
+              {saving ? "Submitting..." : "Submit intake"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <aside className="space-y-5">
         <Card className="p-5">
-          <HeartPulse className="size-5 text-bronze-600" />
-          <p className="mt-4 text-sm font-semibold text-charcoal-950">What your trainer sees</p>
+          <Dumbbell className="size-5 text-bronze-600" />
+          <p className="mt-4 text-sm font-semibold text-charcoal-950">Training context</p>
           <p className="mt-2 text-sm leading-6 text-stone-600">
-            Your goals, readiness notes, schedule, preferences, and emergency contact are added to your client profile.
+            Your trainer will see your recent workout history, preferred workout style, and main goals.
           </p>
         </Card>
         <Card className="p-5">
-          <ShieldCheck className="size-5 text-sage-700" />
-          <p className="mt-4 text-sm font-semibold text-charcoal-950">Required before training</p>
+          <CalendarDays className="size-5 text-sage-700" />
+          <p className="mt-4 text-sm font-semibold text-charcoal-950">Quick setup</p>
           <p className="mt-2 text-sm leading-6 text-stone-600">
-            If readiness answers raise concerns, your trainer may ask for medical clearance before assigning workouts.
+            This replaces the longer intake. Health, schedule, and contact details can be handled directly with your trainer.
           </p>
         </Card>
-        <div className="rounded-[1.5rem] border border-stone-200 bg-white/70 p-4">
-          <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Steps</p>
-          <div className="mt-3 grid gap-2">
-            {stepLabels.map((label, index) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => setStep(index)}
-                className={`rounded-full px-4 py-2 text-left text-sm transition ${
-                  step === index ? "bg-charcoal-950 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-                }`}
-              >
-                {index + 1}. {label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <Card className="p-5">
+          <HeartPulse className="size-5 text-clay-600" />
+          <p className="mt-4 text-sm font-semibold text-charcoal-950">First plan signal</p>
+          <p className="mt-2 text-sm leading-6 text-stone-600">
+            Short answers are enough for your trainer to choose a sensible starting point.
+          </p>
+        </Card>
       </aside>
     </div>
   );
@@ -450,28 +320,5 @@ function Field({
       </span>
       {children}
     </label>
-  );
-}
-
-function Review({ draft }: { draft: IntakeDraft }) {
-  const rows = [
-    ["Primary goal", draft.goals.primary],
-    ["Current activity", draft.training.currentActivity],
-    ["Fitness level", draft.training.fitnessLevel],
-    ["Readiness flags", draft.readiness.parqFlags.join(", ") || "None selected"],
-    ["Medical clearance", draft.readiness.medicalClearance],
-    ["Availability", draft.lifestyle.schedule],
-    ["Emergency contact", `${draft.emergencyContact.name} ${draft.emergencyContact.phone}`.trim()],
-  ];
-
-  return (
-    <div className="grid divide-y divide-border overflow-hidden rounded-[1.25rem] border border-border">
-      {rows.map(([label, value]) => (
-        <div key={label} className="grid gap-2 bg-white/65 p-4 sm:grid-cols-[12rem_1fr]">
-          <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">{label}</p>
-          <p className="text-sm leading-6 text-stone-700">{value || "Not provided"}</p>
-        </div>
-      ))}
-    </div>
   );
 }

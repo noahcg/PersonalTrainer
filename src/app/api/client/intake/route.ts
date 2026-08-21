@@ -68,6 +68,8 @@ export async function POST(request: Request) {
       ...cleanObject<Omit<ClientIntake["training"], "fitnessLevel">>(payload.training, [
         "experience",
         "currentActivity",
+        "lastWorkoutWhen",
+        "lastWorkoutWhat",
         "equipmentAccess",
         "preferredLocation",
         "likes",
@@ -95,23 +97,27 @@ export async function POST(request: Request) {
       "coachingStyle",
       "communication",
     ]);
-    const metrics = cleanObject<ClientIntake["metrics"]>(payload.metrics, ["height", "weight", "measurements", "progressPhotos"]);
+    const metrics = cleanObject<ClientIntake["metrics"]>(payload.metrics, ["age", "height", "weight", "measurements", "progressPhotos"]);
 
-    if (!goals.primary || !training.currentActivity || !readiness.medicalClearance || !lifestyle.schedule || !emergencyContact.name || !emergencyContact.phone) {
+    if (!metrics.age || !training.lastWorkoutWhen || !training.lastWorkoutWhat || !training.likes || !goals.primary) {
       return NextResponse.json(
-        { error: "Please complete goals, current activity, readiness, schedule, and emergency contact fields." },
+        { error: "Please complete age, last workout, workout style, and goals." },
         { status: 400 },
       );
     }
 
     const completedAt = new Date().toISOString();
+    const trainingWithSummary = {
+      ...training,
+      currentActivity: training.currentActivity || `${training.lastWorkoutWhen}: ${training.lastWorkoutWhat}`,
+    };
     const admin = createAdminClient();
     const { error: intakeError } = await admin.from("client_intakes").upsert(
       {
         client_id: client.id,
         emergency_contact: emergencyContact,
         goals,
-        training,
+        training: trainingWithSummary,
         readiness,
         lifestyle,
         metrics,
@@ -125,23 +131,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: intakeError.message }, { status: 500 });
     }
 
-    const readinessSummary = [
-      readiness.injuries ? `Limitations: ${readiness.injuries}` : "",
-      readiness.currentPain ? `Current pain: ${readiness.currentPain}` : "",
-      readiness.parqFlags.length ? `Readiness flags: ${readiness.parqFlags.join(", ")}` : "",
-      readiness.medicalClearance ? `Clearance: ${readiness.medicalClearance}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
-
     const { error: clientError } = await admin
       .from("clients")
       .update({
         goals: goals.primary || null,
-        fitness_level: training.fitnessLevel,
-        injuries_limitations: readinessSummary || null,
-        preferred_training_style: lifestyle.coachingStyle || null,
-        availability: lifestyle.schedule || null,
+        preferred_training_style: training.likes || null,
         intake_completed_at: completedAt,
         updated_at: completedAt,
       })

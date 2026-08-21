@@ -34,6 +34,8 @@ const defaultIntake: Omit<ClientIntake, "id" | "clientId" | "completedAt"> = {
   training: {
     experience: "",
     currentActivity: "",
+    lastWorkoutWhen: "",
+    lastWorkoutWhat: "",
     equipmentAccess: "",
     preferredLocation: "",
     likes: "",
@@ -59,6 +61,7 @@ const defaultIntake: Omit<ClientIntake, "id" | "clientId" | "completedAt"> = {
     communication: "",
   },
   metrics: {
+    age: "",
     height: "",
     weight: "",
     measurements: "",
@@ -105,6 +108,8 @@ function mapIntake(row: ClientIntakeRow): ClientIntake {
         {
           experience: defaultIntake.training.experience,
           currentActivity: defaultIntake.training.currentActivity,
+          lastWorkoutWhen: defaultIntake.training.lastWorkoutWhen,
+          lastWorkoutWhat: defaultIntake.training.lastWorkoutWhat,
           equipmentAccess: defaultIntake.training.equipmentAccess,
           preferredLocation: defaultIntake.training.preferredLocation,
           likes: defaultIntake.training.likes,
