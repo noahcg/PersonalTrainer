@@ -6,6 +6,7 @@ create extension if not exists "pgcrypto";
 create type app_role as enum ('trainer', 'client');
 create type client_status as enum ('active', 'needs_attention', 'paused', 'archived');
 create type client_session_status as enum ('active', 'completed', 'cancelled');
+create type trainer_appointment_status as enum ('scheduled', 'completed', 'cancelled');
 create type difficulty_level as enum ('beginner', 'intermediate', 'advanced');
 create type message_kind as enum ('message', 'coaching_note', 'reminder');
 create type training_package_kind as enum ('one_on_one', 'partner_training');
@@ -172,6 +173,21 @@ create table public.client_sessions (
   notes text,
   duration_minutes int check (duration_minutes is null or duration_minutes >= 0),
   created_by app_role not null default 'trainer',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.trainer_appointments (
+  id uuid primary key default gen_random_uuid(),
+  trainer_id uuid not null references public.trainers(id) on delete cascade,
+  client_id uuid references public.clients(id) on delete set null,
+  title text not null,
+  starts_at timestamptz not null,
+  duration_minutes int not null default 60 check (duration_minutes > 0),
+  location text,
+  notes text,
+  reminder_offsets_minutes int[] not null default '{}'::int[],
+  status trainer_appointment_status not null default 'scheduled',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -373,6 +389,7 @@ create index workouts_plan_idx on public.workouts(training_plan_id);
 create index plan_assignments_client_idx on public.plan_assignments(client_id, status);
 create index workout_logs_client_idx on public.workout_logs(client_id, status);
 create index client_sessions_client_idx on public.client_sessions(client_id, status, started_at desc);
+create index trainer_appointments_trainer_idx on public.trainer_appointments(trainer_id, starts_at);
 create index training_packages_trainer_idx on public.training_packages(trainer_id, status, created_at desc);
 create index training_package_types_trainer_idx on public.training_package_types(trainer_id, active, created_at desc);
 create index package_members_client_idx on public.training_package_members(client_id);
@@ -393,6 +410,7 @@ alter table public.workout_exercises enable row level security;
 alter table public.plan_assignments enable row level security;
 alter table public.workout_logs enable row level security;
 alter table public.client_sessions enable row level security;
+alter table public.trainer_appointments enable row level security;
 alter table public.training_packages enable row level security;
 alter table public.training_package_types enable row level security;
 alter table public.training_package_members enable row level security;
@@ -446,6 +464,8 @@ create policy "logs client writes own" on public.workout_logs for all using (cli
 create policy "client sessions visible" on public.client_sessions for select using (client_id = public.current_client_id() or exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id()));
 create policy "client sessions trainer writes" on public.client_sessions for all using (exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id())) with check (exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id()));
 create policy "client sessions client starts own" on public.client_sessions for insert with check (client_id = public.current_client_id() and created_by = 'client');
+create policy "trainer appointments visible" on public.trainer_appointments for select using (trainer_id = public.current_trainer_id() or client_id = public.current_client_id());
+create policy "trainer appointments trainer writes" on public.trainer_appointments for all using (trainer_id = public.current_trainer_id()) with check (trainer_id = public.current_trainer_id());
 
 create or replace function public.package_belongs_to_current_trainer(package_id uuid)
 returns boolean

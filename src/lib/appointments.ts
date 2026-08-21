@@ -12,6 +12,7 @@ type AppointmentRow = {
   duration_minutes: number;
   location: string | null;
   notes: string | null;
+  reminder_offsets_minutes?: number[] | null;
   status: TrainerAppointment["status"];
   created_at: string;
   clients?: { full_name: string } | { full_name: string }[] | null;
@@ -29,6 +30,7 @@ function mapAppointmentRow(row: AppointmentRow): TrainerAppointment {
     durationMinutes: row.duration_minutes,
     location: row.location ?? "",
     notes: row.notes ?? "",
+    reminderOffsetsMinutes: row.reminder_offsets_minutes ?? [],
     status: row.status,
     createdAt: row.created_at,
   };
@@ -69,6 +71,7 @@ export async function getTrainerCalendarData(): Promise<{
         clientId: session.clientId,
         clientName: client?.name ?? null,
         notes: session.notes ?? "",
+        reminderOffsetsMinutes: [],
         status: session.status,
       });
     }
@@ -85,6 +88,7 @@ export async function getTrainerCalendarData(): Promise<{
         clientId: null,
         clientName: null,
         notes: bulletin.body,
+        reminderOffsetsMinutes: [],
         status: bulletin.status ?? "active",
       });
     }
@@ -100,7 +104,7 @@ export async function getTrainerCalendarData(): Promise<{
   const [appointmentsResponse, sessionsResponse, bulletinsResponse] = await Promise.all([
     supabase
       .from("trainer_appointments")
-      .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, status, created_at, clients(full_name)")
+      .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at, clients(full_name)")
       .eq("trainer_id", trainerId)
       .order("starts_at", { ascending: true }),
     supabase
@@ -128,6 +132,7 @@ export async function getTrainerCalendarData(): Promise<{
     clientId: appt.clientId,
     clientName: appt.clientName,
     notes: appt.notes,
+    reminderOffsetsMinutes: appt.reminderOffsetsMinutes,
     status: appt.status,
   }));
 
@@ -154,6 +159,7 @@ export async function getTrainerCalendarData(): Promise<{
       clientId: sessionRow.client_id,
       clientName: clientRecord?.full_name ?? null,
       notes: sessionRow.notes ?? "",
+      reminderOffsetsMinutes: [],
       status: sessionRow.status,
     });
   }
@@ -177,6 +183,7 @@ export async function getTrainerCalendarData(): Promise<{
       clientId: null,
       clientName: null,
       notes: bulletinRow.body,
+      reminderOffsetsMinutes: [],
       status: bulletinRow.status ?? "active",
     });
   }

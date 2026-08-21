@@ -320,6 +320,7 @@ export type TrainerAppointment = {
   durationMinutes: number;
   location: string;
   notes: string;
+  reminderOffsetsMinutes: number[];
   status: TrainerAppointmentStatus;
   createdAt: string;
 };
@@ -336,6 +337,7 @@ export type CalendarEvent = {
   clientId: string | null;
   clientName: string | null;
   notes: string;
+  reminderOffsetsMinutes?: number[];
   status: string;
 };
 

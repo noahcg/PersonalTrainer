@@ -66,6 +66,7 @@ type AppointmentRow = {
   duration_minutes: number;
   location: string | null;
   notes: string | null;
+  reminder_offsets_minutes?: number[] | null;
   status: TrainerAppointment["status"];
   created_at: string;
 };
@@ -243,6 +244,7 @@ function toTrainerAppointment(row: AppointmentRow, clientName: string | null = n
     durationMinutes: row.duration_minutes,
     location: row.location ?? "",
     notes: row.notes ?? "",
+    reminderOffsetsMinutes: row.reminder_offsets_minutes ?? [],
     status: row.status,
     createdAt: row.created_at,
   };
@@ -480,7 +482,7 @@ export async function getClientSelfProfile() {
       .limit(8),
     supabase
       .from("trainer_appointments")
-      .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, status, created_at")
+      .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at")
       .eq("client_id", clientRow.id)
       .eq("status", "scheduled")
       .gte("starts_at", new Date(Date.now() - 60 * 60 * 1000).toISOString())
