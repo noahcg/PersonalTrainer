@@ -42,6 +42,7 @@ export function TrainerClientProfile({
   const [editOpen, setEditOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState<"context" | "coaching" | "sessions">("context");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(initialClient);
   const [draftPackageTypeId, setDraftPackageTypeId] = useState("");
@@ -585,16 +586,33 @@ export function TrainerClientProfile({
     }
   }
 
-  const sections = useMemo(
+  const profileContextRows = useMemo<Array<[string, string]>>(
     () => [
-      ["Goals", client.goals],
+      ["Goals", intake?.goals.primary || client.goals],
+      ["Preferred training style", intake?.training.likes || client.style],
+      ["Fitness level", client.level],
       ["Injuries / limitations", client.injuries],
-      ["Preferred training style", client.style],
       ["Availability", client.availability],
       ["Trainer notes", client.notes],
+      ["Pricing package", `${pricingTierLabel(client.pricingTier)}. ${pricingTierDetail(client.pricingTier)}`],
     ],
-    [client],
+    [client, intake],
   );
+  const intakeContextRows = useMemo<Array<[string, string]>>(() => {
+    const lastWorkout =
+      [intake?.training.lastWorkoutWhen, intake?.training.lastWorkoutWhat].filter(Boolean).join(" · ") ||
+      intake?.training.currentActivity ||
+      "Not provided";
+    const intakeSubmitted = intake?.completedAt
+      ? new Date(intake.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : "Not completed yet";
+
+    return [
+      ["Intake submitted", intakeSubmitted],
+      ["Age", intake?.metrics.age || "Not provided"],
+      ["Last workout", lastWorkout],
+    ];
+  }, [intake]);
   const activeSession = sessions.find((session) => session.status === "active") ?? null;
   const partnerPackage = client.partnerPackage;
   const assignablePackageTypes = partnerPackage ? [] : packageTypes.filter((packageType) => packageType.kind === "one_on_one" && packageType.active);
@@ -752,174 +770,141 @@ export function TrainerClientProfile({
           </Card>
         ) : null}
 
-        <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
-          <Card className="overflow-hidden p-0">
-            <CardHeader className="border-b border-border bg-white/35">
-              <CardTitle>Profile context</CardTitle>
-              <p className="text-sm leading-6 text-stone-500">The training details that shape programming, cueing, and weekly decisions.</p>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="grid divide-y divide-border md:grid-cols-2 md:divide-x md:divide-y-0">
-                <div className="grid divide-y divide-border">
-                  {sections.slice(0, 3).map(([title, body]) => (
-                    <ProfileContextRow key={title} title={title} body={body} />
-                  ))}
-                </div>
-                <div className="grid divide-y divide-border">
-                  {sections.slice(3).map(([title, body]) => (
-                    <ProfileContextRow key={title} title={title} body={body} />
-                  ))}
-                  <div className="p-5 sm:p-6">
-                    <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Pricing package</p>
-                    <div className="mt-3">
-                      <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
-                    </div>
-                    <p className="mt-4 text-sm leading-6 text-stone-600">{pricingTierDetail(client.pricingTier)}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden p-0">
-            <CardHeader className="border-b border-border bg-white/35">
-              <CardTitle>Intake summary</CardTitle>
-              <p className="text-sm leading-6 text-stone-500">
-                First-login answers from the client, including readiness context and emergency contact details.
-              </p>
-            </CardHeader>
-            <CardContent className="p-0">
-              {intake?.completedAt ? (
-                <div className="grid divide-y divide-border">
-                  <ProfileContextRow title="Submitted" body={new Date(intake.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} />
-                  <ProfileContextRow title="Success marker" body={intake.goals.success || "Not provided"} />
-                  <ProfileContextRow title="Training background" body={intake.training.experience || intake.training.currentActivity || "Not provided"} />
-                  <ProfileContextRow title="Equipment / location" body={[intake.training.equipmentAccess, intake.training.preferredLocation].filter(Boolean).join(" · ") || "Not provided"} />
-                  <ProfileContextRow title="Readiness flags" body={intake.readiness.parqFlags.length ? intake.readiness.parqFlags.join(", ") : "None selected"} />
-                  <ProfileContextRow title="Current pain" body={intake.readiness.currentPain || "Not provided"} />
-                  <ProfileContextRow title="Sleep / stress" body={[intake.lifestyle.sleep, intake.lifestyle.stress].filter(Boolean).join(" · ") || "Not provided"} />
-                  <ProfileContextRow title="Emergency contact" body={[intake.emergencyContact.name, intake.emergencyContact.phone, intake.emergencyContact.relationship].filter(Boolean).join(" · ") || "Not provided"} />
-                </div>
-              ) : (
-                <div className="p-5 text-sm leading-6 text-stone-600 sm:p-6">
-                  Intake has not been completed yet. This client will be sent to the intake form the next time they open the client workspace.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden p-0">
-            <CardHeader className="border-b border-border bg-white/35">
-              <CardTitle>Coaching activity</CardTitle>
-              <p className="text-sm leading-6 text-stone-500">Recent notes and the plan currently anchoring this client’s work.</p>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="border-b border-border p-5 sm:p-6">
-                <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Assigned plan</p>
-                <p className="mt-3 text-xl font-semibold text-charcoal-950">{assignedPlan.title}</p>
-                <p className="mt-2 text-sm leading-6 text-stone-600">{assignedPlan.description}</p>
-              </div>
-              <div className="p-5 sm:p-6">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Recent notes</p>
-                  <Button variant="ghost" size="sm" onClick={() => setNoteOpen(true)}>
-                    <StickyNote className="size-4" />
-                    Add note
-                  </Button>
-                </div>
-                <div className="space-y-3">
-                  {coachingNotes.length ? (
-                    coachingNotes.map((note) => (
-                      <div key={note.id} className="border-l-2 border-bronze-200 pl-4">
-                        <p className="text-sm leading-6 text-stone-700">{note.body}</p>
-                        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-stone-400">{note.createdAt}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="rounded-[1.25rem] bg-stone-50 p-4 text-sm text-stone-500">
-                      No coaching notes yet. Use the note action to leave your first cue, reminder, or encouragement.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         <Card className="overflow-hidden p-0">
           <CardHeader className="border-b border-border bg-white/35">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <CardTitle>In-person session package</CardTitle>
-                <p className="text-sm leading-6 text-stone-500">
-                  Track live coached sessions separately from at-home workout logs.
-                </p>
+                <CardTitle>Client workspace</CardTitle>
+                <p className="text-sm leading-6 text-stone-500">Switch between overview details, coaching notes, and in-person session tracking.</p>
               </div>
-              <Badge variant={client.sessionPackage.remaining === 0 ? "alert" : "sage"}>
-                {client.sessionPackage.remaining === null ? "Open package" : `${client.sessionPackage.remaining} remaining`}
-              </Badge>
+              <div className="flex flex-wrap gap-2 rounded-full bg-stone-100 p-1" role="tablist" aria-label="Client profile sections">
+                <DetailTabButton active={detailTab === "context"} onClick={() => setDetailTab("context")}>
+                  Overview
+                </DetailTabButton>
+                <DetailTabButton active={detailTab === "coaching"} onClick={() => setDetailTab("coaching")}>
+                  Coaching
+                </DetailTabButton>
+                <DetailTabButton active={detailTab === "sessions"} onClick={() => setDetailTab("sessions")}>
+                  Sessions
+                </DetailTabButton>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="grid gap-5 border-b border-border p-5 lg:grid-cols-[1fr_22rem] sm:p-6">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <MetricTile label="Package total" value={client.sessionPackage.total === null ? "Open" : String(client.sessionPackage.total)} />
-                <MetricTile label="Used" value={String(client.sessionPackage.used)} />
-                <MetricTile label="Last in-person" value={client.sessionPackage.lastSessionAt ?? "None yet"} />
+            {detailTab === "context" ? (
+              <div className="grid divide-y divide-border lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+                <ContextGroup title="Profile" description="Current profile details used for programming and support." rows={profileContextRows} />
+                <ContextGroup title="Intake info" description="Onboarding answers that give helpful starting context." rows={intakeContextRows} />
               </div>
-              <div className="grid gap-3">
-                <Input value={sessionLocation} onChange={(event) => setSessionLocation(event.target.value)} placeholder="Studio, client home, gym..." />
-                <Input value={sessionNotes} onChange={(event) => setSessionNotes(event.target.value)} placeholder="Optional session note" />
-                {activeSession ? (
-                  <Button variant="warm" onClick={() => void completeInPersonSession(activeSession.id)} disabled={busy}>
-                    <CheckCircle2 className="size-4" />
-                    {busy ? "Completing..." : "Complete active session"}
-                  </Button>
-                ) : (
-                  <Button variant="warm" onClick={() => void startInPersonSession()} disabled={busy}>
-                    <PlayCircle className="size-4" />
-                    {busy ? "Starting..." : "Start in-person session"}
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="p-5 sm:p-6">
-              <div className="mb-4 flex items-center gap-2">
-                <CalendarClock className="size-4 text-bronze-600" />
-                <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Session ledger</p>
-              </div>
-              <div className="grid gap-3">
-                {sessions.length ? (
-                  sessions.map((session) => (
-                    <div key={session.id} className="rounded-[1.25rem] border border-stone-200 bg-white/70 p-4">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold text-charcoal-950">{session.startedAt}</p>
-                            <Badge variant={session.status === "completed" ? "sage" : session.status === "active" ? "bronze" : "default"}>
-                              {session.status}
-                            </Badge>
-                          </div>
-                          <p className="mt-2 text-sm text-stone-500">
-                            {session.location || "In person"}{session.durationMinutes ? ` · ${session.durationMinutes} min` : ""}
-                          </p>
-                          {session.notes ? <p className="mt-3 text-sm leading-6 text-stone-600">{session.notes}</p> : null}
-                        </div>
-                        {session.status === "active" ? (
-                          <Button variant="secondary" size="sm" onClick={() => void completeInPersonSession(session.id)} disabled={busy}>
-                            Complete
-                          </Button>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-[1.25rem] bg-stone-50 p-4 text-sm text-stone-500">
-                    No in-person sessions recorded yet. Start a session when live training begins.
+            ) : null}
+
+            {detailTab === "coaching" ? (
+              <div>
+                <div className="border-b border-border p-5 sm:p-6">
+                  <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Assigned plan</p>
+                  <p className="mt-3 text-xl font-semibold text-charcoal-950">{assignedPlan.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-stone-600">{assignedPlan.description}</p>
+                </div>
+                <div className="p-5 sm:p-6">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Recent notes</p>
+                    <Button variant="ghost" size="sm" onClick={() => setNoteOpen(true)}>
+                      <StickyNote className="size-4" />
+                      Add note
+                    </Button>
                   </div>
-                )}
+                  <div className="space-y-3">
+                    {coachingNotes.length ? (
+                      coachingNotes.map((note) => (
+                        <div key={note.id} className="border-l-2 border-bronze-200 pl-4">
+                          <p className="text-sm leading-6 text-stone-700">{note.body}</p>
+                          <p className="mt-2 text-xs uppercase tracking-[0.18em] text-stone-400">{note.createdAt}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-[1.25rem] bg-stone-50 p-4 text-sm text-stone-500">
+                        No coaching notes yet. Use the note action to leave your first cue, reminder, or encouragement.
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : null}
+
+            {detailTab === "sessions" ? (
+              <div>
+                <div className="grid gap-5 border-b border-border p-5 lg:grid-cols-[1fr_22rem] sm:p-6">
+                  <div>
+                    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-charcoal-950">In-person session package</p>
+                        <p className="mt-1 text-sm leading-6 text-stone-500">Track live coached sessions separately from at-home workout logs.</p>
+                      </div>
+                      <Badge variant={client.sessionPackage.remaining === 0 ? "alert" : "sage"}>
+                        {client.sessionPackage.remaining === null ? "Open package" : `${client.sessionPackage.remaining} remaining`}
+                      </Badge>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <MetricTile label="Package total" value={client.sessionPackage.total === null ? "Open" : String(client.sessionPackage.total)} />
+                      <MetricTile label="Used" value={String(client.sessionPackage.used)} />
+                      <MetricTile label="Last in-person" value={client.sessionPackage.lastSessionAt ?? "None yet"} />
+                    </div>
+                  </div>
+                  <div className="grid content-start gap-3">
+                    <Input value={sessionLocation} onChange={(event) => setSessionLocation(event.target.value)} placeholder="Studio, client home, gym..." />
+                    <Input value={sessionNotes} onChange={(event) => setSessionNotes(event.target.value)} placeholder="Optional session note" />
+                    {activeSession ? (
+                      <Button variant="warm" onClick={() => void completeInPersonSession(activeSession.id)} disabled={busy}>
+                        <CheckCircle2 className="size-4" />
+                        {busy ? "Completing..." : "Complete active session"}
+                      </Button>
+                    ) : (
+                      <Button variant="warm" onClick={() => void startInPersonSession()} disabled={busy}>
+                        <PlayCircle className="size-4" />
+                        {busy ? "Starting..." : "Start in-person session"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="p-5 sm:p-6">
+                  <div className="mb-4 flex items-center gap-2">
+                    <CalendarClock className="size-4 text-bronze-600" />
+                    <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Session ledger</p>
+                  </div>
+                  <div className="grid gap-3">
+                    {sessions.length ? (
+                      sessions.map((session) => (
+                        <div key={session.id} className="rounded-[1.25rem] border border-stone-200 bg-white/70 p-4">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-semibold text-charcoal-950">{session.startedAt}</p>
+                                <Badge variant={session.status === "completed" ? "sage" : session.status === "active" ? "bronze" : "default"}>
+                                  {session.status}
+                                </Badge>
+                              </div>
+                              <p className="mt-2 text-sm text-stone-500">
+                                {session.location || "In person"}{session.durationMinutes ? ` · ${session.durationMinutes} min` : ""}
+                              </p>
+                              {session.notes ? <p className="mt-3 text-sm leading-6 text-stone-600">{session.notes}</p> : null}
+                            </div>
+                            {session.status === "active" ? (
+                              <Button variant="secondary" size="sm" onClick={() => void completeInPersonSession(session.id)} disabled={busy}>
+                                Complete
+                              </Button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-[1.25rem] bg-stone-50 p-4 text-sm text-stone-500">
+                        No in-person sessions recorded yet. Start a session when live training begins.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>
@@ -1156,6 +1141,54 @@ function MetricTile({ label, value }: { label: string; value: string }) {
       <p className="font-semibold">{value}</p>
       <p className="text-xs text-stone-500">{label}</p>
     </div>
+  );
+}
+
+function DetailTabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+        active ? "bg-white text-charcoal-950 shadow-sm" : "text-stone-600 hover:bg-white/70 hover:text-charcoal-950"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ContextGroup({
+  title,
+  description,
+  rows,
+}: {
+  title: string;
+  description: string;
+  rows: Array<[string, string]>;
+}) {
+  return (
+    <section>
+      <div className="border-b border-border p-5 sm:p-6">
+        <p className="text-sm font-semibold text-charcoal-950">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-stone-500">{description}</p>
+      </div>
+      <div className="grid divide-y divide-border">
+        {rows.map(([rowTitle, body]) => (
+          <ProfileContextRow key={rowTitle} title={rowTitle} body={body} />
+        ))}
+      </div>
+    </section>
   );
 }
 

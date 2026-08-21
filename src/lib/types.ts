@@ -156,6 +156,8 @@ export type ClientIntake = {
   training: {
     experience: string;
     currentActivity: string;
+    lastWorkoutWhen: string;
+    lastWorkoutWhat: string;
     equipmentAccess: string;
     preferredLocation: string;
     likes: string;
@@ -181,6 +183,7 @@ export type ClientIntake = {
     communication: string;
   };
   metrics: {
+    age: string;
     height: string;
     weight: string;
     measurements: string;
