@@ -29,15 +29,16 @@ alter table public.trainer_appointments enable row level security;
 
 do $$
 begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public'
-      and tablename = 'trainer_appointments'
-      and policyname = 'trainer appointments owner access'
-  ) then
-    create policy "trainer appointments owner access" on public.trainer_appointments
-      for all
-      using (trainer_id = public.current_trainer_id())
-      with check (trainer_id = public.current_trainer_id());
-  end if;
+  drop policy if exists "trainer appointments owner access" on public.trainer_appointments;
+  drop policy if exists "trainer appointments trainer writes" on public.trainer_appointments;
+  drop policy if exists "trainer appointments visible" on public.trainer_appointments;
+
+  create policy "trainer appointments visible" on public.trainer_appointments
+    for select
+    using (trainer_id = public.current_trainer_id() or client_id = public.current_client_id());
+
+  create policy "trainer appointments trainer writes" on public.trainer_appointments
+    for all
+    using (trainer_id = public.current_trainer_id())
+    with check (trainer_id = public.current_trainer_id());
 end $$;

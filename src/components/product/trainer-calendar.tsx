@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Megaphone, Plus, Trash2, UserRound, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Megaphone, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,16 @@ import type { CalendarEvent, TrainerAppointment } from "@/lib/types";
 type Mode = "demo" | "supabase";
 
 type ClientOption = { id: string; name: string };
+
+type AppointmentInput = {
+  title: string;
+  clientId: string | null;
+  clientName: string | null;
+  startsAtIso: string;
+  durationMinutes: number;
+  location: string;
+  notes: string;
+};
 
 const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -68,7 +78,12 @@ function formatEventTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    timeZoneName: "short",
   });
+}
+
+function localTimeZoneLabel() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone.replaceAll("_", " ");
 }
 
 function formatLongDate(date: Date) {
@@ -126,6 +141,7 @@ export function TrainerCalendar({
   const [anchor, setAnchor] = useState<Date>(() => startOfMonth(new Date()));
   const [selectedDateKey, setSelectedDateKey] = useState<string>(() => isoDateKey(new Date()));
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<TrainerAppointment | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [nowMs, setNowMs] = useState<number | null>(null);
@@ -204,15 +220,22 @@ export function TrainerCalendar({
     }
   }
 
-  async function createAppointment(input: {
-    title: string;
-    clientId: string | null;
-    clientName: string | null;
-    startsAtIso: string;
-    durationMinutes: number;
-    location: string;
-    notes: string;
-  }): Promise<{ ok: true } | { ok: false; error: string }> {
+  function openNewAppointment() {
+    setEditingAppointment(null);
+    setDialogOpen(true);
+  }
+
+  function openEditAppointment(appointmentId: string) {
+    const appointment = appointments.find((item) => item.id === appointmentId);
+    if (!appointment) {
+      flashMessage("Appointment not found.");
+      return;
+    }
+    setEditingAppointment(appointment);
+    setDialogOpen(true);
+  }
+
+  async function createAppointment(input: AppointmentInput): Promise<{ ok: true } | { ok: false; error: string }> {
     setBusy(true);
     try {
       if (mode === "demo") {
@@ -309,6 +332,94 @@ export function TrainerCalendar({
     }
   }
 
+  async function updateAppointment(appointmentId: string, input: AppointmentInput): Promise<{ ok: true } | { ok: false; error: string }> {
+    setBusy(true);
+    try {
+      if (mode === "supabase") {
+        const supabase = createBrowserClient();
+        const { data: updated, error } = await supabase
+          .from("trainer_appointments")
+          .update({
+            client_id: input.clientId,
+            title: input.title,
+            starts_at: input.startsAtIso,
+            duration_minutes: input.durationMinutes,
+            location: input.location || null,
+            notes: input.notes || null,
+          })
+          .eq("id", appointmentId)
+          .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, status, created_at")
+          .single<{
+            id: string;
+            trainer_id: string;
+            client_id: string | null;
+            title: string;
+            starts_at: string;
+            duration_minutes: number;
+            location: string | null;
+            notes: string | null;
+            status: TrainerAppointment["status"];
+            created_at: string;
+          }>();
+
+        if (error || !updated) {
+          throw error ?? new Error("Unable to update appointment.");
+        }
+
+        const nextAppointment: TrainerAppointment = {
+          id: updated.id,
+          trainerId: updated.trainer_id,
+          clientId: updated.client_id,
+          clientName: input.clientName,
+          title: updated.title,
+          startsAtIso: updated.starts_at,
+          durationMinutes: updated.duration_minutes,
+          location: updated.location ?? "",
+          notes: updated.notes ?? "",
+          status: updated.status,
+          createdAt: updated.created_at,
+        };
+        await persistAppointments(appointments.map((appointment) => (appointment.id === appointmentId ? nextAppointment : appointment)));
+      } else {
+        const nextAppointment: TrainerAppointment = {
+          ...(appointments.find((appointment) => appointment.id === appointmentId) ?? {
+            id: appointmentId,
+            trainerId: null,
+            status: "scheduled" as const,
+            createdAt: new Date().toISOString(),
+          }),
+          clientId: input.clientId,
+          clientName: input.clientName,
+          title: input.title,
+          startsAtIso: input.startsAtIso,
+          durationMinutes: input.durationMinutes,
+          location: input.location,
+          notes: input.notes,
+        };
+        await persistAppointments(appointments.map((appointment) => (appointment.id === appointmentId ? nextAppointment : appointment)));
+      }
+
+      setSelectedDateKey(eventDateKey({ startsAtIso: input.startsAtIso } as CalendarEvent));
+      flashMessage("Appointment updated.");
+      setEditingAppointment(null);
+      setDialogOpen(false);
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to update appointment.";
+      flashMessage(message);
+      return { ok: false, error: message };
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveAppointment(input: AppointmentInput): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (editingAppointment) {
+      return updateAppointment(editingAppointment.id, input);
+    }
+    return createAppointment(input);
+  }
+
   async function deleteAppointment(appointmentId: string) {
     if (!window.confirm("Remove this appointment from your calendar?")) return;
     setBusy(true);
@@ -360,7 +471,7 @@ export function TrainerCalendar({
             <Button variant="secondary" size="icon" aria-label="Next month" onClick={() => setAnchor((current) => addMonths(current, 1))}>
               <ChevronRight className="size-4" />
             </Button>
-            <Button variant="warm" onClick={() => setDialogOpen(true)}>
+            <Button variant="warm" onClick={openNewAppointment}>
               <Plus className="size-4" />
               New appointment
             </Button>
@@ -450,7 +561,9 @@ export function TrainerCalendar({
                   Nothing scheduled. Click <span className="font-semibold">New appointment</span> to add one for this day.
                 </p>
               ) : (
-                selectedEvents.map((event) => <EventRow key={event.id} event={event} onDelete={deleteAppointment} busy={busy} />)
+                selectedEvents.map((event) => (
+                  <EventRow key={event.id} event={event} onEdit={openEditAppointment} onDelete={deleteAppointment} busy={busy} />
+                ))
               )}
             </div>
           </Card>
@@ -486,10 +599,14 @@ export function TrainerCalendar({
 
       <AppointmentDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditingAppointment(null);
+        }}
+        appointment={editingAppointment}
         defaultDateKey={selectedDateKey}
         clientOptions={clientOptions}
-        onSubmit={createAppointment}
+        onSubmit={saveAppointment}
         busy={busy}
       />
 
@@ -504,10 +621,12 @@ export function TrainerCalendar({
 
 function EventRow({
   event,
+  onEdit,
   onDelete,
   busy,
 }: {
   event: CalendarEvent;
+  onEdit: (appointmentId: string) => void;
   onDelete: (appointmentId: string) => Promise<void> | void;
   busy: boolean;
 }) {
@@ -554,15 +673,26 @@ function EventRow({
           {event.notes ? <p className="mt-3 text-sm leading-6 text-stone-600">{event.notes}</p> : null}
         </div>
         {isAppointment ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Remove appointment"
-            disabled={busy}
-            onClick={() => void onDelete(event.id.replace(/^appt-/, ""))}
-          >
-            <Trash2 className="size-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Edit appointment"
+              disabled={busy}
+              onClick={() => onEdit(event.id.replace(/^appt-/, ""))}
+            >
+              <Pencil className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Remove appointment"
+              disabled={busy}
+              onClick={() => void onDelete(event.id.replace(/^appt-/, ""))}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
         ) : null}
       </div>
     </div>
@@ -598,6 +728,7 @@ function UpcomingRow({ event }: { event: CalendarEvent }) {
 function AppointmentDialog({
   open,
   onOpenChange,
+  appointment,
   defaultDateKey,
   clientOptions,
   onSubmit,
@@ -605,17 +736,10 @@ function AppointmentDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  appointment: TrainerAppointment | null;
   defaultDateKey: string;
   clientOptions: ClientOption[];
-  onSubmit: (input: {
-    title: string;
-    clientId: string | null;
-    clientName: string | null;
-    startsAtIso: string;
-    durationMinutes: number;
-    location: string;
-    notes: string;
-  }) => Promise<{ ok: true } | { ok: false; error: string }>;
+  onSubmit: (input: AppointmentInput) => Promise<{ ok: true } | { ok: false; error: string }>;
   busy: boolean;
 }) {
   const [title, setTitle] = useState("");
@@ -628,6 +752,19 @@ function AppointmentDialog({
   const [error, setError] = useState<string | null>(null);
 
   const resetForm = useEffectEvent(() => {
+    if (appointment) {
+      const startsAt = new Date(appointment.startsAtIso);
+      setDate(isoDateKey(startsAt));
+      setTitle(appointment.title);
+      setTime(`${String(startsAt.getHours()).padStart(2, "0")}:${String(startsAt.getMinutes()).padStart(2, "0")}`);
+      setDuration(String(appointment.durationMinutes));
+      setLocation(appointment.location);
+      setNotes(appointment.notes);
+      setClientId(appointment.clientId ?? "");
+      setError(null);
+      return;
+    }
+
     setDate(defaultDateKey);
     setTitle("");
     setTime("09:00");
@@ -694,9 +831,13 @@ function AppointmentDialog({
             <form onSubmit={handleSubmit} className="p-5 sm:p-7">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <Dialog.Title className="text-xl font-semibold text-charcoal-950">New appointment</Dialog.Title>
+                  <Dialog.Title className="text-xl font-semibold text-charcoal-950">
+                    {appointment ? "Edit appointment" : "New appointment"}
+                  </Dialog.Title>
                   <Dialog.Description className="mt-1 text-sm leading-6 text-stone-600">
-                    Block out time with a client or save a personal note on your calendar.
+                    {appointment
+                      ? "Update the time, client, location, or notes for this calendar appointment."
+                      : "Block out time with a client or save a personal note on your calendar."}
                   </Dialog.Description>
                 </div>
                 <Dialog.Close asChild>
@@ -751,6 +892,7 @@ function AppointmentDialog({
                       Start time
                     </label>
                     <Input id="appointment-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} className="mt-2" />
+                    <p className="mt-1 text-xs text-stone-500">{localTimeZoneLabel()}</p>
                   </div>
                   <div>
                     <label htmlFor="appointment-duration" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
@@ -804,7 +946,7 @@ function AppointmentDialog({
                   </Button>
                 </Dialog.Close>
                 <Button type="submit" variant="warm" disabled={busy}>
-                  {busy ? "Saving..." : "Save appointment"}
+                  {busy ? "Saving..." : appointment ? "Update appointment" : "Save appointment"}
                 </Button>
               </div>
             </form>

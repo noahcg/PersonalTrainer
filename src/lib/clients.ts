@@ -5,7 +5,7 @@ import { getTrainerClientIntake } from "@/lib/client-intake";
 import { normalizePricingTier } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase-server";
 import { getPartnerPackagesByClientIds } from "@/lib/training-packages";
-import type { Client, ClientSession, CoachingEntry, Plan } from "@/lib/types";
+import type { Client, ClientSession, CoachingEntry, Plan, TrainerAppointment } from "@/lib/types";
 
 type ClientRow = {
   id: string;
@@ -55,6 +55,19 @@ type ClientSessionRow = {
   notes: string | null;
   duration_minutes: number | null;
   created_by: "trainer" | "client";
+};
+
+type AppointmentRow = {
+  id: string;
+  trainer_id: string;
+  client_id: string | null;
+  title: string;
+  starts_at: string;
+  duration_minutes: number;
+  location: string | null;
+  notes: string | null;
+  status: TrainerAppointment["status"];
+  created_at: string;
 };
 
 const clientSelect =
@@ -216,6 +229,22 @@ function toClientSession(row: ClientSessionRow): ClientSession {
     notes: row.notes ?? "",
     durationMinutes: row.duration_minutes,
     createdBy: row.created_by,
+  };
+}
+
+function toTrainerAppointment(row: AppointmentRow, clientName: string | null = null): TrainerAppointment {
+  return {
+    id: row.id,
+    trainerId: row.trainer_id,
+    clientId: row.client_id,
+    clientName,
+    title: row.title,
+    startsAtIso: row.starts_at,
+    durationMinutes: row.duration_minutes,
+    location: row.location ?? "",
+    notes: row.notes ?? "",
+    status: row.status,
+    createdAt: row.created_at,
   };
 }
 
@@ -398,6 +427,7 @@ export async function getClientSelfProfile() {
       mode: "demo" as const,
       client,
       sessions: demoClientSessions.filter((session) => session.clientId === client.id),
+      appointments: [] as TrainerAppointment[],
     };
   }
 
@@ -407,7 +437,12 @@ export async function getClientSelfProfile() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { mode: "supabase" as const, client: null as Client | null, sessions: [] as ClientSession[] };
+    return {
+      mode: "supabase" as const,
+      client: null as Client | null,
+      sessions: [] as ClientSession[],
+      appointments: [] as TrainerAppointment[],
+    };
   }
 
   const { data: row } = await supabase
@@ -427,10 +462,15 @@ export async function getClientSelfProfile() {
   }
 
   if (!clientRow) {
-    return { mode: "supabase" as const, client: null as Client | null, sessions: [] as ClientSession[] };
+    return {
+      mode: "supabase" as const,
+      client: null as Client | null,
+      sessions: [] as ClientSession[],
+      appointments: [] as TrainerAppointment[],
+    };
   }
 
-  const [client, sessionsResponse] = await Promise.all([
+  const [client, sessionsResponse, appointmentsResponse] = await Promise.all([
     hydrateClient(clientRow, supabase),
     supabase
       .from("client_sessions")
@@ -438,11 +478,20 @@ export async function getClientSelfProfile() {
       .eq("client_id", clientRow.id)
       .order("started_at", { ascending: false })
       .limit(8),
+    supabase
+      .from("trainer_appointments")
+      .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, status, created_at")
+      .eq("client_id", clientRow.id)
+      .eq("status", "scheduled")
+      .gte("starts_at", new Date(Date.now() - 60 * 60 * 1000).toISOString())
+      .order("starts_at", { ascending: true })
+      .limit(8),
   ]);
 
   return {
     mode: "supabase" as const,
     client,
     sessions: ((sessionsResponse.data ?? []) as ClientSessionRow[]).map(toClientSession),
+    appointments: ((appointmentsResponse.data ?? []) as AppointmentRow[]).map((row) => toTrainerAppointment(row, client.name)),
   };
 }

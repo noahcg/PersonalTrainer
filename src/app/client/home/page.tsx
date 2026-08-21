@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarCheck, CheckCircle2, HeartPulse, NotebookPen, TrendingUp, UserRound } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { AppShell } from "@/components/layout/app-shell";
+import { ClientUpcomingAppointments } from "@/components/product/client-upcoming-appointments";
 import { ProgressChart } from "@/components/product/progress-chart";
 import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ import { clientPortalAccessFromStatus } from "@/lib/client-portal-access";
 
 export default async function ClientHomePage() {
   const profileResult = await getClientSelfProfile();
-  const { client, sessions } = profileResult;
+  const { client, sessions, appointments } = profileResult;
   const clientPortalAccess = clientPortalAccessFromStatus(client?.status);
   const { checkIns } = await getClientCheckInData();
 
@@ -147,7 +148,7 @@ export default async function ClientHomePage() {
 
   const workout = workouts[0];
   const latestCheckIn = checkIns[0];
-  const hasWorkspaceData = Boolean(client || plan || workouts.length || messages.length || checkIns.length || resources.length || bulletins.length);
+  const hasWorkspaceData = Boolean(client || plan || workouts.length || messages.length || checkIns.length || resources.length || bulletins.length || appointments.length);
 
   if (!hasWorkspaceData) {
     return (
@@ -263,6 +264,7 @@ export default async function ClientHomePage() {
             </p>
             <Button asChild className="mt-5 w-full" variant="warm"><Link href="/client/messages">Submit check-in</Link></Button>
           </Card>
+          <ClientUpcomingAppointments appointments={appointments} />
           <Card>
             <CardHeader><CardTitle>Trainer notes</CardTitle></CardHeader>
             <CardContent className="space-y-3">
