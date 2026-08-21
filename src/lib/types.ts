@@ -238,6 +238,21 @@ export type Workout = {
   blocks: WorkoutBlock[];
 };
 
+export type WorkoutCheckIn = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  clientPhoto: string;
+  clientGoals: string;
+  workoutId: string;
+  workoutName: string;
+  dayLabel: string;
+  completedAt: string;
+  completedAtIso: string;
+  feedback: string;
+  perceivedEffort: number | null;
+};
+
 export type Plan = {
   id: string;
   title: string;
