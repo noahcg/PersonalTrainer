@@ -6,13 +6,12 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { getTrainerCalendarData } from "@/lib/appointments";
 import { formatBulletinLocation } from "@/lib/bulletin-location";
 import { getTrainerBulletins } from "@/lib/bulletins";
 import { getTrainerCheckInData } from "@/lib/checkins";
-import { getTrainerClients } from "@/lib/clients";
 import type { CalendarEvent } from "@/lib/types";
+import { getTrainerWorkoutCheckIns } from "@/lib/workouts";
 
 const eventTypeLabel: Record<CalendarEvent["type"], string> = {
   appointment: "Appointment",
@@ -31,16 +30,12 @@ function formatNextAppointmentDate(iso: string) {
 }
 
 export default async function TrainerDashboardPage() {
-  const [{ bulletins, mode }, { clients }, { checkIns }, calendarData] = await Promise.all([
+  const [{ bulletins, mode }, { checkIns }, { workoutCheckIns }, calendarData] = await Promise.all([
     getTrainerBulletins(),
-    getTrainerClients(),
     getTrainerCheckInData(),
+    getTrainerWorkoutCheckIns(),
     getTrainerCalendarData(),
   ]);
-  const activeClients = clients.filter((client) => client.status !== "archived");
-  const clientsNeedingAttention = activeClients
-    .filter((client) => client.status === "needs_attention" || client.adherence < 75)
-    .slice(0, 4);
   // eslint-disable-next-line react-hooks/purity -- server component, evaluated once per request
   const nowMs = Date.now();
   const nextEvent =
@@ -180,31 +175,37 @@ export default async function TrainerDashboardPage() {
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-col items-start justify-between gap-4 sm:flex-row">
               <div className="min-w-0">
-                <CardTitle>Clients needing attention</CardTitle>
-                <CardDescription>Prioritized by adherence dips, check-ins, and trainer notes.</CardDescription>
+                <CardTitle>Workout check-ins</CardTitle>
+                <CardDescription>Recent non-session workouts clients completed on their own.</CardDescription>
               </div>
               <Button asChild variant="secondary" size="sm">
-                <Link href="/trainer/clients">View roster</Link>
+                <Link href="/trainer/check-ins">Review check-ins</Link>
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
-              {clientsNeedingAttention.length ? (
-                clientsNeedingAttention.map((client) => (
-                  <Link key={client.id} href={`/trainer/clients/${client.id}`} className="flex flex-wrap items-center gap-3 rounded-[1.35rem] bg-stone-50/88 px-4 py-3 transition hover:bg-white sm:gap-4">
-                    <Avatar name={client.name} src={client.photo} />
+              {workoutCheckIns.length ? (
+                workoutCheckIns.map((checkIn) => (
+                  <Link key={checkIn.id} href={`/trainer/clients/${checkIn.clientId}`} className="flex flex-wrap items-center gap-3 rounded-[1.35rem] bg-stone-50/88 px-4 py-3 transition hover:bg-white sm:gap-4">
+                    <Avatar name={checkIn.clientName} src={checkIn.clientPhoto} />
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-charcoal-950">{client.name}</p>
-                      <p className="truncate text-sm text-stone-500">{client.goals}</p>
+                      <p className="font-medium text-charcoal-950">{checkIn.clientName}</p>
+                      <p className="truncate text-sm text-stone-500">{checkIn.workoutName}</p>
+                      {checkIn.feedback ? (
+                        <p className="mt-1 line-clamp-2 text-sm leading-5 text-stone-600">{checkIn.feedback}</p>
+                      ) : null}
                     </div>
-                    <div className="hidden w-28 sm:block">
-                      <Progress value={client.adherence} />
+                    <div className="hidden min-w-32 text-right text-xs text-stone-500 sm:block">
+                      <p className="font-medium text-charcoal-950">{checkIn.completedAt}</p>
+                      <p>{checkIn.dayLabel}</p>
                     </div>
-                    <Badge className="shrink-0" variant={client.status === "needs_attention" ? "alert" : "sage"}>{client.adherence}%</Badge>
+                    <Badge className="shrink-0" variant={checkIn.perceivedEffort && checkIn.perceivedEffort >= 8 ? "bronze" : "sage"}>
+                      {checkIn.perceivedEffort ? `RPE ${checkIn.perceivedEffort}` : "Logged"}
+                    </Badge>
                   </Link>
                 ))
               ) : (
                 <div className="rounded-[1.35rem] bg-stone-50/88 px-4 py-5 text-sm text-stone-600">
-                  No clients need attention right now. New roster activity will appear here once clients are added.
+                  Completed client workout logs will appear here. Official trainer sessions stay separate from this list.
                 </div>
               )}
             </CardContent>

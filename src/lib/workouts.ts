@@ -1,8 +1,8 @@
-import { workouts as demoWorkouts } from "@/lib/demo-data";
+import { clients as demoClients, workouts as demoWorkouts } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/auth-server";
 import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
-import type { Exercise, Plan, Workout, WorkoutBlock, WorkoutExercise } from "@/lib/types";
+import type { Exercise, Plan, Workout, WorkoutBlock, WorkoutCheckIn, WorkoutExercise } from "@/lib/types";
 
 type WorkoutRow = {
   id: string;
@@ -35,6 +35,38 @@ type WorkoutExerciseRow = {
   duration: string | null;
   notes: string | null;
   position: number;
+};
+
+type WorkoutLogRow = {
+  id: string;
+  client_id: string;
+  workout_id: string;
+  completed_at: string | null;
+  feedback: string | null;
+  perceived_effort: number | null;
+  created_at: string;
+  clients:
+    | {
+        full_name: string;
+        profile_photo_url: string | null;
+        goals: string | null;
+      }
+    | Array<{
+        full_name: string;
+        profile_photo_url: string | null;
+        goals: string | null;
+      }>
+    | null;
+  workouts:
+    | {
+        name: string;
+        phase_label: string | null;
+      }
+    | Array<{
+        name: string;
+        phase_label: string | null;
+      }>
+    | null;
 };
 
 async function getTrainerContext() {
@@ -97,6 +129,40 @@ function mapWorkout(
     cooldown: workout.cooldown ?? "",
     coachNotes: workout.coach_notes ?? "",
     blocks: mappedBlocks,
+  };
+}
+
+function formatWorkoutCheckInDate(value: string) {
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function firstJoinedRow<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function mapWorkoutCheckIn(row: WorkoutLogRow): WorkoutCheckIn {
+  const client = firstJoinedRow(row.clients);
+  const workout = firstJoinedRow(row.workouts);
+  const completedAt = row.completed_at ?? row.created_at;
+
+  return {
+    id: row.id,
+    clientId: row.client_id,
+    clientName: client?.full_name ?? "Client",
+    clientPhoto: client?.profile_photo_url ?? "",
+    clientGoals: client?.goals ?? "Goals not set yet.",
+    workoutId: row.workout_id,
+    workoutName: workout?.name ?? "Workout",
+    dayLabel: workout?.phase_label ?? "Workout logged",
+    completedAt: formatWorkoutCheckInDate(completedAt),
+    completedAtIso: completedAt,
+    feedback: row.feedback ?? "",
+    perceivedEffort: row.perceived_effort,
   };
 }
 
@@ -223,6 +289,107 @@ export async function getClientWorkouts() {
 export async function getClientWorkoutById(id: string) {
   const { workouts } = await getClientWorkouts();
   return workouts.find((workout) => workout.id === id) ?? null;
+}
+
+export async function getTrainerWorkoutCheckIns(limit = 4) {
+  if (!isSupabaseConfigured()) {
+    const demoWorkout = demoWorkouts[0];
+    return {
+      mode: "demo" as const,
+      workoutCheckIns: demoWorkout
+        ? demoClients
+            .filter((client) => client.status !== "archived")
+            .slice(0, limit)
+            .map((client, index) => ({
+              id: `demo-workout-check-in-${client.id}`,
+              clientId: client.id,
+              clientName: client.name,
+              clientPhoto: client.photo,
+              clientGoals: client.goals,
+              workoutId: demoWorkout.id,
+              workoutName: demoWorkout.name,
+              dayLabel: demoWorkout.dayLabel,
+              completedAt: index === 0 ? "Today, 8:40 AM" : `${index + 1} days ago`,
+              completedAtIso: new Date(Date.now() - index * 86_400_000).toISOString(),
+              feedback: index === 0 ? "Felt strong and kept the final sets crisp." : "",
+              perceivedEffort: index === 0 ? 7 : null,
+            }))
+        : ([] as WorkoutCheckIn[]),
+    };
+  }
+
+  const { supabase, trainerId } = await getTrainerContext();
+  if (!trainerId) return { mode: "supabase" as const, workoutCheckIns: [] as WorkoutCheckIn[] };
+  const db = hasSupabaseAdminEnv() ? createAdminClient() : supabase;
+
+  const { data: clients } = await db
+    .from("clients")
+    .select("id")
+    .eq("trainer_id", trainerId)
+    .neq("status", "archived");
+  const clientIds = (clients ?? []).map((client: { id: string }) => client.id);
+  if (!clientIds.length) return { mode: "supabase" as const, workoutCheckIns: [] as WorkoutCheckIn[] };
+
+  const { data } = await db
+    .from("workout_logs")
+    .select("id, client_id, workout_id, completed_at, feedback, perceived_effort, created_at, clients(full_name, profile_photo_url, goals), workouts(name, phase_label)")
+    .in("client_id", clientIds)
+    .eq("status", "completed")
+    .not("completed_at", "is", null)
+    .order("completed_at", { ascending: false })
+    .limit(limit);
+
+  return {
+    mode: "supabase" as const,
+    workoutCheckIns: ((data ?? []) as WorkoutLogRow[]).map(mapWorkoutCheckIn),
+  };
+}
+
+export async function getClientWorkoutCheckIns(limit = 12) {
+  if (!isSupabaseConfigured()) {
+    const demoWorkout = demoWorkouts[0];
+    const demoClient = demoClients[0];
+    return {
+      mode: "demo" as const,
+      workoutCheckIns:
+        demoWorkout && demoClient
+          ? [
+              {
+                id: `demo-workout-check-in-${demoClient.id}`,
+                clientId: demoClient.id,
+                clientName: demoClient.name,
+                clientPhoto: demoClient.photo,
+                clientGoals: demoClient.goals,
+                workoutId: demoWorkout.id,
+                workoutName: demoWorkout.name,
+                dayLabel: demoWorkout.dayLabel,
+                completedAt: "Today, 8:40 AM",
+                completedAtIso: new Date().toISOString(),
+                feedback: "Felt strong and kept the final sets crisp.",
+                perceivedEffort: 7,
+              },
+            ]
+          : ([] as WorkoutCheckIn[]),
+    };
+  }
+
+  const { supabase, clientId } = await getTrainerContext();
+  if (!clientId) return { mode: "supabase" as const, workoutCheckIns: [] as WorkoutCheckIn[] };
+  const db = hasSupabaseAdminEnv() ? createAdminClient() : supabase;
+
+  const { data } = await db
+    .from("workout_logs")
+    .select("id, client_id, workout_id, completed_at, feedback, perceived_effort, created_at, clients(full_name, profile_photo_url, goals), workouts(name, phase_label)")
+    .eq("client_id", clientId)
+    .eq("status", "completed")
+    .not("completed_at", "is", null)
+    .order("completed_at", { ascending: false })
+    .limit(limit);
+
+  return {
+    mode: "supabase" as const,
+    workoutCheckIns: ((data ?? []) as WorkoutLogRow[]).map(mapWorkoutCheckIn),
+  };
 }
 
 export async function getTrainerPlanOptions() {
