@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarCheck, CheckCircle2, HeartPulse, NotebookPen, TrendingUp, UserRound } from "lucide-react";
+import { ArrowRight, CalendarCheck, CheckCircle2, NotebookPen, TrendingUp, UserRound } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { AppShell } from "@/components/layout/app-shell";
 import { AppointmentReminderBanner, ClientUpcomingAppointments } from "@/components/product/client-upcoming-appointments";
@@ -14,8 +14,48 @@ import { getClientConversationData } from "@/lib/messages";
 import { getClientAssignedPlan } from "@/lib/plans";
 import { getClientBulletins } from "@/lib/bulletins";
 import { getClientResources } from "@/lib/resources";
-import { getClientWorkouts } from "@/lib/workouts";
+import { getClientWorkoutCheckIns, getClientWorkouts } from "@/lib/workouts";
 import { clientPortalAccessFromStatus } from "@/lib/client-portal-access";
+import type { Workout } from "@/lib/types";
+
+function normalizeLabel(value: string) {
+  return value.toLowerCase().replace(/[^\w\s/.-]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function getTodayWorkoutTokens(today = new Date()) {
+  const weekday = today.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+  const shortWeekday = today.toLocaleDateString("en-US", { weekday: "short" }).toLowerCase();
+  const month = today.toLocaleDateString("en-US", { month: "long" }).toLowerCase();
+  const shortMonth = today.toLocaleDateString("en-US", { month: "short" }).toLowerCase();
+  const day = String(today.getDate());
+  const monthNumber = String(today.getMonth() + 1);
+
+  return [
+    "today",
+    weekday,
+    shortWeekday,
+    `${month} ${day}`,
+    `${shortMonth} ${day}`,
+    `${monthNumber}/${day}`,
+    `${monthNumber}-${day}`,
+  ];
+}
+
+function isTodaysWorkout(workout: Workout, today = new Date()) {
+  const searchableLabel = normalizeLabel(`${workout.dayLabel} ${workout.name}`);
+  return getTodayWorkoutTokens(today).some((token) => searchableLabel.includes(token));
+}
+
+function getRelevantWorkout(workouts: Workout[]) {
+  const today = new Date();
+  const todaysWorkout = workouts.find((workout) => isTodaysWorkout(workout, today));
+  if (todaysWorkout) return { workout: todaysWorkout, label: "Today's workout" };
+
+  return {
+    workout: workouts[0],
+    label: workouts[0] ? "Recommended next" : "Workout focus",
+  };
+}
 
 export default async function ClientHomePage() {
   const profileResult = await getClientSelfProfile();
@@ -138,17 +178,25 @@ export default async function ClientHomePage() {
     );
   }
 
-  const [{ plan }, { workouts }, { messages }, { resources }, { bulletins, mode }] = await Promise.all([
+  const [{ plan }, { workouts }, { workoutCheckIns }, { messages }, { resources }, { bulletins, mode }] = await Promise.all([
     getClientAssignedPlan(),
     getClientWorkouts(),
+    getClientWorkoutCheckIns(1),
     getClientConversationData(),
     getClientResources(),
     getClientBulletins(),
   ]);
 
-  const workout = workouts[0];
+  const latestCompletedWorkout = workoutCheckIns[0];
+  const featuredWorkout = getRelevantWorkout(workouts);
+  const workout = featuredWorkout.workout;
+  const heroTitle = latestCompletedWorkout?.workoutName ?? workout?.name ?? "No workout assigned yet";
+  const heroBadge = latestCompletedWorkout ? "Latest completed workout" : workout ? featuredWorkout.label : brand.app.workspaceBadge;
+  const heroDescription = latestCompletedWorkout
+    ? latestCompletedWorkout.feedback || "Your trainer can review the workout you submitted and use it to guide what comes next."
+    : workout?.coachNotes ?? "Your trainer will place your next session here once your plan is live.";
   const latestCheckIn = checkIns[0];
-  const hasWorkspaceData = Boolean(client || plan || workouts.length || messages.length || checkIns.length || resources.length || bulletins.length || appointments.length);
+  const hasWorkspaceData = Boolean(client || plan || workouts.length || workoutCheckIns.length || messages.length || checkIns.length || resources.length || bulletins.length || appointments.length);
 
   if (!hasWorkspaceData) {
     return (
@@ -195,19 +243,28 @@ export default async function ClientHomePage() {
         <section className="space-y-5">
           <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
             <div className="p-5 sm:p-8">
-              <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
-              <h2 className="mt-5 max-w-2xl font-serif text-5xl font-semibold leading-[0.95]">{workout?.name ?? "No workout assigned yet"}</h2>
+              <Badge variant={latestCompletedWorkout ? "sage" : "bronze"}>{heroBadge}</Badge>
+              <h2 className="mt-5 max-w-2xl font-serif text-5xl font-semibold leading-[0.95]">{heroTitle}</h2>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-ivory-50/65">
-                {workout?.coachNotes ?? "Your trainer will place your next session here once your plan is live."}
+                {heroDescription}
               </p>
               <div className="mt-7 flex flex-wrap gap-3 text-sm text-ivory-50/70">
-                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{workout?.dayLabel ?? "Awaiting schedule"}</div>
-                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{workout?.duration ?? "Planned by coach"}</div>
-                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{brand.tagline}</div>
+                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">
+                  {latestCompletedWorkout?.completedAt ?? workout?.dayLabel ?? "Awaiting schedule"}
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">
+                  {latestCompletedWorkout?.dayLabel ?? workout?.duration ?? "Planned by coach"}
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">
+                  {latestCompletedWorkout?.perceivedEffort ? `RPE ${latestCompletedWorkout.perceivedEffort}` : brand.tagline}
+                </div>
               </div>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Button asChild variant="warm" size="lg">
-                  <Link href={workout ? `/client/workouts/${workout.id}` : "/client/workouts"}>Open workout <ArrowRight className="size-5" /></Link>
+                  <Link href={latestCompletedWorkout ? `/client/workouts/${latestCompletedWorkout.workoutId}` : workout ? `/client/workouts/${workout.id}` : "/client/workouts"}>
+                    {latestCompletedWorkout ? "Review completed workout" : "Open workout"}
+                    <ArrowRight className="size-5" />
+                  </Link>
                 </Button>
                 <Button asChild variant="secondary" size="lg"><Link href="/client/plan">View plan</Link></Button>
               </div>
@@ -256,16 +313,6 @@ export default async function ClientHomePage() {
           </Card>
         </section>
         <aside className="space-y-5">
-          <Card className="p-5 sm:p-6">
-            <div className="flex items-center gap-3">
-              <HeartPulse className="size-5 text-bronze-600" />
-              <h3 className="font-semibold">Today’s check-in</h3>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-stone-600">
-              {latestCheckIn ? latestCheckIn.notes || "Latest check-in submitted." : "No check-in submitted yet. Use this area to keep your trainer updated."}
-            </p>
-            <Button asChild className="mt-5 w-full" variant="warm"><Link href="/client/messages">Submit check-in</Link></Button>
-          </Card>
           <ClientUpcomingAppointments appointments={appointments} />
           <Card>
             <CardHeader><CardTitle>Trainer notes</CardTitle></CardHeader>

@@ -133,7 +133,7 @@ export function ClientUpcomingAppointments({ appointments }: { appointments: Tra
           appointments.slice(0, 5).map((appointment) => {
             const formatted = formatAppointmentDateTime(appointment.startsAtIso);
             return (
-              <div key={appointment.id} className="rounded-[1.35rem] bg-stone-50 p-4">
+              <div key={appointment.id} className="rounded-[1.35rem] border border-stone-200 bg-white/80 p-4 shadow-[0_10px_28px_rgba(41,37,36,0.06)]">
                 <p className="text-sm font-semibold">
                   {formatted.date} at {formatted.time}
                 </p>
