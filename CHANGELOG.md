@@ -8,6 +8,40 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.7.6] - 2026-08-22
+
+- Renamed the trainer navigation item from Communications to Messages.
+- Added unread client-message badges to the trainer Messages navigation and inbox threads.
+- Simplified trainer inbox thread rows to client identity and latest timestamp.
+- Marked client-sent messages as read when the trainer opens that client thread.
+
+## [0.7.5] - 2026-08-22
+
+- Removed the trainer communications summary, metrics, and search panel from the messages page.
+
+## [0.7.4] - 2026-08-22
+
+- Added bottom breathing room to the trainer communications workspace so the message window does not touch the browser edge.
+
+## [0.7.3] - 2026-08-22
+
+- Changed the client Messages nav badge to show only unread trainer-sent messages.
+- Marked trainer-sent messages as read when the client opens their Messages page.
+- Matched trainer chat behavior with bottom-aligned messages, auto-scroll, and Enter-to-send.
+
+## [0.7.2] - 2026-08-22
+
+- Moved Messages to the third item in the client navigation.
+- Added a client Messages navigation badge showing the number of trainer-sent messages.
+
+## [0.7.1] - 2026-08-22
+
+- Simplified the client messages page to show only the messaging thread and reply composer.
+- Kept the client message page height stable by making the transcript area scroll internally.
+- Aligned the desktop client message panel height with the bottom of the left navigation.
+- Anchored client message bubbles to the bottom of the transcript and auto-scrolled to new messages.
+- Added Enter-to-send behavior for the client message reply field.
+
 ## [0.7.0] - 2026-08-21
 
 - Added PWA metadata and a service worker for installable app behavior.
