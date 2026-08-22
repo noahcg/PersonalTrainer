@@ -292,6 +292,7 @@ export type Message = {
   author: string;
   body: string;
   createdAt: string;
+  readAt?: string | null;
   clientId?: string;
   clientName?: string;
 };

@@ -4,6 +4,7 @@ import type { Message } from "@/lib/types";
 
 const sharedMessagesStorageKey = "nick-glushien-shared-messages";
 const legacyClientMessagesStorageKey = "nick-glushien-client-messages";
+export const messagesChangedEventName = "nick-glushien-messages-changed";
 
 export function readDemoMessages(fallback: Message[]) {
   const primary = window.localStorage.getItem(sharedMessagesStorageKey);
@@ -32,4 +33,5 @@ export function readDemoMessages(fallback: Message[]) {
 
 export function writeDemoMessages(nextMessages: Message[]) {
   window.localStorage.setItem(sharedMessagesStorageKey, JSON.stringify(nextMessages));
+  window.dispatchEvent(new Event(messagesChangedEventName));
 }

@@ -79,7 +79,7 @@ export async function getTrainerConversationData() {
       .order("created_at", { ascending: false }),
     supabase
       .from("messages")
-      .select("id, client_id, sender_profile_id, body, created_at")
+      .select("id, client_id, sender_profile_id, body, read_at, created_at")
       .eq("trainer_id", trainerId)
       .eq("kind", "message")
       .order("created_at", { ascending: true }),
@@ -96,6 +96,7 @@ export async function getTrainerConversationData() {
       author: from === "client" ? client?.full_name ?? "Client" : brand.app.trainerLabel,
       body: row.body,
       createdAt: formatMessageTimestamp(row.created_at),
+      readAt: row.read_at,
       clientId: row.client_id,
       clientName: client?.full_name ?? "Client",
     };
@@ -129,7 +130,7 @@ export async function getClientConversationData() {
 
   const { data: messageRows } = await supabase
     .from("messages")
-    .select("id, client_id, sender_profile_id, body, created_at")
+    .select("id, client_id, sender_profile_id, body, read_at, created_at")
     .eq("trainer_id", trainerId)
     .eq("client_id", clientRow.id)
     .eq("kind", "message")
@@ -143,6 +144,7 @@ export async function getClientConversationData() {
       author: from === "client" ? clientRow.full_name : brand.app.trainerLabel,
       body: row.body,
       createdAt: formatMessageTimestamp(row.created_at),
+      readAt: row.read_at,
       clientId: clientRow.id,
       clientName: clientRow.full_name,
     };

@@ -20,8 +20,9 @@ import {
   Users,
 } from "lucide-react";
 import { brand } from "@/lib/brand";
-import { clients as demoClients } from "@/lib/demo-data";
+import { clients as demoClients, messages as demoMessages } from "@/lib/demo-data";
 import { demoClientsStorageKey } from "@/lib/demo-client-storage";
+import { messagesChangedEventName, readDemoMessages } from "@/lib/demo-message-storage";
 import { profileUpdatedEventName, readDemoTrainerSettings } from "@/lib/profile-identity";
 import { createClient as createBrowserClient, hasSupabaseEnv } from "@/lib/supabase-browser";
 import { cn } from "@/lib/utils";
@@ -37,7 +38,7 @@ const trainerNav = [
   { href: "/trainer/bulletin", label: "Bulletin Board", icon: Megaphone },
   { href: "/trainer/clients", label: "Clients", icon: Users },
   { href: "/trainer/packages", label: "Packages", icon: Package },
-  { href: "/trainer/messages", label: "Communications", icon: MessageCircle },
+  { href: "/trainer/messages", label: "Messages", icon: MessageCircle },
   { href: "/trainer/plans", label: "Training Plans", icon: CalendarCheck },
   { href: "/trainer/workouts", label: "Workouts", icon: Dumbbell },
   { href: "/trainer/exercises", label: "Exercise Library", icon: Library },
@@ -49,11 +50,11 @@ const trainerNav = [
 const clientNav = [
   { href: "/client/home", label: "Home", icon: Home },
   { href: "/client/bulletin", label: "Bulletin", icon: Megaphone },
+  { href: "/client/messages", label: "Messages", icon: MessageCircle },
   { href: "/client/plan", label: "My Plan", icon: CalendarCheck },
   { href: "/client/workouts", label: "My Workouts", icon: Dumbbell },
   { href: "/client/progress", label: "Progress", icon: TrendingUp },
   { href: "/client/resources", label: "Resources", icon: BookOpen },
-  { href: "/client/messages", label: "Messages", icon: MessageCircle },
   { href: "/client/profile", label: "Profile", icon: Users },
 ];
 
@@ -92,6 +93,8 @@ export function AppShell({
   const homeHref = role === "trainer" ? "/trainer/dashboard" : "/client/home";
   const logoHref = navLocked ? pathname : homeHref;
   const [greetingHour, setGreetingHour] = useState<number | null>(null);
+  const [messageNotificationCount, setMessageNotificationCount] = useState(0);
+  const messageBadgeLabel = messageNotificationCount > 99 ? "99+" : String(messageNotificationCount);
   const [identity, setIdentity] = useState({
     name: role === "trainer" ? brand.app.trainerViewLabel : "Mara Lee",
     photo: role === "trainer" ? "" : demoClients[0]?.photo ?? "",
@@ -187,8 +190,78 @@ export function AppShell({
     });
   }
 
+  async function loadMessageNotificationCount() {
+    if (!hasSupabaseEnv()) {
+      const clientId = demoClients[0]?.id;
+      const count = readDemoMessages(demoMessages).filter((item) => {
+        if (role === "trainer") return item.from === "client" && !item.readAt;
+        return item.clientId === clientId && item.from === "trainer" && !item.readAt;
+      }).length;
+      setMessageNotificationCount(count);
+      return;
+    }
+
+    const supabase = createBrowserClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setMessageNotificationCount(0);
+      return;
+    }
+
+    if (role === "trainer") {
+      const { data: trainer } = await supabase
+        .from("trainers")
+        .select("id")
+        .eq("profile_id", user.id)
+        .maybeSingle<{ id: string }>();
+
+      if (!trainer?.id) {
+        setMessageNotificationCount(0);
+        return;
+      }
+
+      const { count } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("trainer_id", trainer.id)
+        .eq("kind", "message")
+        .neq("sender_profile_id", user.id)
+        .is("read_at", null);
+
+      setMessageNotificationCount(count ?? 0);
+      return;
+    }
+
+    const { data: client } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("profile_id", user.id)
+      .maybeSingle<{ id: string }>();
+
+    if (!client?.id) {
+      setMessageNotificationCount(0);
+      return;
+    }
+
+    const { count } = await supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", client.id)
+      .eq("kind", "message")
+      .neq("sender_profile_id", user.id)
+      .is("read_at", null);
+
+    setMessageNotificationCount(count ?? 0);
+  }
+
   const syncIdentity = useEffectEvent(() => {
     void loadIdentity();
+  });
+  const syncMessageNotificationCount = useEffectEvent(() => {
+    void loadMessageNotificationCount();
   });
   const syncGreetingHour = useEffectEvent(() => {
     setGreetingHour(new Date().getHours());
@@ -208,6 +281,21 @@ export function AppShell({
       window.removeEventListener("storage", syncIdentity);
     };
   }, [role]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      syncMessageNotificationCount();
+    }, 0);
+
+    window.addEventListener("storage", syncMessageNotificationCount);
+    window.addEventListener(messagesChangedEventName, syncMessageNotificationCount);
+
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("storage", syncMessageNotificationCount);
+      window.removeEventListener(messagesChangedEventName, syncMessageNotificationCount);
+    };
+  }, [pathname, role]);
 
   useEffect(() => {
     if (!dynamicGreetingName) {
@@ -269,7 +357,12 @@ export function AppShell({
                     )}
                   >
                     <Icon className={cn("size-4", active ? "text-bronze-200" : "text-ivory-50/40 group-hover:text-bronze-200")} />
-                    {item.label}
+                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                    {item.href === `/${role}/messages` && messageNotificationCount > 0 ? (
+                      <span className="ml-auto min-w-5 rounded-full bg-bronze-200 px-1.5 py-0.5 text-center text-[10px] font-semibold leading-4 text-charcoal-950">
+                        {messageBadgeLabel}
+                      </span>
+                    ) : null}
                   </Link>
                 );
               })
@@ -280,7 +373,7 @@ export function AppShell({
           </div>
         </aside>
 
-        <main id="main-content" suppressHydrationWarning className="min-w-0 scroll-mt-4 pb-28 lg:pb-5">
+        <main id="main-content" suppressHydrationWarning className="min-w-0 scroll-mt-4 pb-28 lg:grid lg:h-[calc(100vh-2.5rem)] lg:grid-rows-[auto_minmax(0,1fr)] lg:pb-0">
           <header className="mb-5 min-w-0 rounded-[1.5rem] border border-white/70 bg-white/52 p-5 shadow-soft backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">
@@ -314,7 +407,7 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+          <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="min-h-0">
             {children}
           </motion.div>
         </main>
@@ -334,12 +427,17 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex min-w-[4.75rem] flex-none flex-col items-center gap-1 rounded-full px-3 py-2 text-center text-[10px] text-ivory-50/55",
+                  "relative flex min-w-[4.75rem] flex-none flex-col items-center gap-1 rounded-full px-3 py-2 text-center text-[10px] text-ivory-50/55",
                   active && "bg-white/12 text-white",
                 )}
               >
                 <Icon className="size-4" />
-                {getMobileNavLabel(item.label)}
+                <span>{getMobileNavLabel(item.label)}</span>
+                {item.href === `/${role}/messages` && messageNotificationCount > 0 ? (
+                  <span className="absolute right-2 top-1 min-w-4 rounded-full bg-bronze-200 px-1 text-[9px] font-semibold leading-4 text-charcoal-950">
+                    {messageBadgeLabel}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
