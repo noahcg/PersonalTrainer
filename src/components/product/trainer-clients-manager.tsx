@@ -237,6 +237,7 @@ export function TrainerClientsManager({
           metrics: {
             bodyWeight: "—",
             workouts: 0,
+            assignedWorkouts: { completed: 0, total: 0 },
             streak: 0,
             lastCheckIn: "No check-in yet",
           },
@@ -269,6 +270,7 @@ export function TrainerClientsManager({
           metrics: {
             bodyWeight: "—",
             workouts: 0,
+            assignedWorkouts: { completed: 0, total: 0 },
             streak: 0,
             lastCheckIn: "No check-in yet",
           },
@@ -350,7 +352,7 @@ export function TrainerClientsManager({
               partnerName: partnerDraft.clientBName.trim(),
             },
             adherence: 0,
-            metrics: { bodyWeight: "—", workouts: 0, streak: 0, lastCheckIn: "No check-in yet" },
+            metrics: { bodyWeight: "—", workouts: 0, assignedWorkouts: { completed: 0, total: 0 }, streak: 0, lastCheckIn: "No check-in yet" },
           },
           {
             id: `client-${Date.now()}-b`,
@@ -381,7 +383,7 @@ export function TrainerClientsManager({
               partnerName: partnerDraft.clientAName.trim(),
             },
             adherence: 0,
-            metrics: { bodyWeight: "—", workouts: 0, streak: 0, lastCheckIn: "No check-in yet" },
+            metrics: { bodyWeight: "—", workouts: 0, assignedWorkouts: { completed: 0, total: 0 }, streak: 0, lastCheckIn: "No check-in yet" },
           },
         ];
         const merged = [...nextClients, ...clients];

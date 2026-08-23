@@ -19,6 +19,9 @@ export function ClientCard({
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
 }) {
+  const assignedWorkoutDetail = client.metrics.assignedWorkouts.total
+    ? `${client.metrics.assignedWorkouts.completed}/${client.metrics.assignedWorkouts.total} due workouts logged`
+    : "No scheduled workouts due";
   const needsAttention = client.status === "needs_attention";
   const isInactive = client.status === "archived";
   const primaryStatus = isInactive ? "Inactive" : "Active";
@@ -74,10 +77,11 @@ export function ClientCard({
       </div>
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between text-xs text-stone-500">
-          <span>Adherence</span>
+          <span>Plan adherence</span>
           <span>{client.adherence}%</span>
         </div>
         <Progress value={client.adherence} />
+        <p className="mt-2 text-xs text-stone-500">{assignedWorkoutDetail}</p>
       </div>
       <div className="mt-5 flex items-center gap-2 text-xs text-stone-500">
         {needsAttention ? <AlertCircle className="size-4 text-rose-500" /> : <CalendarDays className="size-4 text-sage-500" />}

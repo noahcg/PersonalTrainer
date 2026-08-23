@@ -20,7 +20,7 @@ export const clients: Client[] = [
     pricingTier: "ongoing_coaching",
     sessionPackage: { total: 12, used: 7, remaining: 5, activeSessionId: null, lastSessionAt: "Apr 22" },
     adherence: 91,
-    metrics: { bodyWeight: "142 lb", workouts: 38, streak: 7, lastCheckIn: "Today" },
+    metrics: { bodyWeight: "142 lb", workouts: 38, assignedWorkouts: { completed: 10, total: 11 }, streak: 7, lastCheckIn: "Today" },
   },
   {
     id: "eli-brooks",
@@ -40,7 +40,7 @@ export const clients: Client[] = [
     pricingTier: "intro_session",
     sessionPackage: { total: 1, used: 0, remaining: 1, activeSessionId: null, lastSessionAt: null },
     adherence: 68,
-    metrics: { bodyWeight: "188 lb", workouts: 19, streak: 1, lastCheckIn: "3 days ago" },
+    metrics: { bodyWeight: "188 lb", workouts: 19, assignedWorkouts: { completed: 6, total: 9 }, streak: 1, lastCheckIn: "3 days ago" },
   },
   {
     id: "nina-patel",
@@ -60,7 +60,7 @@ export const clients: Client[] = [
     pricingTier: "high_touch_coaching",
     sessionPackage: { total: 16, used: 13, remaining: 3, activeSessionId: null, lastSessionAt: "Apr 24" },
     adherence: 96,
-    metrics: { bodyWeight: "126 lb", workouts: 72, streak: 13, lastCheckIn: "Yesterday" },
+    metrics: { bodyWeight: "126 lb", workouts: 72, assignedWorkouts: { completed: 12, total: 13 }, streak: 13, lastCheckIn: "Yesterday" },
   },
 ];
 

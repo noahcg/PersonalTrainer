@@ -41,7 +41,7 @@ export function ProgressChart({
               boxShadow: "0 24px 70px -36px rgba(32,29,24,.35)",
             }}
           />
-          <Area type="monotone" dataKey="adherence" stroke="#788d63" strokeWidth={3} fill="url(#adherence)" />
+          <Area type="monotone" dataKey="adherence" name="Plan adherence" stroke="#788d63" strokeWidth={3} fill="url(#adherence)" />
         </AreaChart>
       </ResponsiveContainer>
     </div>

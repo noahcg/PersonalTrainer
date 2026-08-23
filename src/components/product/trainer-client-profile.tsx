@@ -713,11 +713,16 @@ export function TrainerClientProfile({
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Progress</p>
-                    <p className="mt-1 text-sm font-medium text-charcoal-950">Adherence</p>
+                    <p className="mt-1 text-sm font-medium text-charcoal-950">Plan adherence</p>
                   </div>
                   <div className="rounded-full bg-sage-50 px-3 py-1 text-sm font-semibold text-sage-700">{client.adherence}%</div>
                 </div>
                 <Progress value={client.adherence} className="mt-4 h-2.5 bg-stone-100" />
+                <p className="mt-3 text-xs text-stone-500">
+                  {client.metrics.assignedWorkouts.total
+                    ? `${client.metrics.assignedWorkouts.completed}/${client.metrics.assignedWorkouts.total} due workouts logged`
+                    : "No scheduled workouts due yet"}
+                </p>
               </div>
               <div className="grid w-fit gap-3 sm:grid-cols-2">
                 <ProfileSummaryMetric icon={<Dumbbell className="size-4" />} label="Workouts" value={String(client.metrics.workouts)} />
