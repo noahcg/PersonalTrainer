@@ -197,6 +197,9 @@ export default async function ClientHomePage() {
     : workout?.coachNotes ?? "Your trainer will place your next session here once your plan is live.";
   const latestCheckIn = checkIns[0];
   const hasWorkspaceData = Boolean(client || plan || workouts.length || workoutCheckIns.length || messages.length || checkIns.length || resources.length || bulletins.length || appointments.length);
+  const assignedWorkoutDetail = client?.metrics.assignedWorkouts.total
+    ? `${client.metrics.assignedWorkouts.completed}/${client.metrics.assignedWorkouts.total} due workouts logged`
+    : "No scheduled workouts due yet";
 
   if (!hasWorkspaceData) {
     return (
@@ -272,7 +275,7 @@ export default async function ClientHomePage() {
           </Card>
           <div className="grid gap-5 md:grid-cols-3">
             {[
-              { label: "Weekly adherence", value: client ? `${client.adherence}%` : "—", detail: `${client?.metrics.workouts ?? 0} sessions logged`, Icon: CalendarCheck },
+              { label: "Plan adherence", value: client ? `${client.adherence}%` : "—", detail: assignedWorkoutDetail, Icon: CalendarCheck },
               { label: "Check-ins", value: String(checkIns.length), detail: latestCheckIn ? `Latest: ${latestCheckIn.date}` : "No check-ins yet", Icon: CheckCircle2 },
               {
                 label: "In-person sessions",

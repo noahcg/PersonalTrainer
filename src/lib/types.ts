@@ -133,6 +133,10 @@ export type Client = {
   metrics: {
     bodyWeight: string;
     workouts: number;
+    assignedWorkouts: {
+      completed: number;
+      total: number;
+    };
     streak: number;
     lastCheckIn: string;
   };

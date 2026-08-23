@@ -57,6 +57,17 @@ type ClientSessionRow = {
   created_by: "trainer" | "client";
 };
 
+type ActivePlanAssignmentRow = {
+  training_plan_id: string;
+  starts_on: string;
+};
+
+type AssignedWorkoutRow = {
+  id: string;
+  training_plan_id: string | null;
+  scheduled_day: number | null;
+};
+
 type AppointmentRow = {
   id: string;
   trainer_id: string;
@@ -103,6 +114,14 @@ function formatRelativeDate(value: string | null) {
   return formatDistanceToNow(new Date(value), { addSuffix: true });
 }
 
+function daysSincePlanStart(startsOn: string, today = new Date()) {
+  const start = new Date(`${startsOn}T00:00:00`);
+  if (Number.isNaN(start.getTime())) return 0;
+
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.max(Math.floor((todayStart.getTime() - start.getTime()) / 86_400_000), 0);
+}
+
 function withLegacySessionPackage<T extends Omit<ClientRow, "package_session_limit" | "intake_completed_at"> & Partial<Pick<ClientRow, "intake_completed_at">>>(row: T): ClientRow {
   return {
     ...row,
@@ -112,7 +131,15 @@ function withLegacySessionPackage<T extends Omit<ClientRow, "package_session_lim
 }
 
 async function hydrateClient(row: ClientRow, supabase: Awaited<ReturnType<typeof createClient>>) {
-  const [{ count: completedCount }, { count: usedSessions }, { data: activeSession }, { data: latestSession }, { data: latestCheckIn }, { data: latestProgress }] = await Promise.all([
+  const [
+    { count: completedCount },
+    { count: usedSessions },
+    { data: activeSession },
+    { data: latestSession },
+    { data: latestCheckIn },
+    { data: latestProgress },
+    { data: activeAssignments },
+  ] = await Promise.all([
     supabase
       .from("workout_logs")
       .select("*", { count: "exact", head: true })
@@ -148,12 +175,41 @@ async function hydrateClient(row: ClientRow, supabase: Awaited<ReturnType<typeof
       .maybeSingle<{ submitted_at: string }>(),
     supabase
       .from("progress_entries")
-      .select("body_weight, adherence_percent")
+      .select("body_weight")
       .eq("client_id", row.id)
       .order("entry_date", { ascending: false })
       .limit(1)
-      .maybeSingle<{ body_weight: number | null; adherence_percent: number | null }>(),
+      .maybeSingle<{ body_weight: number | null }>(),
+    supabase
+      .from("plan_assignments")
+      .select("training_plan_id, starts_on")
+      .eq("client_id", row.id)
+      .eq("status", "active"),
   ]);
+  const assignments = (activeAssignments ?? []) as ActivePlanAssignmentRow[];
+  const assignedPlanIds = assignments.map((assignment) => assignment.training_plan_id);
+  const assignmentDayByPlanId = new Map(assignments.map((assignment) => [assignment.training_plan_id, daysSincePlanStart(assignment.starts_on)]));
+  const { data: assignedWorkouts } = assignedPlanIds.length
+    ? await supabase.from("workouts").select("id, training_plan_id, scheduled_day").in("training_plan_id", assignedPlanIds)
+    : { data: [] as AssignedWorkoutRow[] };
+  const dueWorkoutIds = (assignedWorkouts ?? [])
+    .filter((workout: AssignedWorkoutRow) => {
+      if (!workout.training_plan_id || workout.scheduled_day === null) return false;
+      const daysElapsed = assignmentDayByPlanId.get(workout.training_plan_id);
+      return daysElapsed !== undefined && workout.scheduled_day <= daysElapsed + 1;
+    })
+    .map((workout: AssignedWorkoutRow) => workout.id);
+  const { data: completedAssignedLogs } = dueWorkoutIds.length
+    ? await supabase
+        .from("workout_logs")
+        .select("workout_id")
+        .eq("client_id", row.id)
+        .eq("status", "completed")
+        .in("workout_id", dueWorkoutIds)
+    : { data: [] as { workout_id: string }[] };
+  const completedDueWorkoutCount = new Set((completedAssignedLogs ?? []).map((log: { workout_id: string }) => log.workout_id)).size;
+  const dueWorkoutTotal = dueWorkoutIds.length;
+  const planAdherence = dueWorkoutTotal ? Math.round((completedDueWorkoutCount / dueWorkoutTotal) * 100) : 0;
   const packageTotal = row.package_session_limit;
   const packageUsed = usedSessions ?? 0;
 
@@ -195,10 +251,14 @@ async function hydrateClient(row: ClientRow, supabase: Awaited<ReturnType<typeof
           })
         : null,
     },
-    adherence: Math.round(latestProgress?.adherence_percent ?? 0),
+    adherence: planAdherence,
     metrics: {
       bodyWeight: latestProgress?.body_weight ? `${latestProgress.body_weight} lb` : "—",
       workouts: completedCount ?? 0,
+      assignedWorkouts: {
+        completed: completedDueWorkoutCount,
+        total: dueWorkoutTotal,
+      },
       streak: 0,
       lastCheckIn: formatRelativeDate(latestCheckIn?.submitted_at ?? null),
     },

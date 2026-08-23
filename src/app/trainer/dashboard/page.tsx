@@ -60,7 +60,7 @@ export default async function TrainerDashboardPage() {
       role="trainer"
       title="Welcome back, Nick."
       dynamicGreetingName="Nick"
-      subtitle="Clear coaching. Real progress. A structured read on client momentum, adherence, and the coaching moments that need your attention."
+      subtitle="Clear coaching. Real progress. A structured read on client momentum, plan adherence, and the coaching moments that need your attention."
     >
       <SessionReminderBanner initialBulletins={bulletins} mode={mode} role="trainer" />
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">

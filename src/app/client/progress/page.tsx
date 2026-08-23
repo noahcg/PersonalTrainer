@@ -38,6 +38,9 @@ export default async function ClientProgressPage() {
           },
         ]
       : [];
+  const assignedWorkoutDetail = client.metrics.assignedWorkouts.total
+    ? `${client.metrics.assignedWorkouts.completed}/${client.metrics.assignedWorkouts.total} due workouts logged`
+    : "No scheduled workouts due yet";
 
   return (
     <AppShell
@@ -48,7 +51,7 @@ export default async function ClientProgressPage() {
     >
       <div className="grid gap-5 md:grid-cols-3">
         <StatCard label="Body weight" value={client.metrics.bodyWeight} detail="Latest recorded metric" />
-        <StatCard label="Adherence" value={`${client.adherence}%`} detail={`${client.metrics.workouts} workouts completed`} tone="sage" />
+        <StatCard label="Plan adherence" value={`${client.adherence}%`} detail={assignedWorkoutDetail} tone="sage" />
         <StatCard label="Check-ins" value={client.metrics.lastCheckIn} detail="Most recent submission" tone="dark" />
       </div>
       <Card className="mt-5">

@@ -26,16 +26,17 @@ export default async function TrainerProgressPage() {
   const [{ clients }, { checkIns }] = await Promise.all([getTrainerClients(), getTrainerCheckInData()]);
 
   const activeClients = clients.filter((client) => client.status !== "archived");
-  const averageAdherence = activeClients.length
-    ? activeClients.reduce((sum, client) => sum + client.adherence, 0) / activeClients.length
+  const clientsWithDueWorkouts = activeClients.filter((client) => client.metrics.assignedWorkouts.total > 0);
+  const averagePlanAdherence = clientsWithDueWorkouts.length
+    ? clientsWithDueWorkouts.reduce((sum, client) => sum + client.adherence, 0) / clientsWithDueWorkouts.length
     : 0;
-  const needsAttention = activeClients.filter((client) => client.status === "needs_attention" || client.adherence < 75);
+  const needsAttention = activeClients.filter((client) => client.status === "needs_attention" || (client.metrics.assignedWorkouts.total > 0 && client.adherence < 75));
   const pendingCheckIns = checkIns.filter((checkIn) => !checkIn.reviewed);
   const averageRecovery = checkIns.length
     ? checkIns.reduce((sum, checkIn) => sum + (checkIn.energy + checkIn.sleep + checkIn.motivation - checkIn.stress) / 4, 0) / checkIns.length
     : 0;
 
-  const rosterTrend = activeClients
+  const rosterTrend = clientsWithDueWorkouts
     .map((client) => ({
       label: client.name.split(" ")[0],
       adherence: client.adherence,
@@ -44,14 +45,14 @@ export default async function TrainerProgressPage() {
     }))
     .sort((left, right) => left.adherence - right.adherence);
 
-  const lowestAdherence = [...activeClients].sort((left, right) => left.adherence - right.adherence).slice(0, 4);
-  const strongestMomentum = [...activeClients].sort((left, right) => right.adherence - left.adherence).slice(0, 4);
+  const lowestPlanAdherence = [...clientsWithDueWorkouts].sort((left, right) => left.adherence - right.adherence).slice(0, 4);
+  const strongestMomentum = [...clientsWithDueWorkouts].sort((left, right) => right.adherence - left.adherence).slice(0, 4);
   const recentCheckIns = checkIns.slice(0, 5);
 
   return (
-    <AppShell role="trainer" title="Progress intelligence" subtitle="Track body weight, measurements, PRs, photos metadata, adherence, milestone notes, and recovery signals.">
+    <AppShell role="trainer" title="Progress intelligence" subtitle="Track body weight, measurements, PRs, photos metadata, plan adherence, milestone notes, and recovery signals.">
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Average adherence" value={formatPercent(averageAdherence)} detail={`${activeClients.length} active clients`} tone="sage" />
+        <StatCard label="Plan adherence" value={formatPercent(averagePlanAdherence)} detail={`${clientsWithDueWorkouts.length} clients with scheduled work due`} tone="sage" />
         <StatCard label="Needs attention" value={String(needsAttention.length)} detail="Low adherence or flagged status" />
         <StatCard label="Check-ins to review" value={String(pendingCheckIns.length)} detail="Awaiting trainer response" tone="dark" />
         <StatCard label="Recovery average" value={formatAverage(averageRecovery)} detail="Energy, sleep, motivation, stress" />
@@ -60,7 +61,7 @@ export default async function TrainerProgressPage() {
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Roster adherence view</CardTitle>
+            <CardTitle>Roster plan adherence</CardTitle>
           </CardHeader>
           <CardContent>
             <ProgressChart data={rosterTrend.length ? rosterTrend : undefined} />
@@ -72,8 +73,8 @@ export default async function TrainerProgressPage() {
             <CardTitle>Clients needing action</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {lowestAdherence.length ? (
-              lowestAdherence.map((client) => (
+            {lowestPlanAdherence.length ? (
+              lowestPlanAdherence.map((client) => (
                 <Link
                   key={client.id}
                   href={`/trainer/clients/${client.id}`}
@@ -85,7 +86,7 @@ export default async function TrainerProgressPage() {
                     <p className="truncate text-sm text-stone-500">{client.metrics.lastCheckIn}</p>
                   </div>
                   <Badge variant={client.adherence < 75 || client.status === "needs_attention" ? "alert" : "bronze"}>
-                    {client.adherence}% adherence
+                    {client.adherence}% adherent
                   </Badge>
                 </Link>
               ))
@@ -170,7 +171,7 @@ export default async function TrainerProgressPage() {
           <CardTitle>Progress priorities</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {lowestAdherence.slice(0, 3).map((client) => (
+          {lowestPlanAdherence.slice(0, 3).map((client) => (
             <Link
               key={client.id}
               href={`/trainer/clients/${client.id}`}
@@ -190,7 +191,7 @@ export default async function TrainerProgressPage() {
               </p>
             </Link>
           ))}
-          {!lowestAdherence.length ? (
+          {!lowestPlanAdherence.length ? (
             <div className="rounded-[1.35rem] bg-stone-50/88 p-4 text-sm text-stone-600">Once client data is active, this area will surface the people who need plan changes or a check-in response.</div>
           ) : null}
         </CardContent>
