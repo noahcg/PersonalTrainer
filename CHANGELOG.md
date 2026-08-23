@@ -8,6 +8,10 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.7.14] - 2026-08-23
+
+- Changed trainer session logging to record a completed in-person session immediately instead of starting an active stopwatch-style session.
+
 ## [0.7.13] - 2026-08-23
 
 - Updated the trainer app header eyebrow and account chip subtitle.

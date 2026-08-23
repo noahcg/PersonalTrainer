@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, Dumbbell, ExternalLink, Mail, NotebookPen, Package, PencilLine, PlayCircle, Save, StickyNote, Trash2, X } from "lucide-react";
+import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, Dumbbell, ExternalLink, Mail, NotebookPen, Package, PencilLine, Save, StickyNote, Trash2, X } from "lucide-react";
 import { forwardRef, type HTMLAttributes, useEffect, useMemo, useRef, useState } from "react";
 import { clientAccessDetail } from "@/lib/client-access";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
@@ -210,14 +210,13 @@ export function TrainerClientProfile({
     }
   }
 
-  async function startInPersonSession() {
-    if (client.sessionPackage.activeSessionId) return;
+  async function logInPersonSession() {
     setBusy(true);
     setMessage(null);
 
     try {
       let nextSessions = sessions;
-      const startedAt = new Date();
+      const loggedAt = new Date();
 
       if (mode === "supabase") {
         const supabase = createBrowserClient();
@@ -225,16 +224,18 @@ export function TrainerClientProfile({
           data: { user },
         } = await supabase.auth.getUser();
 
-        if (!user) throw new Error("You need an authenticated trainer session to start a client session.");
+        if (!user) throw new Error("You need an authenticated trainer session to log a client session.");
 
         const { data: inserted, error } = await supabase
           .from("client_sessions")
           .insert({
             client_id: client.id,
-            started_at: startedAt.toISOString(),
-            status: "active",
+            started_at: loggedAt.toISOString(),
+            completed_at: loggedAt.toISOString(),
+            status: "completed",
             location: sessionLocation.trim() || "In person",
             notes: sessionNotes.trim() || null,
+            duration_minutes: null,
             created_by: "trainer",
           })
           .select("id, client_id, started_at, completed_at, status, location, notes, duration_minutes, created_by")
@@ -250,7 +251,7 @@ export function TrainerClientProfile({
             created_by: "trainer" | "client";
           }>();
 
-        if (error || !inserted) throw error ?? new Error("Unable to start in-person session.");
+        if (error || !inserted) throw error ?? new Error("Unable to log in-person session.");
 
         nextSessions = [
           {
@@ -263,8 +264,15 @@ export function TrainerClientProfile({
               hour: "numeric",
               minute: "2-digit",
             }),
-            completedAt: null,
-            completedAtIso: null,
+            completedAt: inserted.completed_at
+              ? new Date(inserted.completed_at).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : null,
+            completedAtIso: inserted.completed_at,
             status: inserted.status,
             location: inserted.location ?? "",
             notes: inserted.notes ?? "",
@@ -278,16 +286,21 @@ export function TrainerClientProfile({
           {
             id: `client-session-${Date.now()}`,
             clientId: client.id,
-            startedAtIso: startedAt.toISOString(),
-            startedAt: startedAt.toLocaleString("en-US", {
+            startedAtIso: loggedAt.toISOString(),
+            startedAt: loggedAt.toLocaleString("en-US", {
               month: "short",
               day: "numeric",
               hour: "numeric",
               minute: "2-digit",
             }),
-            completedAt: null,
-            completedAtIso: null,
-            status: "active",
+            completedAt: loggedAt.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            }),
+            completedAtIso: loggedAt.toISOString(),
+            status: "completed",
             location: sessionLocation.trim() || "In person",
             notes: sessionNotes.trim(),
             durationMinutes: null,
@@ -303,10 +316,10 @@ export function TrainerClientProfile({
       setDraftClient(nextClient);
       if (mode === "demo") persist(nextClient, coachingNotes, nextSessions);
       setSessionNotes("");
-      setMessage("In-person session started.");
+      setMessage("In-person session logged and counted against package.");
       window.setTimeout(() => setMessage(null), 2400);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to start in-person session.");
+      setMessage(error instanceof Error ? error.message : "Unable to log in-person session.");
     } finally {
       setBusy(false);
     }
@@ -613,7 +626,6 @@ export function TrainerClientProfile({
       ["Last workout", lastWorkout],
     ];
   }, [intake]);
-  const activeSession = sessions.find((session) => session.status === "active") ?? null;
   const partnerPackage = client.partnerPackage;
   const assignablePackageTypes = partnerPackage ? [] : packageTypes.filter((packageType) => packageType.kind === "one_on_one" && packageType.active);
   const selectedDraftPackageType = assignablePackageTypes.find((item) => item.id === draftPackageTypeId) ?? null;
@@ -662,12 +674,12 @@ export function TrainerClientProfile({
                 ) : null}
                 <Button
                   variant="warm"
-                  onClick={() => void startInPersonSession()}
-                  disabled={busy || Boolean(activeSession) || client.status === "archived"}
+                  onClick={() => void logInPersonSession()}
+                  disabled={busy || client.status === "archived"}
                   className="shadow-warm"
                 >
-                  <PlayCircle className="size-4" />
-                  {client.status === "archived" ? "Client inactive" : activeSession ? "Session active" : "Start in-person session"}
+                  <CheckCircle2 className="size-4" />
+                  {client.status === "archived" ? "Client inactive" : busy ? "Logging..." : "Log in-person session"}
                 </Button>
                 <Button variant="secondary" onClick={() => setEditOpen(true)} className="bg-ivory-50">
                   <PencilLine className="size-4" />
@@ -862,17 +874,10 @@ export function TrainerClientProfile({
                   <div className="grid content-start gap-3">
                     <Input value={sessionLocation} onChange={(event) => setSessionLocation(event.target.value)} placeholder="Studio, client home, gym..." />
                     <Input value={sessionNotes} onChange={(event) => setSessionNotes(event.target.value)} placeholder="Optional session note" />
-                    {activeSession ? (
-                      <Button variant="warm" onClick={() => void completeInPersonSession(activeSession.id)} disabled={busy}>
-                        <CheckCircle2 className="size-4" />
-                        {busy ? "Completing..." : "Complete active session"}
-                      </Button>
-                    ) : (
-                      <Button variant="warm" onClick={() => void startInPersonSession()} disabled={busy}>
-                        <PlayCircle className="size-4" />
-                        {busy ? "Starting..." : "Start in-person session"}
-                      </Button>
-                    )}
+                    <Button variant="warm" onClick={() => void logInPersonSession()} disabled={busy || client.status === "archived"}>
+                      <CheckCircle2 className="size-4" />
+                      {client.status === "archived" ? "Client inactive" : busy ? "Logging..." : "Log in-person session"}
+                    </Button>
                   </div>
                 </div>
                 <div className="p-5 sm:p-6">
@@ -907,7 +912,7 @@ export function TrainerClientProfile({
                       ))
                     ) : (
                       <div className="rounded-[1.25rem] bg-stone-50 p-4 text-sm text-stone-500">
-                        No in-person sessions recorded yet. Start a session when live training begins.
+                        No in-person sessions recorded yet. Log a session when live training is complete.
                       </div>
                     )}
                   </div>
