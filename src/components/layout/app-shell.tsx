@@ -338,7 +338,7 @@ export function AppShell({
         Skip to main
       </a>
       <div className="mx-auto grid max-w-[1500px] gap-5 lg:grid-cols-[238px_1fr]">
-        <aside className="sticky top-5 hidden h-[calc(100vh-2.5rem)] flex-col overflow-hidden rounded-[2rem] border border-white/8 bg-charcoal-950 px-4 py-5 text-ivory-50 shadow-soft lg:flex">
+        <aside className="sticky top-5 hidden h-[calc(100dvh-4rem)] flex-col overflow-hidden rounded-[2rem] border border-white/8 bg-charcoal-950 px-4 py-5 text-ivory-50 shadow-soft lg:flex">
           <Link href={logoHref} aria-disabled={navLocked} className="block w-full rounded-[1.25rem]">
             <NGLogoLockup tone="light" subtext="Training" className="max-w-full" />
           </Link>
@@ -377,7 +377,7 @@ export function AppShell({
           </div>
         </aside>
 
-        <main id="main-content" suppressHydrationWarning className="min-w-0 scroll-mt-4 pb-28 lg:grid lg:h-[calc(100vh-2.5rem)] lg:grid-rows-[auto_minmax(0,1fr)] lg:pb-0">
+        <main id="main-content" suppressHydrationWarning className="min-w-0 scroll-mt-4 pb-28 lg:pb-6">
           <header className="mb-5 min-w-0 rounded-[1.5rem] border border-white/70 bg-white/52 p-5 shadow-soft backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">

@@ -182,7 +182,7 @@ export function ClientMessagesPanel({
 
   return (
     <AppShell role="client" title="Messages" subtitle="Reply directly to your trainer.">
-      <div className="flex h-[calc(100dvh-16rem)] min-h-[24rem] max-w-4xl flex-col lg:h-full lg:min-h-0">
+      <div className="flex h-[calc(100dvh-16rem)] min-h-[24rem] max-w-4xl flex-col">
         <Card className="flex min-h-0 flex-1 flex-col p-5 sm:p-6">
           <div ref={transcriptRef} className="min-h-0 flex-1 overflow-y-auto pr-1">
             {messages.length ? (

@@ -8,6 +8,10 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.7.12] - 2026-08-23
+
+- Restored shared bottom padding across client and trainer app pages.
+
 ## [0.7.11] - 2026-08-23
 
 - Changed the client account chip subtitle to "Client account."
