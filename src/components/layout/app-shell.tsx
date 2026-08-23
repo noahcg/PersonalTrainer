@@ -95,8 +95,8 @@ export function AppShell({
   const [messageNotificationCount, setMessageNotificationCount] = useState(0);
   const messageBadgeLabel = messageNotificationCount > 99 ? "99+" : String(messageNotificationCount);
   const [identity, setIdentity] = useState({
-    name: role === "trainer" ? brand.app.trainerViewLabel : "Mara Lee",
-    photo: role === "trainer" ? "" : demoClients[0]?.photo ?? "",
+    name: role === "trainer" ? brand.app.trainerViewLabel : "Client",
+    photo: "",
     subtitle: role === "trainer" ? brand.tagline : brand.app.clientSupportLabel,
   });
 
