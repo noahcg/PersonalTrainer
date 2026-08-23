@@ -106,6 +106,7 @@ function mapWorkout(
           return {
             id: item.id,
             exerciseId: item.exercise_id,
+            exercise,
             name: exercise?.name ?? "Exercise",
             sets: item.sets ?? 0,
             reps: item.reps ?? "",

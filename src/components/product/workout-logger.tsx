@@ -226,9 +226,12 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
   const referenceExercises = useMemo(
     () =>
       new Map(
-        exerciseLibrary.map((exercise) => [exercise.id, exercise]),
+        [
+          ...exerciseLibrary,
+          ...workout.blocks.flatMap((block) => block.exercises.flatMap((exercise) => exercise.exercise ?? [])),
+        ].map((exercise) => [exercise.id, exercise]),
       ),
-    [],
+    [workout.blocks],
   );
 
   function updateEntry(exerciseId: string, setNumber: number, patch: Partial<SetEntry>) {
