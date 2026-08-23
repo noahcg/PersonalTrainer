@@ -26,27 +26,27 @@ export default async function ClientWorkoutsPage() {
   }
 
   return (
-    <AppShell role="client" title="My workouts" subtitle="Upcoming and completed workouts with clear guidance and logging.">
-      <div className="space-y-6">
+    <AppShell role="client" title="My workouts" subtitle="Upcoming and completed workouts with clear guidance and logging." mobileFocus>
+      <div className="space-y-5 sm:space-y-6">
         {workouts.length ? (
           <section>
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
-                <h2 className="text-xl font-semibold text-charcoal-950">Assigned workouts</h2>
+                <h2 className="text-lg font-semibold text-charcoal-950 sm:text-xl">Assigned workouts</h2>
                 <p className="mt-1 text-sm text-stone-500">Workouts available to log now.</p>
               </div>
             </div>
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-2 md:gap-5">
               {workouts.map((workout) => (
-                <Card key={workout.id} className="p-5 sm:p-6">
+                <Card key={workout.id} className="p-4 sm:p-6">
                   <Badge variant="bronze">Assigned</Badge>
-                  <h3 className="mt-5 font-serif text-4xl font-semibold">{workout.name}</h3>
+                  <h3 className="mt-4 font-serif text-3xl font-semibold leading-tight sm:mt-5 sm:text-4xl">{workout.name}</h3>
                   <p className="mt-3 text-sm leading-6 text-stone-600">{workout.coachNotes}</p>
-                  <div className="mt-5 grid gap-2 text-sm text-stone-500">
+                  <div className="mt-4 flex flex-wrap gap-2 text-sm text-stone-500 sm:mt-5">
                     <span>{workout.duration}</span>
                     <span>{workout.blocks.length} training blocks</span>
                   </div>
-                  <Button asChild className="mt-6" variant="warm">
+                  <Button asChild className="mt-5 w-full sm:mt-6 sm:w-fit" variant="warm">
                     <Link href={`/client/workouts/${workout.id}`}>
                       Start logging
                       <ArrowRight className="size-4" />
@@ -61,18 +61,18 @@ export default async function ClientWorkoutsPage() {
         <section>
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-charcoal-950">Logged workouts</h2>
+              <h2 className="text-lg font-semibold text-charcoal-950 sm:text-xl">Logged workouts</h2>
               <p className="mt-1 text-sm text-stone-500">Your completed non-session workout history.</p>
             </div>
           </div>
-          <Card className="p-5 sm:p-6">
+          <Card className="p-3 sm:p-6">
             {workoutCheckIns.length ? (
-              <div className="space-y-3">
+              <div className="space-y-2.5 sm:space-y-3">
                 {workoutCheckIns.map((checkIn) => (
                   <Link
                     key={checkIn.id}
                     href={`/client/workouts/${checkIn.workoutId}`}
-                    className="flex flex-col gap-3 rounded-[1.35rem] bg-stone-50/88 px-4 py-4 transition hover:bg-white sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-[1.15rem] bg-stone-50/88 px-3.5 py-3.5 transition hover:bg-white sm:flex-row sm:items-center sm:justify-between sm:rounded-[1.35rem] sm:px-4 sm:py-4"
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">

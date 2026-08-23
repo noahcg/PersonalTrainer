@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
 import { ArrowRight, Check, Eye, LoaderCircle, MessageSquare, Save, X } from "lucide-react";
-import { brand } from "@/lib/brand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -405,31 +404,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
 
   if (completedAt) {
     return (
-      <div className="space-y-5">
-        <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
-          <div className="p-5 sm:p-8">
-            <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
-            <h2 className="mt-4 font-serif text-4xl font-semibold">{workout.name}</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-ivory-50/65">
-              Workout submitted to your trainer.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3 text-sm text-ivory-50/70">
-              <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{workout.dayLabel}</div>
-              <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{total}/{total} exercises</div>
-              {perceivedEffort ? (
-                <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">RPE {perceivedEffort}</div>
-              ) : null}
-            </div>
-            <div className="mt-7">
-              <div className="mb-2 flex justify-between text-xs text-ivory-50/55">
-                <span>Workout completion</span>
-                <span>Complete</span>
-              </div>
-              <Progress value={100} />
-            </div>
-          </div>
-        </Card>
-
+      <div className="space-y-4 sm:space-y-5">
         <Card className="p-5 sm:p-6">
           <div className="flex items-start gap-3">
             <div className="grid size-10 shrink-0 place-items-center rounded-full bg-sage-100 text-sage-700">
@@ -438,14 +413,19 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
             <div className="min-w-0">
               <h3 className="text-xl font-semibold text-charcoal-950">Workout complete</h3>
               <p className="mt-2 text-sm leading-6 text-stone-600">
-                Logged {formatCompletedAt(completedAt)}. Your trainer can now review this workout from their dashboard.
+                {workout.name} was logged {formatCompletedAt(completedAt)}. Your trainer can now review it from their dashboard.
               </p>
+              <div className="mt-4 flex flex-wrap gap-2 text-sm text-stone-600">
+                <Badge variant="sage">Complete</Badge>
+                <span className="rounded-full bg-stone-50 px-3 py-1.5">{total}/{total} exercises</span>
+                {perceivedEffort ? <span className="rounded-full bg-stone-50 px-3 py-1.5">RPE {perceivedEffort}</span> : null}
+              </div>
               {feedback ? (
                 <p className="mt-4 rounded-[1.25rem] bg-stone-50 p-4 text-sm leading-6 text-stone-600">{feedback}</p>
               ) : null}
             </div>
           </div>
-          <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap sm:justify-end">
             <Button
               type="button"
               variant="secondary"
@@ -475,28 +455,19 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
   }
 
   return (
-    <div className="space-y-5">
-      <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
-        <div className="p-5 sm:p-8">
-          <div>
-            <Badge variant="bronze">{brand.app.workspaceBadge}</Badge>
-            <h2 className="mt-4 font-serif text-4xl font-semibold">{workout.name}</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-ivory-50/65">{workout.coachNotes}</p>
-            <div className="mt-5 flex flex-wrap gap-3 text-sm text-ivory-50/70">
-              <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{workout.dayLabel}</div>
-              <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{total} exercises</div>
-              <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">{brand.tagline}</div>
-            </div>
+    <div className="space-y-4 pb-20 sm:space-y-5 sm:pb-0">
+      <section className="rounded-[1.25rem] border border-stone-200/80 bg-white/58 px-4 py-3.5 shadow-inner-soft sm:rounded-[1.5rem] sm:px-5 sm:py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="font-serif text-2xl font-semibold leading-tight text-charcoal-950 sm:text-3xl">{workout.name}</h2>
+            <p className="mt-2 text-sm leading-6 text-stone-600">{workout.coachNotes}</p>
           </div>
-          <div className="mt-7">
-            <div className="mb-2 flex justify-between text-xs text-ivory-50/55">
-              <span>Workout completion</span>
-              <span>{completed.length}/{total}</span>
-            </div>
-            <Progress value={completionPercent} />
+          <div className="flex shrink-0 flex-wrap gap-2 text-sm text-stone-600 sm:justify-end">
+            <span className="rounded-full bg-stone-50 px-3 py-1.5">{workout.dayLabel}</span>
+            <span className="rounded-full bg-stone-50 px-3 py-1.5">{total} exercises</span>
           </div>
         </div>
-      </Card>
+      </section>
 
       {workout.blocks.map((block, index) => (
         <motion.section
@@ -505,34 +476,41 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.06 }}
         >
-          <Card className="p-5 sm:p-6">
-            <div className="mb-5">
+          <Card className="p-3.5 sm:p-6">
+            <div className="mb-4 sm:mb-5">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">{block.label}</p>
-              <h3 className="mt-2 text-xl font-semibold">{block.intent}</h3>
+              <h3 className="mt-2 text-lg font-semibold sm:text-xl">{block.intent}</h3>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3.5 sm:space-y-4">
               {block.exercises.map((exercise) => {
                 const done = completed.includes(exercise.id);
                 const reference = referenceExercises.get(exercise.exerciseId);
                 return (
-                  <div key={exercise.id} className="rounded-[1.5rem] border border-stone-200 bg-stone-50/78 p-4">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div key={exercise.id} className="rounded-[1.2rem] border border-stone-200 bg-stone-50/78 p-3 sm:rounded-[1.5rem] sm:p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-lg font-semibold">{exercise.name}</h4>
+                          <h4 className="text-base font-semibold sm:text-lg">{exercise.name}</h4>
                           <Badge variant={done ? "sage" : "default"}>{done ? "Complete" : `${exercise.sets} sets`}</Badge>
                         </div>
                         <p className="mt-2 text-sm leading-6 text-stone-600">{exercise.notes}</p>
                       </div>
-                      <div className="flex flex-col gap-2 sm:items-end">
+                      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-col sm:items-end">
                         <Button
                           variant="secondary"
+                          className="px-3 text-xs sm:px-5 sm:text-sm"
                           onClick={() => setReferenceExercise({ prescription: exercise, exercise: reference })}
                         >
                           <Eye className="size-4" />
-                          Watch / review form
+                          <span className="sm:hidden">Form</span>
+                          <span className="hidden sm:inline">Watch / review form</span>
                         </Button>
-                        <Button variant={done ? "secondary" : "default"} onClick={() => void saveExerciseProgress(exercise)} disabled={saving}>
+                        <Button
+                          variant={done ? "secondary" : "default"}
+                          className="px-3 text-xs sm:px-5 sm:text-sm"
+                          onClick={() => void saveExerciseProgress(exercise)}
+                          disabled={saving}
+                        >
                           <Check className="size-4" />
                           {done ? "Logged" : "Mark done"}
                         </Button>
@@ -544,7 +522,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                         onClick={() => setReferenceExercise({ prescription: exercise, exercise: reference })}
                         className="mt-4 flex w-full flex-col overflow-hidden rounded-[1.35rem] border border-white bg-white/82 text-left shadow-inner-soft transition hover:bg-white sm:flex-row"
                       >
-                        <div className="relative h-36 sm:h-auto sm:w-44">
+                        <div className="relative h-32 sm:h-auto sm:w-44">
                           <Image
                             src={reference.demoUrl}
                             alt={`${reference.name} demonstration`}
@@ -567,7 +545,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                         </div>
                       </button>
                     ) : null}
-                    <div className="mt-4 grid gap-3 sm:grid-cols-5">
+                    <div className="mt-4 grid gap-2.5 sm:grid-cols-5 sm:gap-3">
                       {Array.from({ length: exercise.sets }).map((_, setIndex) => {
                         const setNumber = setIndex + 1;
                         const currentEntry = setState[entryKey(exercise.id, setNumber)] ?? {
@@ -577,7 +555,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                           completed: false,
                         };
                         return (
-                          <div key={setNumber} className="rounded-[1.15rem] bg-white/86 p-3">
+                          <div key={setNumber} className="rounded-[1rem] bg-white/86 p-2.5 sm:rounded-[1.15rem] sm:p-3">
                             <p className="mb-2 text-xs font-semibold text-stone-500">Set {setNumber}</p>
                             <div className="grid grid-cols-2 gap-2">
                               <Input
@@ -585,19 +563,23 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                                 onChange={(event) => updateEntry(exercise.id, setNumber, { reps: event.target.value })}
                                 placeholder={exercise.reps}
                                 aria-label="reps"
+                                inputMode="numeric"
+                                className="h-10 rounded-xl px-3 sm:h-11 sm:rounded-2xl sm:px-4"
                               />
                               <Input
                                 value={currentEntry.weight}
                                 onChange={(event) => updateEntry(exercise.id, setNumber, { weight: event.target.value })}
                                 placeholder="lbs"
                                 aria-label="weight"
+                                inputMode="decimal"
+                                className="h-10 rounded-xl px-3 sm:h-11 sm:rounded-2xl sm:px-4"
                               />
                             </div>
                           </div>
                         );
                       })}
                     </div>
-                    <div className="mt-4 grid gap-3 text-xs text-stone-500 sm:grid-cols-4">
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-stone-500 sm:grid-cols-4 sm:gap-3">
                       <span>Tempo: {exercise.tempo}</span>
                       <span>Rest: {exercise.rest}</span>
                       <span>RPE: {exercise.rpe}</span>
@@ -611,7 +593,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
         </motion.section>
       ))}
 
-      <Card className="p-5 sm:p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-full bg-bronze-100 text-bronze-700">
             <MessageSquare className="size-5" />
@@ -659,12 +641,26 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
               Cancel
             </Button>
           ) : null}
-          <Button variant="warm" onClick={() => void completeWorkout()} disabled={saving}>
+          <Button variant="warm" onClick={() => void completeWorkout()} disabled={saving} className="w-full sm:w-fit">
             <Save className="size-4" />
             {saving ? "Saving..." : "Mark workout complete"}
           </Button>
         </div>
       </Card>
+
+      <div className="fixed inset-x-3 bottom-[5.75rem] z-40 grid grid-cols-[1fr_auto] items-center gap-3 rounded-[1.15rem] border border-white/70 bg-ivory-50/94 p-2.5 shadow-soft backdrop-blur-xl sm:hidden">
+        <div className="min-w-0">
+          <div className="mb-1.5 flex items-center justify-between gap-3 text-xs font-medium text-stone-600">
+            <span>{completed.length}/{total} exercises</span>
+            <span>{Math.round(completionPercent)}%</span>
+          </div>
+          <Progress value={completionPercent} />
+        </div>
+        <Button variant="warm" onClick={() => void completeWorkout()} disabled={saving} className="h-11 px-4">
+          <Save className="size-4" />
+          {saving ? "Saving" : "Complete"}
+        </Button>
+      </div>
 
       <ExerciseReferenceDialog
         open={Boolean(referenceExercise)}
@@ -676,7 +672,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
       />
 
       {message ? (
-        <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">
+        <div className="fixed bottom-[11rem] left-3 right-3 z-50 rounded-[1.2rem] bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft sm:bottom-24 sm:left-auto sm:right-3 sm:rounded-full lg:right-6">
           {message}
         </div>
       ) : null}
@@ -706,10 +702,10 @@ function ExerciseReferenceDialog({
             initial={{ opacity: 0, y: 28, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
-            className="fixed inset-x-3 bottom-3 z-50 max-h-[92vh] overflow-y-auto rounded-[2rem] border border-white/70 bg-ivory-50 shadow-soft outline-none sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-w-4xl sm:-translate-x-1/2 sm:-translate-y-1/2"
+            className="fixed inset-x-2 bottom-2 z-50 max-h-[94vh] overflow-y-auto rounded-[1.4rem] border border-white/70 bg-ivory-50 shadow-soft outline-none sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-w-4xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[2rem]"
           >
             <div className="grid sm:grid-cols-[0.95fr_1.05fr]">
-              <div className="relative min-h-72 overflow-hidden rounded-t-[2rem] bg-charcoal-950 sm:rounded-l-[2rem] sm:rounded-tr-none">
+              <div className="relative min-h-60 overflow-hidden rounded-t-[1.4rem] bg-charcoal-950 sm:min-h-72 sm:rounded-l-[2rem] sm:rounded-tr-none">
                 {exercise?.demoUrl ? (
                   <Image
                     src={exercise.demoUrl}
@@ -727,7 +723,7 @@ function ExerciseReferenceDialog({
                 <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/65 via-transparent to-charcoal-950/20" />
                 <div className="absolute bottom-5 left-5 right-5">
                   <Badge variant="bronze">{exercise?.pattern ?? "Movement"}</Badge>
-                  <p className="mt-3 font-serif text-4xl font-semibold text-ivory-50">{title}</p>
+                  <p className="mt-3 font-serif text-3xl font-semibold leading-tight text-ivory-50 sm:text-4xl">{title}</p>
                   {exercise ? (
                     <p className="mt-2 text-sm text-ivory-50/70">
                       {exercise.category} · {exercise.difficulty} · {exercise.equipment.join(", ")}

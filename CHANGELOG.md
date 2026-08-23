@@ -8,6 +8,19 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.8.9] - 2026-08-23
+
+- Replaced the large black client workout hero with a compact workout summary for faster mobile logging.
+
+## [0.8.8] - 2026-08-23
+
+- Improved client mobile layouts for messages, workout lists, and workout logging.
+- Added compact client page chrome for focused phone workflows and a sticky mobile workout completion bar.
+
+## [0.8.7] - 2026-08-23
+
+- Prevented mobile viewport scaling and input-focus zoom in the app shell.
+
 ## [0.8.6] - 2026-08-23
 
 - Changed client home Trainer notes to show the latest trainer-managed profile note instead of recent messages.
