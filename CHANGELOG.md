@@ -8,6 +8,10 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.8.1] - 2026-08-23
+
+- Fixed client workout exercise references so trainer-added demo media appears in the client form review dialog.
+
 ## [0.8.0] - 2026-08-23
 
 - Replaced the vague adherence display with plan adherence based on scheduled assigned workouts due so far.
