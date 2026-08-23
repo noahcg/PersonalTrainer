@@ -73,7 +73,6 @@ function getMobileNavLabel(label: string) {
 export function AppShell({
   role,
   title,
-  subtitle,
   dynamicGreetingName,
   navLocked = false,
   clientPortalAccess = "full",
@@ -115,6 +114,10 @@ export function AppShell({
     }
 
     return `Welcome back, ${name}.`;
+  }
+
+  function getFirstName(name: string) {
+    return name.trim().split(/\s+/)[0] || "Client";
   }
 
   async function loadIdentity() {
@@ -266,6 +269,7 @@ export function AppShell({
   const syncGreetingHour = useEffectEvent(() => {
     setGreetingHour(new Date().getHours());
   });
+  const greetingName = dynamicGreetingName ?? (role === "client" ? getFirstName(identity.name) : undefined);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -298,7 +302,7 @@ export function AppShell({
   }, [pathname, role]);
 
   useEffect(() => {
-    if (!dynamicGreetingName) {
+    if (!greetingName) {
       return;
     }
 
@@ -313,10 +317,10 @@ export function AppShell({
       window.clearTimeout(timeout);
       window.clearInterval(interval);
     };
-  }, [dynamicGreetingName]);
+  }, [greetingName]);
 
   const displayTitle =
-    dynamicGreetingName && greetingHour !== null ? getTimeBasedGreeting(dynamicGreetingName, greetingHour) : title;
+    greetingName && greetingHour !== null ? getTimeBasedGreeting(greetingName, greetingHour) : title;
 
   async function handleLogout() {
     if (hasSupabaseEnv()) {
@@ -392,7 +396,6 @@ export function AppShell({
                 >
                   {displayTitle}
                 </motion.h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">{subtitle}</p>
               </div>
               <div className="flex min-w-0 flex-wrap items-center gap-3 rounded-[1.5rem] border border-stone-200/80 bg-white/72 p-2 shadow-inner-soft sm:rounded-full">
                 <Avatar name={identity.name} src={identity.photo} />

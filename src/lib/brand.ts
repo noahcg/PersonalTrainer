@@ -7,7 +7,7 @@ export const brand = {
     trainerLabel: "Trainer",
     trainerViewLabel: "Trainer view",
     trainerHeaderLabel: "Training command center",
-    clientHeaderLabel: "Client experience",
+    clientHeaderLabel: "Welcome back",
     clientSupportLabel: "Guided by your trainer",
     workspaceBadge: "Coaching workspace",
     rosterBadge: "Studio roster",

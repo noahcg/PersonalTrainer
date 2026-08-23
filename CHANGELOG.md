@@ -8,6 +8,18 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.7.9] - 2026-08-23
+
+- Changed the client header eyebrow from "Client experience" to "Welcome back."
+
+## [0.7.8] - 2026-08-23
+
+- Removed the supporting message below the app header greeting.
+
+## [0.7.7] - 2026-08-23
+
+- Updated the client app header to show a time-of-day greeting using the client's name.
+
 ## [0.7.6] - 2026-08-22
 
 - Renamed the trainer navigation item from Communications to Messages.
