@@ -6,7 +6,7 @@ export default async function TrainerMessagesPage() {
   const result = await getTrainerConversationData();
 
   return (
-    <AppShell role="trainer" title="Communications" subtitle="Review client conversations and reply from one focused workspace.">
+    <AppShell role="trainer" title="Communications" subtitle="Review client conversations and reply from one focused workspace." mobileFocus>
       <TrainerMessagesManager
         initialParticipants={result.participants}
         initialMessages={result.messages}

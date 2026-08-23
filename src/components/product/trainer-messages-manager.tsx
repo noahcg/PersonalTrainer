@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { MessageCircle, Send } from "lucide-react";
+import { ChevronDown, MessageCircle, Send } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,7 @@ export function TrainerMessagesManager({
       };
     });
   }, [messages, participants]);
+  const selectedThread = threads.find((thread) => thread.id === selectedClientId) ?? null;
 
   const activeMessages = useMemo(
     () => messages.filter((message) => message.clientId === selectedClientId),
@@ -203,15 +204,49 @@ export function TrainerMessagesManager({
   }
 
   return (
-    <div className="pb-5">
+    <div className="pb-3 sm:pb-5">
       {status ? (
         <Card className="mb-5 border-bronze-200 bg-bronze-50/70 p-4 text-sm text-stone-700">
           {status}
         </Card>
       ) : null}
 
-      <div className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <Card className="overflow-hidden p-0">
+      <div className="grid gap-3 sm:gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
+        <Card className="p-3 xl:hidden">
+          <div className="flex items-center gap-3">
+            {selectedClient ? <Avatar name={selectedClient.name} src={selectedClient.photo} className="size-10" /> : <MessageCircle className="size-5 text-stone-400" />}
+            <div className="min-w-0 flex-1">
+              <label htmlFor="mobile-client-thread" className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-bronze-600">
+                Client
+              </label>
+              <div className="relative mt-1">
+                <select
+                  id="mobile-client-thread"
+                  value={selectedClientId ?? ""}
+                  onChange={(event) => setSelectedClientId(event.target.value || null)}
+                  className="h-11 w-full appearance-none rounded-2xl border border-stone-200 bg-white/80 px-4 pr-10 text-sm font-semibold text-charcoal-950 shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
+                  aria-label="Choose client conversation"
+                >
+                  {threads.length ? null : <option value="">No clients</option>}
+                  {threads.map((thread) => (
+                    <option key={thread.id} value={thread.id}>
+                      {thread.name}
+                      {thread.unread > 0 ? ` (${thread.unread > 99 ? "99+" : thread.unread} unread)` : ""}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-stone-500" />
+              </div>
+            </div>
+            {selectedThread?.unread ? (
+              <span className="min-w-6 rounded-full bg-bronze-200 px-2 py-1 text-center text-xs font-semibold leading-4 text-charcoal-950">
+                {selectedThread.unread > 99 ? "99+" : selectedThread.unread}
+              </span>
+            ) : null}
+          </div>
+        </Card>
+
+        <Card className="hidden overflow-hidden p-0 xl:block">
           <div className="border-b border-border bg-white/35 p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -258,24 +293,24 @@ export function TrainerMessagesManager({
           </div>
         </Card>
 
-        <Card className="flex min-h-[620px] flex-col overflow-hidden p-0">
+        <Card className="flex h-[calc(100dvh-20rem)] min-h-[22rem] max-h-[44rem] flex-col overflow-hidden rounded-[1.25rem] p-0 sm:h-[calc(100dvh-16rem)] sm:min-h-[30rem] sm:rounded-[2rem] xl:max-h-[calc(100dvh-15.5rem)]">
           {selectedClient ? (
             <>
-              <div className="flex items-center gap-3 border-b border-border bg-white/35 p-5">
-                <Avatar name={selectedClient.name} src={selectedClient.photo} className="size-12" />
+              <div className="flex items-center gap-3 border-b border-border bg-white/35 p-3 sm:p-5">
+                <Avatar name={selectedClient.name} src={selectedClient.photo} className="size-10 sm:size-12" />
                 <div className="min-w-0">
-                  <p className="text-lg font-semibold text-charcoal-950">{selectedClient.name}</p>
+                  <p className="truncate text-base font-semibold text-charcoal-950 sm:text-lg">{selectedClient.name}</p>
                   <p className="text-sm text-stone-500">Direct coaching conversation</p>
                 </div>
               </div>
 
-              <div className="min-h-0 flex-1 bg-stone-50/35 p-3 sm:p-4">
+              <div className="min-h-0 flex-1 bg-stone-50/35 p-2 sm:p-4">
                 <div
                   ref={transcriptRef}
-                  className="chat-scrollbar h-full overflow-y-auto rounded-[1.35rem] border border-stone-200/80 bg-white/58 px-3 py-4 shadow-inner-soft sm:rounded-[1.6rem] sm:px-4 sm:py-5"
+                  className="chat-scrollbar h-full overscroll-contain overflow-y-auto rounded-[1.35rem] border border-stone-200/80 bg-white/58 px-2.5 py-3 shadow-inner-soft sm:rounded-[1.6rem] sm:px-4 sm:py-5"
                 >
                   {activeMessages.length ? (
-                    <div className="flex min-h-full flex-col justify-end pr-2 sm:pr-3">
+                    <div className="flex min-h-full flex-col justify-end pr-1 sm:pr-3">
                       {activeMessages.map((message, index) => {
                         const previousFrom = activeMessages[index - 1]?.from;
                         const nextFrom = activeMessages[index + 1]?.from;
@@ -290,9 +325,9 @@ export function TrainerMessagesManager({
                           >
                             {message.from === "client" ? (
                               endsGroup ? (
-                                <Avatar name={message.author} src={selectedClient.photo} className="size-9" />
+                                <Avatar name={message.author} src={selectedClient.photo} className="size-8 sm:size-9" />
                               ) : (
-                                <div className="size-9 shrink-0" />
+                                <div className="size-8 shrink-0 sm:size-9" />
                               )
                             ) : null}
                             <div
@@ -321,8 +356,8 @@ export function TrainerMessagesManager({
                 </div>
               </div>
 
-              <div className="border-t border-border bg-stone-50/45 p-5">
-                <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex-none border-t border-border bg-stone-50/45 p-3 sm:p-5">
+                <div className="flex gap-2 sm:gap-3">
                   <Input
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
@@ -333,17 +368,17 @@ export function TrainerMessagesManager({
                       void sendMessage();
                     }}
                     placeholder={`Message ${selectedClient.name}...`}
-                    className="bg-white"
+                    className="min-w-0 flex-1 bg-white"
                   />
-                  <Button variant="warm" onClick={sendMessage} disabled={busy}>
+                  <Button variant="warm" onClick={sendMessage} disabled={busy} className="size-11 shrink-0 px-0 sm:size-auto sm:px-5" aria-label="Send message">
                     <Send className="size-4" />
-                    {busy ? "Sending..." : "Send"}
+                    <span className="hidden sm:inline">{busy ? "Sending..." : "Send"}</span>
                   </Button>
                 </div>
               </div>
             </>
           ) : (
-            <div className="grid min-h-[420px] place-items-center text-center text-stone-500">
+            <div className="grid min-h-0 flex-1 place-items-center text-center text-stone-500">
               <div>
                 <MessageCircle className="mx-auto size-8 text-stone-300" />
                 <p className="mt-4 text-sm">No client selected.</p>

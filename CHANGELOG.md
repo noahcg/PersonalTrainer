@@ -8,6 +8,14 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.8.11] - 2026-08-23
+
+- Reworked trainer Messages on mobile with a compact client picker and a more phone-friendly conversation layout.
+
+## [0.8.10] - 2026-08-23
+
+- Capped the trainer message conversation height so long threads scroll internally on desktop and mobile.
+
 ## [0.8.9] - 2026-08-23
 
 - Replaced the large black client workout hero with a compact workout summary for faster mobile logging.
