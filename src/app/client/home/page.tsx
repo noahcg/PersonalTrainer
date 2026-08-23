@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getClientCheckInData } from "@/lib/checkins";
 import { getClientSelfProfile } from "@/lib/clients";
-import { getClientConversationData } from "@/lib/messages";
 import { getClientAssignedPlan } from "@/lib/plans";
 import { getClientBulletins } from "@/lib/bulletins";
 import { getClientResources } from "@/lib/resources";
@@ -178,11 +177,10 @@ export default async function ClientHomePage() {
     );
   }
 
-  const [{ plan }, { workouts }, { workoutCheckIns }, { messages }, { resources }, { bulletins, mode }] = await Promise.all([
+  const [{ plan }, { workouts }, { workoutCheckIns }, { resources }, { bulletins, mode }] = await Promise.all([
     getClientAssignedPlan(),
     getClientWorkouts(),
     getClientWorkoutCheckIns(1),
-    getClientConversationData(),
     getClientResources(),
     getClientBulletins(),
   ]);
@@ -196,7 +194,7 @@ export default async function ClientHomePage() {
     ? latestCompletedWorkout.feedback || "Your trainer can review the workout you submitted and use it to guide what comes next."
     : workout?.coachNotes ?? "Your trainer will place your next session here once your plan is live.";
   const latestCheckIn = checkIns[0];
-  const hasWorkspaceData = Boolean(client || plan || workouts.length || workoutCheckIns.length || messages.length || checkIns.length || resources.length || bulletins.length || appointments.length);
+  const hasWorkspaceData = Boolean(client || plan || workouts.length || workoutCheckIns.length || checkIns.length || resources.length || bulletins.length || appointments.length);
   const assignedWorkoutDetail = client?.metrics.assignedWorkouts.total
     ? `${client.metrics.assignedWorkouts.completed}/${client.metrics.assignedWorkouts.total} due workouts logged`
     : "No scheduled workouts due yet";
@@ -320,16 +318,14 @@ export default async function ClientHomePage() {
           <Card>
             <CardHeader><CardTitle>Trainer notes</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              {messages.length ? (
-                messages.slice(-2).reverse().map((message) => (
-                  <div key={message.id} className="rounded-[1.35rem] bg-stone-50 p-4">
-                    <p className="text-sm font-semibold">{message.author}</p>
-                    <p className="mt-3 text-sm leading-6 text-stone-600">{message.body}</p>
-                  </div>
-                ))
+              {client?.notes && client.notes !== "No trainer notes yet." ? (
+                <div className="rounded-[1.35rem] bg-stone-50 p-4">
+                  <p className="text-sm font-semibold">Most recent trainer note</p>
+                  <p className="mt-3 text-sm leading-6 text-stone-600">{client.notes}</p>
+                </div>
               ) : (
                 <div className="rounded-[1.35rem] bg-stone-50 p-4 text-sm leading-6 text-stone-600">
-                  Coach notes will appear here once your trainer starts the conversation.
+                  Trainer notes will appear here once your trainer adds one to your profile.
                 </div>
               )}
             </CardContent>

@@ -7,7 +7,6 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input, Textarea } from "@/components/ui/input";
 import { clients as demoClients } from "@/lib/demo-data";
 import { readStoredDemoClientProfile, syncDemoClientRecord, writeStoredDemoClientProfile } from "@/lib/demo-client-storage";
 import { dispatchProfileUpdated, readImageFileAsDataUrl, uploadProfilePhoto } from "@/lib/profile-identity";
@@ -25,12 +24,6 @@ export function ClientProfileEditor({
   mode: "demo" | "supabase";
   clientPortalAccess?: ClientPortalAccess;
 }) {
-  const [profile, setProfile] = useState({
-    goals: initialClient.goals,
-    availability: initialClient.availability,
-    injuries: initialClient.injuries,
-    notes: initialClient.notes,
-  });
   const [client, setClient] = useState(initialClient);
   const [sessions, setSessions] = useState(initialSessions);
   const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
@@ -45,12 +38,6 @@ export function ClientProfileEditor({
 
     const timeout = window.setTimeout(() => {
       setClient(stored.client);
-      setProfile({
-        goals: stored.client.goals,
-        availability: stored.client.availability,
-        injuries: stored.client.injuries,
-        notes: stored.client.notes,
-      });
       setSessions(stored.sessions ?? initialSessions);
     }, 0);
     return () => window.clearTimeout(timeout);
@@ -58,19 +45,12 @@ export function ClientProfileEditor({
 
   async function saveProfile() {
     setSaving(true);
-    const nextClient = {
-      ...client,
-      goals: profile.goals,
-      availability: profile.availability,
-      injuries: profile.injuries,
-      notes: profile.notes,
-    };
 
     try {
       if (mode === "supabase") {
-        const photoUrl = pendingPhotoFile ? await uploadProfilePhoto(pendingPhotoFile) : nextClient.photo;
+        const photoUrl = pendingPhotoFile ? await uploadProfilePhoto(pendingPhotoFile) : client.photo;
         const resolvedClient = {
-          ...nextClient,
+          ...client,
           photo: photoUrl,
         };
         const response = await fetch("/api/client/profile", {
@@ -79,10 +59,6 @@ export function ClientProfileEditor({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            goals: resolvedClient.goals,
-            availability: resolvedClient.availability,
-            injuries: resolvedClient.injuries,
-            notes: resolvedClient.notes,
             photo: resolvedClient.photo || null,
           }),
         });
@@ -95,6 +71,7 @@ export function ClientProfileEditor({
         setClient(resolvedClient);
         setPendingPhotoFile(null);
       } else {
+        const nextClient = { ...client };
         const existing = readStoredDemoClientProfile(initialClient.id);
         writeStoredDemoClientProfile(initialClient.id, {
           client: nextClient,
@@ -102,16 +79,15 @@ export function ClientProfileEditor({
           sessions,
         });
         syncDemoClientRecord(nextClient, demoClients);
+        setClient(nextClient);
+        setPendingPhotoFile(null);
       }
 
-      if (mode !== "supabase") {
-        setClient(nextClient);
-      }
       dispatchProfileUpdated();
-      setMessage("Profile saved.");
+      setMessage("Profile photo saved.");
       window.setTimeout(() => setMessage(null), 1800);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to save profile.");
+      setMessage(error instanceof Error ? error.message : "Unable to save profile photo.");
       window.setTimeout(() => setMessage(null), 2200);
     } finally {
       setSaving(false);
@@ -137,7 +113,7 @@ export function ClientProfileEditor({
     <AppShell
       role="client"
       title="Profile"
-      subtitle="Keep your goals, limitations, schedule, and preferences current for better coaching."
+      subtitle="Review the profile your trainer manages from your intake and coaching updates."
       clientPortalAccess={clientPortalAccess}
     >
       <div className="space-y-5">
@@ -249,19 +225,14 @@ export function ClientProfileEditor({
             </div>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <Field label="Goals">
-              <Input value={profile.goals} onChange={(event) => setProfile((current) => ({ ...current, goals: event.target.value }))} />
-            </Field>
-            <Field label="Availability">
-              <Input value={profile.availability} onChange={(event) => setProfile((current) => ({ ...current, availability: event.target.value }))} />
-            </Field>
-            <Field label="Injuries / limitations">
-              <Textarea value={profile.injuries} onChange={(event) => setProfile((current) => ({ ...current, injuries: event.target.value }))} />
-            </Field>
-            <Field label="Notes">
-              <Textarea value={profile.notes} onChange={(event) => setProfile((current) => ({ ...current, notes: event.target.value }))} />
-            </Field>
-            <Button variant="warm" onClick={() => void saveProfile()} disabled={saving}>{saving ? "Saving..." : "Save profile"}</Button>
+            <ReadOnlyField label="Goals" value={client.goals} />
+            <ReadOnlyField label="Availability" value={client.availability} />
+            <ReadOnlyField label="Injuries / limitations" value={client.injuries} />
+            <ReadOnlyField label="Trainer notes" value={client.notes} />
+            <div className="rounded-[1.25rem] border border-bronze-200 bg-bronze-50/70 p-4 text-sm leading-6 text-stone-700">
+              Your trainer manages these profile details after intake. You can update only your profile photo here.
+            </div>
+            <Button variant="warm" onClick={() => void saveProfile()} disabled={saving}>{saving ? "Saving..." : "Save profile photo"}</Button>
           </CardContent>
         </Card>
       </div>
@@ -288,11 +259,11 @@ function SessionMetric({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
-    <label className="grid gap-2 text-sm font-medium text-charcoal-950">
-      {label}
-      {children}
-    </label>
+    <div className="rounded-[1.25rem] border border-stone-200 bg-white/70 p-4">
+      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.22em] text-stone-500">{label}</p>
+      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-stone-700">{value}</p>
+    </div>
   );
 }
