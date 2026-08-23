@@ -19,5 +19,5 @@ export default async function ClientMessagesPage() {
     );
   }
 
-  return <ClientMessagesPanel initialParticipant={result.participant} initialMessages={result.messages} mode={result.mode} />;
+  return <ClientMessagesPanel initialParticipant={result.participant} initialMessages={result.messages} initialTrainerProfile={result.trainerProfile} mode={result.mode} />;
 }

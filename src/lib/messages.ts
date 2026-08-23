@@ -1,6 +1,7 @@
 import { brand } from "@/lib/brand";
 import { clients as demoClients, messages as demoMessages } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/auth-server";
+import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
 import type { ClientStatus, ConversationParticipant, Message } from "@/lib/types";
 
@@ -11,6 +12,11 @@ type ClientRow = {
   full_name: string;
   profile_photo_url: string | null;
   status?: ClientStatus;
+};
+
+type TrainerProfile = {
+  fullName: string;
+  photo: string;
 };
 
 function formatMessageTimestamp(value: string) {
@@ -54,6 +60,28 @@ function toParticipant(row: ClientRow): ConversationParticipant {
     id: row.id,
     name: row.full_name,
     photo: row.profile_photo_url ?? "",
+  };
+}
+
+async function getTrainerProfile(supabase: Awaited<ReturnType<typeof createClient>>, trainerId: string): Promise<TrainerProfile> {
+  const db = hasSupabaseAdminEnv() ? createAdminClient() : supabase;
+  const { data: trainer } = await db
+    .from("trainers")
+    .select("profile_id")
+    .eq("id", trainerId)
+    .maybeSingle<{ profile_id: string }>();
+
+  if (!trainer?.profile_id) return { fullName: brand.app.trainerLabel, photo: "" };
+
+  const { data: profile } = await db
+    .from("profiles")
+    .select("full_name, avatar_url")
+    .eq("id", trainer.profile_id)
+    .maybeSingle<{ full_name: string; avatar_url: string | null }>();
+
+  return {
+    fullName: profile?.full_name ?? brand.app.trainerLabel,
+    photo: profile?.avatar_url ?? "",
   };
 }
 
@@ -115,6 +143,7 @@ export async function getClientConversationData() {
     return {
       mode: "demo" as const,
       participant: { id: client.id, name: client.name, photo: client.photo },
+      trainerProfile: { fullName: brand.app.trainerLabel, photo: "" },
       messages: demoMessages.filter((message) => message.clientId === client.id),
     };
   }
@@ -124,24 +153,28 @@ export async function getClientConversationData() {
     return {
       mode: "supabase" as const,
       participant: null as ConversationParticipant | null,
+      trainerProfile: { fullName: brand.app.trainerLabel, photo: "" },
       messages: [] as Message[],
     };
   }
 
-  const { data: messageRows } = await supabase
-    .from("messages")
-    .select("id, client_id, sender_profile_id, body, read_at, created_at")
-    .eq("trainer_id", trainerId)
-    .eq("client_id", clientRow.id)
-    .eq("kind", "message")
-    .order("created_at", { ascending: true });
+  const [{ data: messageRows }, trainerProfile] = await Promise.all([
+    supabase
+      .from("messages")
+      .select("id, client_id, sender_profile_id, body, read_at, created_at")
+      .eq("trainer_id", trainerId)
+      .eq("client_id", clientRow.id)
+      .eq("kind", "message")
+      .order("created_at", { ascending: true }),
+    getTrainerProfile(supabase, trainerId),
+  ]);
 
   const messages: Message[] = (messageRows ?? []).map((row) => {
     const from = row.sender_profile_id === user.id ? "client" : "trainer";
     return {
       id: row.id,
       from,
-      author: from === "client" ? clientRow.full_name : brand.app.trainerLabel,
+      author: from === "client" ? clientRow.full_name : trainerProfile.fullName,
       body: row.body,
       createdAt: formatMessageTimestamp(row.created_at),
       readAt: row.read_at,
@@ -153,6 +186,7 @@ export async function getClientConversationData() {
   return {
     mode: "supabase" as const,
     participant: toParticipant(clientRow),
+    trainerProfile,
     messages,
   };
 }

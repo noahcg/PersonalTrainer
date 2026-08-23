@@ -269,26 +269,56 @@ export function TrainerMessagesManager({
                 </div>
               </div>
 
-              <div ref={transcriptRef} className="min-h-0 flex-1 overflow-y-auto p-5">
-                {activeMessages.length ? (
-                  <div className="flex min-h-full flex-col justify-end gap-4">
-                    {activeMessages.map((message) => (
-                      <div key={message.id} className={`flex gap-3 ${message.from === "trainer" ? "justify-end" : ""}`}>
-                        {message.from === "client" ? <Avatar name={message.author} src={selectedClient.photo} className="size-9" /> : null}
-                        <div className={`max-w-[86%] rounded-[1.5rem] p-4 sm:max-w-[78%] ${message.from === "trainer" ? "bg-charcoal-950 text-ivory-50" : "bg-stone-50"}`}>
-                          <p className="text-sm leading-6">{message.body}</p>
-                          <p className={`mt-2 text-xs ${message.from === "trainer" ? "text-ivory-50/50" : "text-stone-500"}`}>{message.createdAt}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex min-h-full flex-col justify-end">
-                    <div className="rounded-[1.25rem] bg-stone-50 p-5 text-sm text-stone-500">
-                      No messages yet. Start the conversation with a direct coaching note.
+              <div className="min-h-0 flex-1 bg-stone-50/35 p-3 sm:p-4">
+                <div
+                  ref={transcriptRef}
+                  className="chat-scrollbar h-full overflow-y-auto rounded-[1.35rem] border border-stone-200/80 bg-white/58 px-3 py-4 shadow-inner-soft sm:rounded-[1.6rem] sm:px-4 sm:py-5"
+                >
+                  {activeMessages.length ? (
+                    <div className="flex min-h-full flex-col justify-end pr-2 sm:pr-3">
+                      {activeMessages.map((message, index) => {
+                        const previousFrom = activeMessages[index - 1]?.from;
+                        const nextFrom = activeMessages[index + 1]?.from;
+                        const startsGroup = previousFrom !== message.from;
+                        const endsGroup = nextFrom !== message.from;
+                        const isTrainerMessage = message.from === "trainer";
+
+                        return (
+                          <div
+                            key={message.id}
+                            className={`flex items-end gap-2.5 ${index === 0 ? "" : startsGroup ? "mt-3.5" : "mt-1"} ${isTrainerMessage ? "justify-end" : ""}`}
+                          >
+                            {message.from === "client" ? (
+                              endsGroup ? (
+                                <Avatar name={message.author} src={selectedClient.photo} className="size-9" />
+                              ) : (
+                                <div className="size-9 shrink-0" />
+                              )
+                            ) : null}
+                            <div
+                              className={`max-w-[82%] rounded-[1.15rem] px-3.5 py-2.5 sm:max-w-[72%] ${
+                                isTrainerMessage
+                                  ? `rounded-br-md bg-charcoal-950 text-ivory-50 shadow-soft ${startsGroup ? "" : "rounded-tr-md"}`
+                                  : `rounded-bl-md border border-stone-200/80 bg-ivory-50 text-charcoal-950 ${startsGroup ? "" : "rounded-tl-md"}`
+                              }`}
+                            >
+                              <p className="text-sm leading-5">{message.body}</p>
+                              {endsGroup ? (
+                                <p className={`mt-1.5 text-[0.72rem] leading-4 ${isTrainerMessage ? "text-ivory-50/54" : "text-stone-500"}`}>{message.createdAt}</p>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex min-h-full flex-col justify-end">
+                      <div className="rounded-[1.15rem] border border-stone-200/80 bg-ivory-50 px-4 py-3 text-sm text-stone-500">
+                        No messages yet. Start the conversation with a direct coaching note.
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="border-t border-border bg-stone-50/45 p-5">
@@ -303,6 +333,7 @@ export function TrainerMessagesManager({
                       void sendMessage();
                     }}
                     placeholder={`Message ${selectedClient.name}...`}
+                    className="bg-white"
                   />
                   <Button variant="warm" onClick={sendMessage} disabled={busy}>
                     <Send className="size-4" />

@@ -160,3 +160,28 @@ body::after {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+.chat-scrollbar {
+  scrollbar-color: rgba(124, 115, 104, 0.42) transparent;
+  scrollbar-gutter: stable;
+}
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 0.7rem;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  border: 0.2rem solid transparent;
+  border-radius: 999px;
+  background: rgba(124, 115, 104, 0.42);
+  background-clip: content-box;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(98, 90, 81, 0.58);
+  background-clip: content-box;
+}

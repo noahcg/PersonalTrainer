@@ -8,6 +8,27 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.8.6] - 2026-08-23
+
+- Changed client home Trainer notes to show the latest trainer-managed profile note instead of recent messages.
+- Limited client profile editing to profile photo updates; trainer-managed profile details are now read-only for clients.
+
+## [0.8.5] - 2026-08-23
+
+- Grouped consecutive chat bubbles from the same sender with tighter spacing, connected corners, and end-of-group timestamps.
+
+## [0.8.4] - 2026-08-23
+
+- Fixed the client message thread's trainer avatar lookup so it can display the trainer profile image under Supabase row-level security.
+
+## [0.8.3] - 2026-08-23
+
+- Displayed the trainer's uploaded profile image on trainer-sent bubbles in the client message thread.
+
+## [0.8.2] - 2026-08-23
+
+- Refined client and trainer message threads with an inset transcript surface, reserved scrollbar gutter, tighter chat bubbles, and clearer sent/received bubble edges.
+
 ## [0.8.1] - 2026-08-23
 
 - Fixed client workout exercise references so trainer-added demo media appears in the client form review dialog.

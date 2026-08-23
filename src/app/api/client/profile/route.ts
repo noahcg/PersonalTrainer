@@ -27,11 +27,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Only clients can update this profile." }, { status: 403 });
     }
 
-    const { goals, availability, injuries, notes, photo } = (await request.json()) as {
-      goals?: string;
-      availability?: string;
-      injuries?: string;
-      notes?: string;
+    const { photo } = (await request.json()) as {
       photo?: string | null;
     };
 
@@ -39,10 +35,6 @@ export async function POST(request: Request) {
     const { error } = await admin
       .from("clients")
       .update({
-        goals: goals?.trim() || null,
-        availability: availability?.trim() || null,
-        injuries_limitations: injuries?.trim() || null,
-        notes: notes?.trim() || null,
         profile_photo_url: photo?.trim() || null,
       })
       .eq("profile_id", user.id);
