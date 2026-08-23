@@ -15,10 +15,12 @@ import type { ConversationParticipant, Message } from "@/lib/types";
 export function ClientMessagesPanel({
   initialParticipant,
   initialMessages,
+  initialTrainerProfile,
   mode,
 }: {
   initialParticipant: ConversationParticipant;
   initialMessages: Message[];
+  initialTrainerProfile: { fullName: string; photo: string };
   mode: "demo" | "supabase";
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -183,27 +185,55 @@ export function ClientMessagesPanel({
   return (
     <AppShell role="client" title="Messages" subtitle="Reply directly to your trainer.">
       <div className="flex h-[calc(100dvh-16rem)] min-h-[24rem] max-w-4xl flex-col">
-        <Card className="flex min-h-0 flex-1 flex-col p-5 sm:p-6">
-          <div ref={transcriptRef} className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4">
+          <div
+            ref={transcriptRef}
+            className="chat-scrollbar min-h-0 flex-1 overflow-y-auto rounded-[1.35rem] border border-stone-200/80 bg-white/58 px-3 py-4 shadow-inner-soft sm:rounded-[1.6rem] sm:px-4 sm:py-5"
+          >
             {messages.length ? (
-              <div className="flex min-h-full flex-col justify-end gap-4">
-                {messages.map((messageItem) => (
-                  <div key={messageItem.id} className={`flex gap-3 ${messageItem.from === "client" ? "justify-end" : ""}`}>
-                    {messageItem.from === "trainer" && <Avatar name={messageItem.author} className="size-9" />}
-                    <div className={`max-w-[86%] rounded-[1.5rem] p-4 sm:max-w-[78%] ${messageItem.from === "client" ? "bg-charcoal-950 text-ivory-50" : "bg-stone-50"}`}>
-                      <p className="text-sm leading-6">{messageItem.body}</p>
-                      <p className={`mt-2 text-xs ${messageItem.from === "client" ? "text-ivory-50/50" : "text-stone-500"}`}>{messageItem.createdAt}</p>
+              <div className="flex min-h-full flex-col justify-end pr-2 sm:pr-3">
+                {messages.map((messageItem, index) => {
+                  const previousFrom = messages[index - 1]?.from;
+                  const nextFrom = messages[index + 1]?.from;
+                  const startsGroup = previousFrom !== messageItem.from;
+                  const endsGroup = nextFrom !== messageItem.from;
+                  const isClientMessage = messageItem.from === "client";
+
+                  return (
+                    <div
+                      key={messageItem.id}
+                      className={`flex items-end gap-2.5 ${index === 0 ? "" : startsGroup ? "mt-3.5" : "mt-1"} ${isClientMessage ? "justify-end" : ""}`}
+                    >
+                      {messageItem.from === "trainer" ? (
+                        endsGroup ? (
+                          <Avatar name={initialTrainerProfile.fullName || messageItem.author} src={initialTrainerProfile.photo} className="size-9" />
+                        ) : (
+                          <div className="size-9 shrink-0" />
+                        )
+                      ) : null}
+                      <div
+                        className={`max-w-[82%] rounded-[1.15rem] px-3.5 py-2.5 sm:max-w-[72%] ${
+                          isClientMessage
+                            ? `rounded-br-md bg-charcoal-950 text-ivory-50 shadow-soft ${startsGroup ? "" : "rounded-tr-md"}`
+                            : `rounded-bl-md border border-stone-200/80 bg-ivory-50 text-charcoal-950 ${startsGroup ? "" : "rounded-tl-md"}`
+                        }`}
+                      >
+                        <p className="text-sm leading-5">{messageItem.body}</p>
+                        {endsGroup ? (
+                          <p className={`mt-1.5 text-[0.72rem] leading-4 ${isClientMessage ? "text-ivory-50/54" : "text-stone-500"}`}>{messageItem.createdAt}</p>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="flex min-h-full flex-col justify-end">
-                <div className="rounded-[1.25rem] bg-stone-50 p-5 text-sm leading-6 text-stone-600">No messages yet.</div>
+                <div className="rounded-[1.15rem] border border-stone-200/80 bg-ivory-50 px-4 py-3 text-sm leading-6 text-stone-600">No messages yet.</div>
               </div>
             )}
           </div>
-          <div className="mt-5 flex flex-none gap-3">
+          <div className="mt-3 flex flex-none gap-2 sm:gap-3">
             <Input
               value={reply}
               onChange={(event) => setReply(event.target.value)}
@@ -214,8 +244,9 @@ export function ClientMessagesPanel({
                 void sendReply();
               }}
               placeholder="Reply to Nick..."
+              className="bg-white"
             />
-            <Button variant="warm" onClick={() => void sendReply()}>
+            <Button variant="warm" onClick={() => void sendReply()} className="shrink-0 px-4 sm:px-5">
               <Send className="size-4" />
               Send
             </Button>
