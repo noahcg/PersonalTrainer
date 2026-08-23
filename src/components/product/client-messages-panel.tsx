@@ -183,15 +183,15 @@ export function ClientMessagesPanel({
   }
 
   return (
-    <AppShell role="client" title="Messages" subtitle="Reply directly to your trainer.">
-      <div className="flex h-[calc(100dvh-16rem)] min-h-[24rem] max-w-4xl flex-col">
-        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4">
+    <AppShell role="client" title="Messages" subtitle="Reply directly to your trainer." mobileFocus>
+      <div className="flex h-[calc(100dvh-15.5rem)] min-h-[23rem] max-w-4xl flex-col sm:h-[calc(100dvh-16rem)] sm:min-h-[24rem]">
+        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.25rem] p-2 sm:rounded-[2rem] sm:p-4">
           <div
             ref={transcriptRef}
-            className="chat-scrollbar min-h-0 flex-1 overflow-y-auto rounded-[1.35rem] border border-stone-200/80 bg-white/58 px-3 py-4 shadow-inner-soft sm:rounded-[1.6rem] sm:px-4 sm:py-5"
+            className="chat-scrollbar min-h-0 flex-1 overscroll-contain overflow-y-auto rounded-[1rem] border border-stone-200/80 bg-white/58 px-2.5 py-3 shadow-inner-soft sm:rounded-[1.6rem] sm:px-4 sm:py-5"
           >
             {messages.length ? (
-              <div className="flex min-h-full flex-col justify-end pr-2 sm:pr-3">
+              <div className="flex min-h-full flex-col justify-end pr-1 sm:pr-3">
                 {messages.map((messageItem, index) => {
                   const previousFrom = messages[index - 1]?.from;
                   const nextFrom = messages[index + 1]?.from;
@@ -202,17 +202,17 @@ export function ClientMessagesPanel({
                   return (
                     <div
                       key={messageItem.id}
-                      className={`flex items-end gap-2.5 ${index === 0 ? "" : startsGroup ? "mt-3.5" : "mt-1"} ${isClientMessage ? "justify-end" : ""}`}
+                      className={`flex items-end gap-2 ${index === 0 ? "" : startsGroup ? "mt-3.5" : "mt-1"} ${isClientMessage ? "justify-end" : ""}`}
                     >
                       {messageItem.from === "trainer" ? (
                         endsGroup ? (
-                          <Avatar name={initialTrainerProfile.fullName || messageItem.author} src={initialTrainerProfile.photo} className="size-9" />
+                          <Avatar name={initialTrainerProfile.fullName || messageItem.author} src={initialTrainerProfile.photo} className="size-8 sm:size-9" />
                         ) : (
-                          <div className="size-9 shrink-0" />
+                          <div className="size-8 shrink-0 sm:size-9" />
                         )
                       ) : null}
                       <div
-                        className={`max-w-[82%] rounded-[1.15rem] px-3.5 py-2.5 sm:max-w-[72%] ${
+                        className={`max-w-[86%] rounded-[1.1rem] px-3.5 py-2.5 sm:max-w-[72%] ${
                           isClientMessage
                             ? `rounded-br-md bg-charcoal-950 text-ivory-50 shadow-soft ${startsGroup ? "" : "rounded-tr-md"}`
                             : `rounded-bl-md border border-stone-200/80 bg-ivory-50 text-charcoal-950 ${startsGroup ? "" : "rounded-tl-md"}`
@@ -233,7 +233,7 @@ export function ClientMessagesPanel({
               </div>
             )}
           </div>
-          <div className="mt-3 flex flex-none gap-2 sm:gap-3">
+          <div className="mt-2 flex flex-none gap-2 rounded-[1.15rem] border border-stone-200/80 bg-white/76 p-2 shadow-inner-soft sm:mt-3 sm:gap-3 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
             <Input
               value={reply}
               onChange={(event) => setReply(event.target.value)}
@@ -244,11 +244,11 @@ export function ClientMessagesPanel({
                 void sendReply();
               }}
               placeholder="Reply to Nick..."
-              className="bg-white"
+              className="min-w-0 flex-1 rounded-full bg-white"
             />
-            <Button variant="warm" onClick={() => void sendReply()} className="shrink-0 px-4 sm:px-5">
+            <Button variant="warm" onClick={() => void sendReply()} className="size-11 shrink-0 px-0 sm:size-auto sm:px-5" aria-label="Send reply">
               <Send className="size-4" />
-              Send
+              <span className="hidden sm:inline">Send</span>
             </Button>
           </div>
         </Card>

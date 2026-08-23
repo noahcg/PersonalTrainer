@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkoutLogger } from "@/components/product/workout-logger";
 import { Button } from "@/components/ui/button";
@@ -11,9 +12,12 @@ export default async function ClientWorkoutPage({ params }: { params: Promise<{ 
   if (!workout) notFound();
 
   return (
-    <AppShell role="client" title="Workout log" subtitle="Log sets, reps, load, notes, completion, and feedback with a mobile-first flow.">
-      <Button asChild variant="ghost" size="sm" className="-ml-2 mb-5 w-fit">
-        <Link href="/client/workouts">Back to workouts</Link>
+    <AppShell role="client" title="Workout log" subtitle="Log sets, reps, load, notes, completion, and feedback with a mobile-first flow." mobileFocus>
+      <Button asChild variant="ghost" size="sm" className="-ml-2 mb-3 w-fit sm:mb-5">
+        <Link href="/client/workouts">
+          <ArrowLeft className="size-4" />
+          Workouts
+        </Link>
       </Button>
       <WorkoutLogger workout={workout} />
     </AppShell>

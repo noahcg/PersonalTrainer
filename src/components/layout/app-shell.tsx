@@ -74,6 +74,7 @@ export function AppShell({
   role,
   title,
   dynamicGreetingName,
+  mobileFocus = false,
   navLocked = false,
   clientPortalAccess = "full",
   children,
@@ -82,6 +83,7 @@ export function AppShell({
   title: string;
   subtitle: string;
   dynamicGreetingName?: string;
+  mobileFocus?: boolean;
   navLocked?: boolean;
   clientPortalAccess?: ClientPortalAccess;
   children: React.ReactNode;
@@ -333,7 +335,7 @@ export function AppShell({
   }
 
   return (
-    <div className="min-h-screen px-4 py-4 text-charcoal-950 sm:px-5 lg:px-6">
+    <div className={cn("min-h-screen text-charcoal-950 sm:px-5 sm:py-4 lg:px-6", mobileFocus ? "px-2 py-2 sm:px-5" : "px-4 py-4")}>
       <a href="#main-content" className="skip-link">
         Skip to main
       </a>
@@ -377,14 +379,22 @@ export function AppShell({
           </div>
         </aside>
 
-        <main id="main-content" suppressHydrationWarning className="min-w-0 scroll-mt-4 pb-28 lg:pb-6">
-          <header className="mb-5 min-w-0 rounded-[1.5rem] border border-white/70 bg-white/52 p-5 shadow-soft backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <main id="main-content" suppressHydrationWarning className={cn("min-w-0 scroll-mt-4 lg:pb-6", mobileFocus ? "pb-24" : "pb-28")}>
+          <header
+            className={cn(
+              "min-w-0 border border-white/70 bg-white/52 shadow-soft backdrop-blur-xl sm:mb-5 sm:rounded-[2rem] sm:p-6",
+              mobileFocus ? "mb-2 rounded-[1.25rem] p-3" : "mb-5 rounded-[1.5rem] p-5",
+            )}
+          >
+            <div className={cn("flex flex-col md:flex-row md:items-center md:justify-between", mobileFocus ? "gap-3 sm:gap-5" : "gap-5")}>
               <div className="min-w-0">
                 <motion.p
                   initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-[0.66rem] font-semibold uppercase tracking-[0.34em] text-bronze-600"
+                  className={cn(
+                    "font-semibold uppercase text-bronze-600",
+                    mobileFocus ? "text-[0.62rem] tracking-[0.24em] sm:text-[0.66rem] sm:tracking-[0.34em]" : "text-[0.66rem] tracking-[0.34em]",
+                  )}
                 >
                   {role === "trainer" ? brand.app.trainerHeaderLabel : brand.app.clientHeaderLabel}
                 </motion.p>
@@ -392,12 +402,20 @@ export function AppShell({
                   initial={false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.04 }}
-                  className="mt-2 text-wrap font-serif text-[2rem] font-semibold leading-[1.05] tracking-tight text-charcoal-950 sm:text-5xl"
+                  className={cn(
+                    "text-wrap font-serif font-semibold leading-[1.05] tracking-tight text-charcoal-950 sm:text-5xl",
+                    mobileFocus ? "mt-1 text-[1.65rem]" : "mt-2 text-[2rem]",
+                  )}
                 >
                   {displayTitle}
                 </motion.h1>
               </div>
-              <div className="flex min-w-0 flex-wrap items-center gap-3 rounded-[1.5rem] border border-stone-200/80 bg-white/72 p-2 shadow-inner-soft sm:rounded-full">
+              <div
+                className={cn(
+                  "flex min-w-0 flex-wrap items-center gap-3 border border-stone-200/80 bg-white/72 p-2 shadow-inner-soft sm:rounded-full",
+                  mobileFocus ? "rounded-[1.25rem]" : "rounded-[1.5rem]",
+                )}
+              >
                 <Avatar name={identity.name} src={identity.photo} />
                 <div className="min-w-0 flex-1 pr-1 sm:pr-3">
                   <p className="truncate text-sm font-semibold">{identity.name}</p>
