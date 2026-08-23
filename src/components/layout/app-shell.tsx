@@ -97,7 +97,7 @@ export function AppShell({
   const [identity, setIdentity] = useState({
     name: role === "trainer" ? brand.app.trainerViewLabel : "Client",
     photo: "",
-    subtitle: role === "trainer" ? brand.tagline : brand.app.clientSupportLabel,
+    subtitle: role === "trainer" ? brand.app.trainerSupportLabel : brand.app.clientSupportLabel,
   });
 
   function getTimeBasedGreeting(name: string, hour = new Date().getHours()) {
@@ -127,7 +127,7 @@ export function AppShell({
         setIdentity({
           name: trainerSettings.name || brand.app.trainerViewLabel,
           photo: trainerSettings.photo,
-          subtitle: brand.tagline,
+          subtitle: brand.app.trainerSupportLabel,
         });
         return;
       }
@@ -175,7 +175,7 @@ export function AppShell({
       setIdentity({
         name: profile?.full_name ?? brand.app.trainerViewLabel,
         photo: profile?.avatar_url ?? "",
-        subtitle: brand.tagline,
+        subtitle: brand.app.trainerSupportLabel,
       });
       return;
     }
