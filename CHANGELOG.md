@@ -8,6 +8,14 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.8.15] - 2026-08-24
+
+- Added spacing and visual polish to the trainer settings profile sections.
+
+## [0.8.14] - 2026-08-24
+
+- Added in-app Terms and Privacy links to trainer settings, client profile, and account setup.
+
 ## [0.8.13] - 2026-08-24
 
 - Prevented the public legal page brand name from wrapping across lines.

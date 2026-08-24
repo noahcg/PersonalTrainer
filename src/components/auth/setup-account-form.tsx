@@ -117,6 +117,17 @@ export function SetupAccountForm() {
         <Button className="mt-6 w-full" disabled={saving} onClick={() => void submit()} variant="warm">
           {saving ? "Saving..." : "Finish setup"}
         </Button>
+        <p className="mt-4 text-center text-xs leading-5 text-stone-500">
+          By continuing, you agree to the{" "}
+          <Link className="font-semibold text-charcoal-950 transition hover:text-bronze-700" href="/terms">
+            Terms of Service
+          </Link>{" "}
+          and acknowledge the{" "}
+          <Link className="font-semibold text-charcoal-950 transition hover:text-bronze-700" href="/privacy">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </Card>
     </main>
   );

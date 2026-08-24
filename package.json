@@ -1,6 +1,6 @@
 {
   "name": "personal-trainer",
-  "version": "0.8.13",
+  "version": "0.8.15",
   "private": true,
   "scripts": {
     "dev": "next dev",

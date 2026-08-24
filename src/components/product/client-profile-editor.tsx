@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { CalendarClock, CalendarRange, CheckCircle2, ShieldPlus, Target } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Avatar } from "@/components/ui/avatar";
@@ -233,6 +234,16 @@ export function ClientProfileEditor({
               Your trainer manages these profile details after intake. You can update only your profile photo here.
             </div>
             <Button variant="warm" onClick={() => void saveProfile()} disabled={saving}>{saving ? "Saving..." : "Save profile photo"}</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Legal</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold text-stone-600">
+              <Link className="transition hover:text-bronze-700" href="/privacy">Privacy Policy</Link>
+              <Link className="transition hover:text-bronze-700" href="/terms">Terms of Service</Link>
+            </div>
           </CardContent>
         </Card>
       </div>
