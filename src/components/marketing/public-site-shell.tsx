@@ -44,7 +44,15 @@ export function PublicSiteShell({
         <footer className="border-t border-stone-200/70 px-5 py-6 text-sm text-stone-500 sm:px-8 lg:px-10">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p>{brand.businessName}</p>
-            <span className="text-stone-400">v{appVersion}</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Link className="transition hover:text-charcoal-950" href="/terms">
+                Terms
+              </Link>
+              <Link className="transition hover:text-charcoal-950" href="/privacy">
+                Privacy
+              </Link>
+              <span className="text-stone-400">v{appVersion}</span>
+            </div>
           </div>
         </footer>
       </div>

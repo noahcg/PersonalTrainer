@@ -8,6 +8,15 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.8.13] - 2026-08-24
+
+- Prevented the public legal page brand name from wrapping across lines.
+
+## [0.8.12] - 2026-08-24
+
+- Added public Terms of Service and Privacy Policy pages.
+- Linked Terms and Privacy from the logged-out public footer.
+
 ## [0.8.11] - 2026-08-23
 
 - Reworked trainer Messages on mobile with a compact client picker and a more phone-friendly conversation layout.
