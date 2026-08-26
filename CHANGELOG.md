@@ -8,6 +8,10 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.12.0] - 2026-08-26
+
+- Added trainer exercise image uploads so self-shot demo photos can be saved to exercise media instead of requiring an external URL.
+
 ## [0.11.8] - 2026-08-26
 
 - Removed the Exercise Library intro and summary metrics so library tools start higher on the page.

@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { Layers3, PencilLine, Plus, Search, X } from "lucide-react";
+import { ImagePlus, Layers3, PencilLine, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ExerciseCard } from "@/components/product/exercise-card";
@@ -55,6 +55,61 @@ function splitList(value: string) {
     .filter(Boolean);
 }
 
+function isImageSource(value: string) {
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized.startsWith("data:image/") ||
+    normalized.includes(".jpg") ||
+    normalized.includes(".jpeg") ||
+    normalized.includes(".png") ||
+    normalized.includes(".webp") ||
+    normalized.includes(".gif") ||
+    normalized.includes("/storage/v1/object/public/")
+  );
+}
+
+async function readExerciseImagePreview(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Please choose an image file.");
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("Please choose an image under 5MB.");
+  }
+
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Unable to read image file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadExerciseImage(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Please choose an image file.");
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("Please choose an image under 5MB.");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch("/api/trainer/exercise-media", {
+    method: "POST",
+    body: formData,
+  });
+
+  const payload = (await response.json()) as { error?: string; url?: string };
+  if (!response.ok || !payload.url) {
+    throw new Error(payload.error ?? "Unable to upload exercise image.");
+  }
+
+  return payload.url;
+}
+
 export function ExerciseLibrary({
   initialExercises,
   mode,
@@ -68,6 +123,7 @@ export function ExerciseLibrary({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DraftExercise>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDemoFile, setPendingDemoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -159,6 +215,22 @@ export function ExerciseLibrary({
       demoUrl: exercise.demoUrl,
       tags: exercise.tags.join(", "),
     });
+    setPendingDemoFile(null);
+  }
+
+  async function updateDemoFile(file: File | null) {
+    if (!file) return;
+
+    try {
+      const preview = await readExerciseImagePreview(file);
+      setPendingDemoFile(file);
+      updateDraft("demoUrl", preview);
+      setMessage("Exercise image ready to save.");
+      window.setTimeout(() => setMessage(null), 1800);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to load exercise image.");
+      window.setTimeout(() => setMessage(null), 2200);
+    }
   }
 
   async function resolveTrainerId() {
@@ -248,7 +320,11 @@ export function ExerciseLibrary({
     setMessage(null);
 
     try {
-      const nextExercise = toExerciseFromDraft(editingId ?? `custom-${Date.now()}`);
+      const uploadedDemoUrl = mode === "supabase" && pendingDemoFile ? await uploadExerciseImage(pendingDemoFile) : draft.demoUrl;
+      const nextExercise = {
+        ...toExerciseFromDraft(editingId ?? `custom-${Date.now()}`),
+        demoUrl: uploadedDemoUrl.trim() || fallbackDemoUrl,
+      };
       const resolvedId = mode === "supabase" ? await persistExercise(nextExercise, editingId) : nextExercise.id;
       const resolvedExercise = { ...nextExercise, id: resolvedId };
 
@@ -262,6 +338,7 @@ export function ExerciseLibrary({
       }
       setDraft(emptyDraft);
       setEditingId(null);
+      setPendingDemoFile(null);
       setOpen(false);
       setMessage(editingId ? "Exercise updated." : "Exercise created.");
       window.setTimeout(() => setMessage(null), 2400);
@@ -293,6 +370,7 @@ export function ExerciseLibrary({
                 onClick={() => {
                   setDraft(emptyDraft);
                   setEditingId(null);
+                  setPendingDemoFile(null);
                 }}
               >
                 <Plus className="size-4" />
@@ -428,14 +506,73 @@ export function ExerciseLibrary({
                       </label>
                     </div>
 
-                    <label className="grid gap-2 text-sm font-medium">
-                      Demo image or video URL
-                      <Input
-                        value={draft.demoUrl}
-                        onChange={(event) => updateDraft("demoUrl", event.target.value)}
-                        placeholder="https://..."
-                      />
-                    </label>
+                    <div className="grid gap-3 rounded-[1.35rem] border border-stone-200 bg-white/70 p-4">
+                      <div className="grid gap-4 md:grid-cols-[12rem_minmax(0,1fr)] md:items-start">
+                        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-stone-200 bg-stone-100">
+                          {draft.demoUrl && isImageSource(draft.demoUrl) ? (
+                            <div
+                              role="img"
+                              aria-label="Exercise demo preview"
+                              className="h-full bg-cover bg-center"
+                              style={{ backgroundImage: `url(${JSON.stringify(draft.demoUrl)})` }}
+                            />
+                          ) : (
+                            <div className="grid h-full place-items-center text-center text-sm text-stone-500">
+                              <div>
+                                <ImagePlus className="mx-auto size-7 text-stone-400" />
+                                <p className="mt-2 px-3">No image selected</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="grid gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-charcoal-950">Demo media</p>
+                            <p className="mt-1 text-xs leading-5 text-stone-500">
+                              Upload a trainer-shot image, or keep using an external URL.
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button asChild type="button" variant="secondary" size="sm">
+                              <label className="cursor-pointer focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-bronze-500 focus-within:ring-4 focus-within:ring-bronze-100">
+                                <ImagePlus className="size-4" />
+                                Upload image
+                                <input
+                                  className="sr-only"
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(event) => void updateDemoFile(event.target.files?.[0] ?? null)}
+                                />
+                              </label>
+                            </Button>
+                            {draft.demoUrl ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  updateDraft("demoUrl", "");
+                                  setPendingDemoFile(null);
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            ) : null}
+                          </div>
+                          <label className="grid gap-2 text-sm font-medium">
+                            Image or video URL
+                            <Input
+                              value={draft.demoUrl}
+                              onChange={(event) => {
+                                updateDraft("demoUrl", event.target.value);
+                                setPendingDemoFile(null);
+                              }}
+                              placeholder="https://..."
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
 
                     <div className="flex flex-col-reverse gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:justify-between">
                       <div className="text-sm text-stone-500">
