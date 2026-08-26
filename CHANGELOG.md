@@ -8,6 +8,44 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.11.8] - 2026-08-26
+
+- Removed the Exercise Library intro and summary metrics so library tools start higher on the page.
+
+## [0.11.7] - 2026-08-26
+
+- Tightened the Workout Builder landing page spacing after removing the right-side panel.
+
+## [0.11.6] - 2026-08-26
+
+- Simplified the Workout Builder landing page by removing the eyebrow and right-side sequence panel.
+
+## [0.11.5] - 2026-08-26
+
+- Redesigned the Workout Builder landing page as a lighter builder canvas with an integrated exercise-to-workout-to-plan path.
+
+## [0.11.4] - 2026-08-26
+
+- Removed the extra workflow navigation strip from the Workout Builder landing page.
+
+## [0.11.3] - 2026-08-26
+
+- Reworked the Workout Builder landing page to remove redundant explanatory cards and replace them with a compact workflow navigation strip.
+
+## [0.11.2] - 2026-08-26
+
+- Expanded the Workout Builder landing page copy to explain the exercise-to-workout-to-plan building-block workflow.
+
+## [0.11.1] - 2026-08-26
+
+- Reflowed the trainer workout editor so the new Workout Builder rail no longer pushes the workout details panel off-screen.
+
+## [0.11.0] - 2026-08-26
+
+- Simplified the trainer navigation to Dashboard, Clients, Calendar, Messages, Bulletin Board, Workout Builder, and Settings.
+- Added a trainer Workout Builder hub page with clear entry points for Exercise Library, Workouts, and Training Plans.
+- Added a shared left-rail subnav across Exercise Library, Workouts, Training Plans, and exercise detail pages.
+
 ## [0.10.0] - 2026-08-26
 
 - Removed the standalone trainer Progress page and nav item so trainer progress review stays client-specific.

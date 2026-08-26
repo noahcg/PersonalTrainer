@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { TrainerWorkoutBuilderNav } from "@/components/product/trainer-workout-builder-nav";
 import { TrainerWorkoutBuilder } from "@/components/product/trainer-workout-builder";
 import { getTrainerExercises } from "@/lib/exercises";
 import { getTrainerPlanOptions, getTrainerWorkouts } from "@/lib/workouts";
@@ -11,8 +12,10 @@ export default async function WorkoutsPage() {
   ]);
 
   return (
-    <AppShell role="trainer" title="Workout builder" subtitle="Compose warm-ups, main blocks, accessories, finishers, cooldowns, and exercise prescriptions with coach-grade detail.">
-      <TrainerWorkoutBuilder initialWorkouts={workouts} exercises={exercises} plans={plans} mode={mode} />
+    <AppShell role="trainer" title="Workouts" subtitle="Compose warm-ups, main blocks, accessories, finishers, cooldowns, and exercise prescriptions with coach-grade detail.">
+      <TrainerWorkoutBuilderNav>
+        <TrainerWorkoutBuilder initialWorkouts={workouts} exercises={exercises} plans={plans} mode={mode} />
+      </TrainerWorkoutBuilderNav>
     </AppShell>
   );
 }

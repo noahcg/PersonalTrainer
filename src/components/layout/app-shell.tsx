@@ -10,14 +10,13 @@ import {
   CalendarDays,
   Dumbbell,
   Home,
-  Library,
   LogOut,
   Megaphone,
   MessageCircle,
-  Package,
   Settings,
   TrendingUp,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { clients as demoClients, messages as demoMessages } from "@/lib/demo-data";
@@ -32,21 +31,29 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { NGLogoLockup } from "@/components/brand/ng-logo";
 
-const trainerNav = [
+type AppNavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  matchHrefs?: string[];
+};
+
+const trainerNav: AppNavItem[] = [
   { href: "/trainer/dashboard", label: "Dashboard", icon: Home },
-  { href: "/trainer/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/trainer/bulletin", label: "Bulletin Board", icon: Megaphone },
   { href: "/trainer/clients", label: "Clients", icon: Users },
-  { href: "/trainer/packages", label: "Packages", icon: Package },
+  { href: "/trainer/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/trainer/messages", label: "Messages", icon: MessageCircle },
-  { href: "/trainer/plans", label: "Training Plans", icon: CalendarCheck },
-  { href: "/trainer/workouts", label: "Workouts", icon: Dumbbell },
-  { href: "/trainer/exercises", label: "Exercise Library", icon: Library },
-  { href: "/trainer/resources", label: "Resources", icon: BookOpen },
+  { href: "/trainer/bulletin", label: "Bulletin Board", icon: Megaphone },
+  {
+    href: "/trainer/workout-builder",
+    label: "Workout Builder",
+    icon: Dumbbell,
+    matchHrefs: ["/trainer/workout-builder", "/trainer/exercises", "/trainer/workouts", "/trainer/plans"],
+  },
   { href: "/trainer/settings", label: "Settings", icon: Settings },
 ];
 
-const clientNav = [
+const clientNav: AppNavItem[] = [
   { href: "/client/home", label: "Home", icon: Home },
   { href: "/client/bulletin", label: "Bulletin", icon: Megaphone },
   { href: "/client/messages", label: "Messages", icon: MessageCircle },
@@ -350,7 +357,7 @@ export function AppShell({
               </div>
             ) : (
               nav.map((item) => {
-                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const active = (item.matchHrefs ?? [item.href]).some((href) => pathname === href || pathname.startsWith(`${href}/`));
                 const Icon = item.icon;
                 return (
                   <Link
@@ -441,7 +448,7 @@ export function AppShell({
         >
           {nav.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const active = (item.matchHrefs ?? [item.href]).some((href) => pathname === href || pathname.startsWith(`${href}/`));
             return (
               <Link
                 key={item.href}
