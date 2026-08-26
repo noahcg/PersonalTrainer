@@ -8,6 +8,22 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.12.4] - 2026-08-26
+
+- Let trainers customize reference exercises by saving trainer-owned copies instead of showing locked rows.
+
+## [0.12.3] - 2026-08-26
+
+- Changed the Exercise Library from large row tiles to a compact equal-height index layout.
+
+## [0.12.2] - 2026-08-26
+
+- Reworked the Exercise Library into equal-height catalog rows instead of card tiles.
+
+## [0.12.1] - 2026-08-26
+
+- Redesigned Exercise Library cards with sharper tiles and integrated edit actions.
+
 ## [0.12.0] - 2026-08-26
 
 - Added trainer exercise image uploads so self-shot demo photos can be saved to exercise media instead of requiring an external URL.

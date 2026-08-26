@@ -2,8 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { ImagePlus, Layers3, PencilLine, Plus, Search, X } from "lucide-react";
-import Link from "next/link";
+import { ImagePlus, Layers3, Plus, Search, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ExerciseCard } from "@/components/product/exercise-card";
 import { Badge } from "@/components/ui/badge";
@@ -123,6 +122,7 @@ export function ExerciseLibrary({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DraftExercise>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [customizingReferenceName, setCustomizingReferenceName] = useState<string | null>(null);
   const [pendingDemoFile, setPendingDemoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -216,6 +216,29 @@ export function ExerciseLibrary({
       tags: exercise.tags.join(", "),
     });
     setPendingDemoFile(null);
+  }
+
+  function beginEditingExercise(exercise: Exercise) {
+    const isDirectlyEditable = exercise.editable ?? mode === "demo";
+
+    populateDraft(exercise);
+    setEditingId(isDirectlyEditable ? exercise.id : null);
+    setCustomizingReferenceName(isDirectlyEditable ? null : exercise.name);
+    setOpen(true);
+  }
+
+  function resetDialogState() {
+    setDraft(emptyDraft);
+    setEditingId(null);
+    setCustomizingReferenceName(null);
+    setPendingDemoFile(null);
+  }
+
+  function handleDialogOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      resetDialogState();
+    }
   }
 
   async function updateDemoFile(file: File | null) {
@@ -338,9 +361,10 @@ export function ExerciseLibrary({
       }
       setDraft(emptyDraft);
       setEditingId(null);
+      setCustomizingReferenceName(null);
       setPendingDemoFile(null);
       setOpen(false);
-      setMessage(editingId ? "Exercise updated." : "Exercise created.");
+      setMessage(editingId ? "Exercise updated." : customizingReferenceName ? "Custom exercise saved." : "Exercise created.");
       window.setTimeout(() => setMessage(null), 2400);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save exercise.");
@@ -363,14 +387,12 @@ export function ExerciseLibrary({
                 className="pl-11"
               />
             </div>
-          <Dialog.Root open={open} onOpenChange={setOpen}>
+          <Dialog.Root open={open} onOpenChange={handleDialogOpenChange}>
             <Dialog.Trigger asChild>
               <Button
                 variant="warm"
                 onClick={() => {
-                  setDraft(emptyDraft);
-                  setEditingId(null);
-                  setPendingDemoFile(null);
+                  resetDialogState();
                 }}
               >
                 <Plus className="size-4" />
@@ -389,11 +411,13 @@ export function ExerciseLibrary({
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <Dialog.Title className="font-serif text-4xl font-semibold text-charcoal-950">
-                        {editingId ? "Edit exercise" : "Create exercise"}
+                        {editingId ? "Edit exercise" : customizingReferenceName ? "Customize exercise" : "Create exercise"}
                       </Dialog.Title>
                       <Dialog.Description className="mt-2 text-sm leading-6 text-stone-600">
                         {editingId
                           ? "Refine the coaching reference clients see when they need a reminder."
+                          : customizingReferenceName
+                            ? `Start from ${customizingReferenceName} and save your own trainer-owned version.`
                           : "Add enough context for a client to execute the movement safely and confidently."}
                       </Dialog.Description>
                     </div>
@@ -576,14 +600,18 @@ export function ExerciseLibrary({
 
                     <div className="flex flex-col-reverse gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:justify-between">
                       <div className="text-sm text-stone-500">
-                        {editingId ? "Review the changes before saving." : "Add the details your clients need to follow this exercise."}
+                        {editingId
+                          ? "Review the changes before saving."
+                          : customizingReferenceName
+                            ? "This will save as your own editable exercise."
+                            : "Add the details your clients need to follow this exercise."}
                       </div>
                       <div className="flex flex-col-reverse gap-3 sm:flex-row">
                       <Dialog.Close asChild>
                         <Button type="button" variant="secondary">Cancel</Button>
                       </Dialog.Close>
                       <Button type="submit" variant="warm" disabled={saving}>
-                        {saving ? "Saving..." : editingId ? "Save changes" : "Create exercise"}
+                        {saving ? "Saving..." : editingId ? "Save changes" : customizingReferenceName ? "Save custom copy" : "Create exercise"}
                       </Button>
                       </div>
                     </div>
@@ -611,37 +639,29 @@ export function ExerciseLibrary({
       </Card>
 
       {visibleExercises.length > 0 ? (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <div className="overflow-hidden border-y border-stone-200/90">
+          <div className="hidden h-10 grid-cols-[5rem_minmax(0,1.4fr)_minmax(8rem,0.75fr)_minmax(8rem,0.8fr)_minmax(7rem,0.65fr)_3rem] items-center gap-3 border-b border-stone-200/90 bg-stone-50/55 px-2 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-stone-500 lg:grid">
+            <span>Demo</span>
+            <span>Exercise</span>
+            <span>Category</span>
+            <span>Muscles</span>
+            <span>Equipment</span>
+            <span className="sr-only">Actions</span>
+          </div>
           {visibleExercises.map((exercise, index) => (
             <motion.div
               key={exercise.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(index * 0.035, 0.2) }}
+              className="h-24"
             >
-              <div className="space-y-3">
-                <Link href={`/trainer/exercises/${exercise.id}`} className="block">
-                  <ExerciseCard exercise={exercise} />
-                </Link>
-                {exercise.editable ?? mode === "demo" ? (
-                  <Button
-                    variant="secondary"
-                    className="w-full rounded-2xl"
-                    onClick={() => {
-                      populateDraft(exercise);
-                      setEditingId(exercise.id);
-                      setOpen(true);
-                    }}
-                  >
-                    <PencilLine className="size-4" />
-                    Edit exercise
-                  </Button>
-                ) : (
-                  <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm text-stone-500">
-                    Global reference exercise
-                  </div>
-                )}
-              </div>
+              <ExerciseCard
+                exercise={exercise}
+                href={`/trainer/exercises/${exercise.id}`}
+                canEdit={exercise.editable ?? mode === "demo"}
+                onEdit={() => beginEditingExercise(exercise)}
+              />
             </motion.div>
           ))}
         </div>
