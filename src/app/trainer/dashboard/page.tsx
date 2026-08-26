@@ -10,6 +10,7 @@ import { getTrainerCalendarData } from "@/lib/appointments";
 import { formatBulletinLocation } from "@/lib/bulletin-location";
 import { getTrainerBulletins } from "@/lib/bulletins";
 import { getTrainerCheckInData } from "@/lib/checkins";
+import { formatScheduledDateTime } from "@/lib/date-format";
 import type { CalendarEvent } from "@/lib/types";
 import { getTrainerWorkoutCheckIns } from "@/lib/workouts";
 
@@ -21,13 +22,7 @@ const nextEventCardCopy: Record<CalendarEvent["type"], { eyebrow: string; label:
 };
 
 function formatNextAppointmentDate(iso: string) {
-  return new Date(iso).toLocaleString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatScheduledDateTime(iso, { weekday: "long", month: "long" });
 }
 
 export default async function TrainerDashboardPage() {

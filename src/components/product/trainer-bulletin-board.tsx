@@ -11,6 +11,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
 import { applyStoredReminderSettings, archiveStoredBulletinId, deleteStoredBulletinId, writeStoredReminderSettings } from "@/lib/bulletin-reminder-storage";
 import { emptyBulletinLocationDetails, formatBulletinLocation, isValidMapUrl, normalizeBulletinLocationDetails } from "@/lib/bulletin-location";
+import { formatScheduledDateTime } from "@/lib/date-format";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { BulletinPost } from "@/lib/types";
 
@@ -29,14 +30,7 @@ type ComposerErrors = {
 
 function formatSessionDate(value?: string | null) {
   if (!value) return null;
-  return new Date(value).toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "America/New_York",
-  });
+  return formatScheduledDateTime(value, { weekday: "short", month: "short" });
 }
 
 type SavedBulletinRow = {

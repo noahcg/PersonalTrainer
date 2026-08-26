@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { readStoredDemoAppointments, writeStoredDemoAppointments } from "@/lib/demo-appointment-storage";
+import { appTimeZone, formatScheduledTime } from "@/lib/date-format";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, TrainerAppointment } from "@/lib/types";
@@ -92,15 +93,11 @@ function eventDateKey(event: CalendarEvent | TrainerAppointment) {
 }
 
 function formatEventTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
+  return formatScheduledTime(iso, { timeZoneName: "short" });
 }
 
 function localTimeZoneLabel() {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone.replaceAll("_", " ");
+  return appTimeZone.replaceAll("_", " ");
 }
 
 function formatReminderLead(minutes: number) {

@@ -6,6 +6,7 @@ import { CalendarCheck, Clock3, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { applyStoredReminderSettings, filterArchivedBulletins } from "@/lib/bulletin-reminder-storage";
+import { formatScheduledDateTime } from "@/lib/date-format";
 import type { BulletinPost, Role } from "@/lib/types";
 
 const bulletinStorageKey = "nick-glushien-bulletins";
@@ -15,14 +16,7 @@ const demoClient = { id: "mara-lee", name: "Mara Lee" };
 
 function formatSessionDate(value?: string | null) {
   if (!value) return "Timing pending";
-  return new Date(value).toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "America/New_York",
-  });
+  return formatScheduledDateTime(value, { weekday: "short", month: "short" });
 }
 
 function formatReminderLead(minutes: number) {

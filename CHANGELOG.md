@@ -8,6 +8,10 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.9.1] - 2026-08-26
+
+- Fixed dashboard and schedule displays so saved trainer calendar times render in the app timezone consistently across development and production.
+
 ## [0.9.0] - 2026-08-26
 
 - Added trainer-only calendar items so trainers can block work time for client management, workout building, demo media, or any other freeform task.

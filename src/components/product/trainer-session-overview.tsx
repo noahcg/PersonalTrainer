@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBulletinLocation, normalizeBulletinLocationDetails } from "@/lib/bulletin-location";
 import { filterArchivedBulletins } from "@/lib/bulletin-reminder-storage";
+import { formatScheduledDateTime } from "@/lib/date-format";
 import type { BulletinPost } from "@/lib/types";
 
 const storageKey = "nick-glushien-bulletins";
@@ -16,14 +17,7 @@ const demoClient = { id: "mara-lee", name: "Mara Lee" };
 
 function formatSessionDate(value?: string | null) {
   if (!value) return null;
-  return new Date(value).toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "America/New_York",
-  });
+  return formatScheduledDateTime(value, { weekday: "short", month: "short" });
 }
 
 function hydrateRsvps(posts: BulletinPost[], rawStorage: string | null) {
