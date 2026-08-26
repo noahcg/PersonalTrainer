@@ -124,7 +124,7 @@ export async function getTrainerCalendarData(): Promise<{
   const appointments = appointmentRows.map(mapAppointmentRow);
   const events: CalendarEvent[] = appointments.map((appt) => ({
     id: `appt-${appt.id}`,
-    type: "appointment",
+    type: appt.clientId ? "appointment" : "calendar_item",
     title: appt.title,
     startsAtIso: appt.startsAtIso,
     durationMinutes: appt.durationMinutes,
