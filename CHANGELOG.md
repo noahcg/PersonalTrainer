@@ -20,6 +20,7 @@ This project uses pre-1.0 semver until intentional launch:
 - Refined the trainer calendar month header styling with lighter navigation controls and cleaner hierarchy.
 - Redesigned the selected-day event count as quieter agenda metadata instead of a rounded badge.
 - Fixed selected-day event cards so edit and delete actions stay aligned in the top-right corner.
+- Fixed duplicate planning-session events after creating or hydrating trainer calendar items.
 
 ## [0.8.15] - 2026-08-24
 

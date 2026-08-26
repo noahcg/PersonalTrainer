@@ -156,6 +156,10 @@ function appointmentToEvent(appointment: TrainerAppointment): CalendarEvent {
   };
 }
 
+function isAppointmentBackedEvent(event: CalendarEvent) {
+  return event.type === "appointment" || event.type === "calendar_item";
+}
+
 export function TrainerCalendar({
   mode,
   initialAppointments,
@@ -182,7 +186,7 @@ export function TrainerCalendar({
     if (!stored.length) return;
     setAppointments(stored);
     setEvents((current) => {
-      const withoutOldAppointments = current.filter((event) => event.type !== "appointment");
+      const withoutOldAppointments = current.filter((event) => !isAppointmentBackedEvent(event));
       return [...withoutOldAppointments, ...stored.map(appointmentToEvent)];
     });
   });
@@ -243,7 +247,7 @@ export function TrainerCalendar({
   async function persistAppointments(next: TrainerAppointment[]) {
     setAppointments(next);
     setEvents((current) => {
-      const others = current.filter((event) => event.type !== "appointment");
+      const others = current.filter((event) => !isAppointmentBackedEvent(event));
       return [...others, ...next.map(appointmentToEvent)];
     });
     if (mode === "demo") {
