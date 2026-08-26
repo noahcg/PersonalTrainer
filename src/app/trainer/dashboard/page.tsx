@@ -13,10 +13,11 @@ import { getTrainerCheckInData } from "@/lib/checkins";
 import type { CalendarEvent } from "@/lib/types";
 import { getTrainerWorkoutCheckIns } from "@/lib/workouts";
 
-const eventTypeLabel: Record<CalendarEvent["type"], string> = {
-  appointment: "Appointment",
-  bulletin_session: "Bulletin session",
-  in_person_session: "In-person session",
+const nextEventCardCopy: Record<CalendarEvent["type"], { eyebrow: string; label: string }> = {
+  appointment: { eyebrow: "Next appointment", label: "Appointment" },
+  calendar_item: { eyebrow: "Next calendar item", label: "Planning session" },
+  bulletin_session: { eyebrow: "Next bulletin session", label: "Bulletin session" },
+  in_person_session: { eyebrow: "Next in-person session", label: "In-person session" },
 };
 
 function formatNextAppointmentDate(iso: string) {
@@ -54,6 +55,7 @@ export default async function TrainerDashboardPage() {
   const appointmentBulletinLocation = appointmentBulletin
     ? formatBulletinLocation(appointmentBulletin.sessionLocationDetails, appointmentBulletin.sessionLocation)
     : null;
+  const nextEventCopy = nextEvent ? nextEventCardCopy[nextEvent.type] : null;
 
   return (
     <AppShell
@@ -72,9 +74,11 @@ export default async function TrainerDashboardPage() {
                   <CalendarDays className="size-5" />
                 </div>
                 <div>
-                  <p className="text-[0.66rem] font-semibold uppercase tracking-[0.3em] text-bronze-200">Next appointment</p>
+                  <p className="text-[0.66rem] font-semibold uppercase tracking-[0.3em] text-bronze-200">
+                    {nextEventCopy?.eyebrow ?? "Next on calendar"}
+                  </p>
                   <p className="mt-1 font-serif text-xl font-semibold">
-                    {nextEvent ? eventTypeLabel[nextEvent.type] : "Nothing scheduled"}
+                    {nextEventCopy?.label ?? "Nothing scheduled"}
                   </p>
                 </div>
               </div>
@@ -115,7 +119,7 @@ export default async function TrainerDashboardPage() {
                 </div>
               ) : (
                 <p className="max-w-xl text-sm leading-6 text-ivory-50/65">
-                  Your calendar is open. Add a client appointment or schedule a session to see it here.
+                  Your calendar is open. Add a client appointment, trainer-only work block, or scheduled session to see it here.
                 </p>
               )}
 

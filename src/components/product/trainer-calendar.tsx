@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { BellRing, CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Megaphone, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
+import { BellRing, BriefcaseBusiness, CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Megaphone, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import type { CalendarEvent, TrainerAppointment } from "@/lib/types";
 type Mode = "demo" | "supabase";
 
 type ClientOption = { id: string; name: string };
+type CalendarItemKind = "planning_session" | "client_appointment";
 
 type AppointmentInput = {
   title: string;
@@ -44,10 +45,16 @@ const eventTypeMeta: Record<
   { label: string; tone: string; dot: string; chip: string }
 > = {
   appointment: {
-    label: "Appointment",
-    tone: "Trainer-scheduled appointment",
+    label: "Client appointment",
+    tone: "Client-linked appointment",
     dot: "bg-bronze-500",
     chip: "bg-bronze-100 text-bronze-800 border-bronze-200",
+  },
+  calendar_item: {
+    label: "Calendar item",
+    tone: "Trainer-only work block",
+    dot: "bg-sky-500",
+    chip: "bg-sky-100 text-sky-800 border-sky-200",
   },
   bulletin_session: {
     label: "Bulletin session",
@@ -136,7 +143,7 @@ function buildMonthGrid(anchor: Date) {
 function appointmentToEvent(appointment: TrainerAppointment): CalendarEvent {
   return {
     id: `appt-${appointment.id}`,
-    type: "appointment",
+    type: appointment.clientId ? "appointment" : "calendar_item",
     title: appointment.title,
     startsAtIso: appointment.startsAtIso,
     durationMinutes: appointment.durationMinutes,
@@ -147,6 +154,10 @@ function appointmentToEvent(appointment: TrainerAppointment): CalendarEvent {
     reminderOffsetsMinutes: appointment.reminderOffsetsMinutes,
     status: appointment.status,
   };
+}
+
+function isAppointmentBackedEvent(event: CalendarEvent) {
+  return event.type === "appointment" || event.type === "calendar_item";
 }
 
 export function TrainerCalendar({
@@ -175,7 +186,7 @@ export function TrainerCalendar({
     if (!stored.length) return;
     setAppointments(stored);
     setEvents((current) => {
-      const withoutOldAppointments = current.filter((event) => event.type !== "appointment");
+      const withoutOldAppointments = current.filter((event) => !isAppointmentBackedEvent(event));
       return [...withoutOldAppointments, ...stored.map(appointmentToEvent)];
     });
   });
@@ -236,7 +247,7 @@ export function TrainerCalendar({
   async function persistAppointments(next: TrainerAppointment[]) {
     setAppointments(next);
     setEvents((current) => {
-      const others = current.filter((event) => event.type !== "appointment");
+      const others = current.filter((event) => !isAppointmentBackedEvent(event));
       return [...others, ...next.map(appointmentToEvent)];
     });
     if (mode === "demo") {
@@ -352,7 +363,7 @@ export function TrainerCalendar({
       }
 
       setSelectedDateKey(eventDateKey({ startsAtIso: input.startsAtIso } as CalendarEvent));
-      flashMessage("Appointment added to your calendar.");
+      flashMessage(input.clientId ? "Appointment added to your calendar." : "Calendar item added.");
       setDialogOpen(false);
       return { ok: true };
     } catch (error) {
@@ -442,7 +453,7 @@ export function TrainerCalendar({
       }
 
       setSelectedDateKey(eventDateKey({ startsAtIso: input.startsAtIso } as CalendarEvent));
-      flashMessage("Appointment updated.");
+      flashMessage(input.clientId ? "Appointment updated." : "Calendar item updated.");
       setEditingAppointment(null);
       setDialogOpen(false);
       return { ok: true };
@@ -463,7 +474,7 @@ export function TrainerCalendar({
   }
 
   async function deleteAppointment(appointmentId: string) {
-    if (!window.confirm("Remove this appointment from your calendar?")) return;
+    if (!window.confirm("Remove this calendar item?")) return;
     setBusy(true);
     try {
       if (mode === "supabase") {
@@ -473,7 +484,7 @@ export function TrainerCalendar({
       }
       const next = appointments.filter((appt) => appt.id !== appointmentId);
       await persistAppointments(next);
-      flashMessage("Appointment removed.");
+      flashMessage("Calendar item removed.");
     } catch (error) {
       flashMessage(error instanceof Error ? error.message : "Unable to remove appointment.");
     } finally {
@@ -492,30 +503,17 @@ export function TrainerCalendar({
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">Schedule</p>
-                <h2 className="font-serif text-2xl font-semibold text-charcoal-950">{monthLabel}</h2>
+                <h2 className="font-serif text-2xl font-semibold text-charcoal-950">Calendar workspace</h2>
               </div>
             </div>
             <p className="mt-3 text-sm leading-6 text-stone-500">
-              Appointments you create, in-person session logs, and bulletin-board sessions are merged here.
+              Client appointments, trainer-only work blocks, in-person session logs, and bulletin-board sessions are merged here.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="icon" aria-label="Previous month" onClick={() => setAnchor((current) => addMonths(current, -1))}>
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => {
-              const today = new Date();
-              setAnchor(startOfMonth(today));
-              setSelectedDateKey(isoDateKey(today));
-            }}>
-              Today
-            </Button>
-            <Button variant="secondary" size="icon" aria-label="Next month" onClick={() => setAnchor((current) => addMonths(current, 1))}>
-              <ChevronRight className="size-4" />
-            </Button>
+          <div className="flex items-center gap-2 sm:self-start">
             <Button variant="warm" onClick={openNewAppointment}>
               <Plus className="size-4" />
-              New appointment
+              New item
             </Button>
           </div>
         </div>
@@ -532,7 +530,45 @@ export function TrainerCalendar({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Card className="overflow-hidden p-3 sm:p-4">
-          <div className="grid grid-cols-7 border-b border-stone-200 pb-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+          <div className="flex flex-col gap-3 border-b border-stone-200 px-1 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-2">
+            <div className="min-w-0">
+              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-bronze-600">Month view</p>
+              <p className="mt-1 truncate font-serif text-2xl font-semibold text-charcoal-950 sm:text-3xl">{monthLabel}</p>
+            </div>
+            <div className="inline-flex w-full items-center justify-between gap-2 rounded-full border border-stone-200 bg-white/75 p-1 shadow-[0_10px_28px_rgba(41,37,36,0.05)] sm:w-auto">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-9 shrink-0 hover:bg-stone-50"
+                aria-label="Previous month"
+                onClick={() => setAnchor((current) => addMonths(current, -1))}
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-9 min-w-20 bg-stone-50 px-4 text-xs ring-stone-200 hover:bg-ivory-50"
+                onClick={() => {
+                  const today = new Date();
+                  setAnchor(startOfMonth(today));
+                  setSelectedDateKey(isoDateKey(today));
+                }}
+              >
+                Today
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-9 shrink-0 hover:bg-stone-50"
+                aria-label="Next month"
+                onClick={() => setAnchor((current) => addMonths(current, 1))}
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-7 pt-3 pb-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
             {weekDayLabels.map((label) => (
               <div key={label} className="py-2">
                 {label}
@@ -588,19 +624,22 @@ export function TrainerCalendar({
 
         <div className="space-y-5">
           <Card className="p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[0.66rem] font-semibold uppercase tracking-[0.28em] text-bronze-600">Selected day</p>
-                <p className="mt-1 font-serif text-xl font-semibold text-charcoal-950">{formatLongDate(selectedDate)}</p>
+            <div>
+              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.28em] text-bronze-600">Selected day</p>
+              <p className="mt-1 font-serif text-xl font-semibold leading-tight text-charcoal-950">{formatLongDate(selectedDate)}</p>
+              <div className="mt-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                <span className={cn("size-2 rounded-full", selectedEvents.length ? "bg-bronze-500" : "bg-stone-300")} />
+                <span>
+                  {selectedEvents.length
+                    ? `${selectedEvents.length} ${selectedEvents.length === 1 ? "event" : "events"} scheduled`
+                    : "No events scheduled"}
+                </span>
               </div>
-              <Badge variant={selectedEvents.length ? "bronze" : "default"}>
-                {selectedEvents.length} {selectedEvents.length === 1 ? "event" : "events"}
-              </Badge>
             </div>
             <div className="mt-4 space-y-3">
               {selectedEvents.length === 0 ? (
                 <p className="rounded-[1.25rem] bg-stone-50 px-4 py-4 text-sm leading-6 text-stone-600">
-                  Nothing scheduled. Click <span className="font-semibold">New appointment</span> to add one for this day.
+                  Nothing scheduled. Click <span className="font-semibold">New item</span> to add one for this day.
                 </p>
               ) : (
                 selectedEvents.map((event) => (
@@ -616,7 +655,7 @@ export function TrainerCalendar({
             <div className="mt-4 space-y-3">
               {upcomingEvents.length === 0 ? (
                 <p className="rounded-[1.25rem] bg-stone-50 px-4 py-4 text-sm leading-6 text-stone-600">
-                  No upcoming events. Add an appointment to get started.
+                  No upcoming events. Add a calendar item to get started.
                 </p>
               ) : (
                 upcomingEvents.map((event) => (
@@ -673,10 +712,10 @@ function EventRow({
   busy: boolean;
 }) {
   const meta = eventTypeMeta[event.type];
-  const isAppointment = event.type === "appointment";
+  const isTrainerEditableItem = event.type === "appointment" || event.type === "calendar_item";
   return (
-    <div className="rounded-[1.25rem] border border-stone-200 bg-white/82 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className={cn("relative rounded-[1.25rem] border border-stone-200 bg-white/82 p-4", isTrainerEditableItem && "pr-24")}>
+      <div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold", meta.chip)}>
@@ -711,7 +750,13 @@ function EventRow({
                 Bulletin invite
               </span>
             ) : null}
-            {isAppointment && event.clientId && event.reminderOffsetsMinutes?.length ? (
+            {event.type === "calendar_item" ? (
+              <span className="inline-flex items-center gap-1.5">
+                <BriefcaseBusiness className="size-3.5" />
+                Trainer-only
+              </span>
+            ) : null}
+            {event.type === "appointment" && event.clientId && event.reminderOffsetsMinutes?.length ? (
               <span className="inline-flex items-center gap-1.5">
                 <BellRing className="size-3.5" />
                 Client reminder {event.reminderOffsetsMinutes.map(formatReminderLead).join(", ")}
@@ -720,12 +765,12 @@ function EventRow({
           </div>
           {event.notes ? <p className="mt-3 text-sm leading-6 text-stone-600">{event.notes}</p> : null}
         </div>
-        {isAppointment ? (
-          <div className="flex items-center gap-1">
+        {isTrainerEditableItem ? (
+          <div className="absolute right-3 top-3 flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
-              aria-label="Edit appointment"
+              aria-label="Edit calendar item"
               disabled={busy}
               onClick={() => onEdit(event.id.replace(/^appt-/, ""))}
             >
@@ -734,7 +779,7 @@ function EventRow({
             <Button
               variant="ghost"
               size="sm"
-              aria-label="Remove appointment"
+              aria-label="Remove calendar item"
               disabled={busy}
               onClick={() => void onDelete(event.id.replace(/^appt-/, ""))}
             >
@@ -796,6 +841,7 @@ function AppointmentDialog({
   const [duration, setDuration] = useState("60");
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
+  const [itemKind, setItemKind] = useState<CalendarItemKind>("planning_session");
   const [clientId, setClientId] = useState<string>("");
   const [reminderOffsets, setReminderOffsets] = useState<number[]>([60]);
   const [error, setError] = useState<string | null>(null);
@@ -809,6 +855,7 @@ function AppointmentDialog({
       setDuration(String(appointment.durationMinutes));
       setLocation(appointment.location);
       setNotes(appointment.notes);
+      setItemKind(appointment.clientId ? "client_appointment" : "planning_session");
       setClientId(appointment.clientId ?? "");
       setReminderOffsets(normalizeReminderOffsets(appointment.reminderOffsetsMinutes ?? []));
       setError(null);
@@ -821,6 +868,7 @@ function AppointmentDialog({
     setDuration("60");
     setLocation("");
     setNotes("");
+    setItemKind("planning_session");
     setClientId("");
     setReminderOffsets([60]);
     setError(null);
@@ -832,7 +880,9 @@ function AppointmentDialog({
     return () => window.clearTimeout(timeout);
   }, [open]);
 
-  const selectedClient = clientOptions.find((option) => option.id === clientId) ?? null;
+  const selectedClient = itemKind === "client_appointment"
+    ? clientOptions.find((option) => option.id === clientId) ?? null
+    : null;
 
   function toggleReminderOffset(minutes: number) {
     setReminderOffsets((current) => {
@@ -848,7 +898,11 @@ function AppointmentDialog({
     setError(null);
     const trimmedTitle = title.trim() || (selectedClient ? `Session with ${selectedClient.name}` : "");
     if (!trimmedTitle) {
-      setError("Add a title or select a client.");
+      setError("Add a title.");
+      return;
+    }
+    if (itemKind === "client_appointment" && !selectedClient) {
+      setError("Select a client for this appointment.");
       return;
     }
     if (!date || !time) {
@@ -893,12 +947,12 @@ function AppointmentDialog({
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <Dialog.Title className="text-xl font-semibold text-charcoal-950">
-                    {appointment ? "Edit appointment" : "New appointment"}
+                    {appointment ? "Edit calendar item" : "New calendar item"}
                   </Dialog.Title>
                   <Dialog.Description className="mt-1 text-sm leading-6 text-stone-600">
                     {appointment
-                      ? "Update the time, client, location, or notes for this calendar appointment."
-                      : "Block out time with a client or save a personal note on your calendar."}
+                      ? "Update the time, client, location, or notes for this calendar item."
+                      : "Add a client appointment or block off trainer-only work time."}
                   </Dialog.Description>
                 </div>
                 <Dialog.Close asChild>
@@ -915,7 +969,7 @@ function AppointmentDialog({
                   </label>
                   <Input
                     id="appointment-title"
-                    placeholder={selectedClient ? `Session with ${selectedClient.name}` : "Strength block, intake call, etc."}
+                    placeholder={itemKind === "client_appointment" && selectedClient ? `Session with ${selectedClient.name}` : "Client management, workout build, demo media, etc."}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="mt-2"
@@ -923,23 +977,49 @@ function AppointmentDialog({
                 </div>
 
                 <div>
-                  <label htmlFor="appointment-client" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    Client (optional)
+                  <label htmlFor="appointment-kind" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                    Event
                   </label>
                   <select
-                    id="appointment-client"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
+                    id="appointment-kind"
+                    value={itemKind}
+                    onChange={(e) => {
+                      const nextKind = e.target.value as CalendarItemKind;
+                      setItemKind(nextKind);
+                      if (nextKind === "planning_session") {
+                        setClientId("");
+                        setReminderOffsets([]);
+                      } else if (!reminderOffsets.length) {
+                        setReminderOffsets([60]);
+                      }
+                    }}
                     className="mt-2 h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm text-charcoal-950 shadow-inner-soft focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
                   >
-                    <option value="">No client (personal block)</option>
-                    {clientOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.name}
-                      </option>
-                    ))}
+                    <option value="planning_session">Planning session</option>
+                    <option value="client_appointment">Client appointment</option>
                   </select>
                 </div>
+
+                {itemKind === "client_appointment" ? (
+                  <div>
+                    <label htmlFor="appointment-client" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                      Client
+                    </label>
+                    <select
+                      id="appointment-client"
+                      value={clientId}
+                      onChange={(e) => setClientId(e.target.value)}
+                      className="mt-2 h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm text-charcoal-950 shadow-inner-soft focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
+                    >
+                      <option value="">Select a client</option>
+                      {clientOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
 
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div>
@@ -973,11 +1053,11 @@ function AppointmentDialog({
 
                 <div>
                   <label htmlFor="appointment-location" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    Location
+                    Location (optional)
                   </label>
                   <Input
                     id="appointment-location"
-                    placeholder="Studio, virtual, gym, etc."
+                    placeholder="Studio, virtual, desk work, gym, etc."
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="mt-2"
@@ -990,47 +1070,46 @@ function AppointmentDialog({
                   </label>
                   <Textarea
                     id="appointment-notes"
-                    placeholder="Focus, equipment to prep, or anything to remember."
+                    placeholder="Focus, prep details, links to gather, or anything to remember."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     className="mt-2"
                   />
                 </div>
 
-                <div>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <label className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                      Client reminders
-                    </label>
-                    <span className="text-xs text-stone-500">
-                      {selectedClient ? selectedClient.name : "Select a client to enable"}
-                    </span>
+                {selectedClient ? (
+                  <div>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                        Client reminders
+                      </label>
+                      <span className="text-xs text-stone-500">{selectedClient.name}</span>
+                    </div>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                      {reminderOptions.map((option) => {
+                        const selected = reminderOffsets.includes(option.minutes);
+                        return (
+                          <button
+                            key={option.minutes}
+                            type="button"
+                            onClick={() => toggleReminderOffset(option.minutes)}
+                            className={cn(
+                              "inline-flex min-h-11 items-center justify-center rounded-2xl border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze-300",
+                              selected
+                                ? "border-bronze-300 bg-bronze-50 text-bronze-800"
+                                : "border-stone-200 bg-white/70 text-stone-600 hover:bg-white",
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-stone-500">
+                      Reminders appear in the client portal during the selected window before the appointment.
+                    </p>
                   </div>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-4">
-                    {reminderOptions.map((option) => {
-                      const selected = reminderOffsets.includes(option.minutes);
-                      return (
-                        <button
-                          key={option.minutes}
-                          type="button"
-                          disabled={!selectedClient}
-                          onClick={() => toggleReminderOffset(option.minutes)}
-                          className={cn(
-                            "inline-flex min-h-11 items-center justify-center rounded-2xl border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze-300 disabled:cursor-not-allowed disabled:opacity-45",
-                            selected
-                              ? "border-bronze-300 bg-bronze-50 text-bronze-800"
-                              : "border-stone-200 bg-white/70 text-stone-600 hover:bg-white",
-                          )}
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="mt-2 text-xs leading-5 text-stone-500">
-                    Reminders appear in the client portal during the selected window before the appointment.
-                  </p>
-                </div>
+                ) : null}
 
                 {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
               </div>
@@ -1042,7 +1121,7 @@ function AppointmentDialog({
                   </Button>
                 </Dialog.Close>
                 <Button type="submit" variant="warm" disabled={busy}>
-                  {busy ? "Saving..." : appointment ? "Update appointment" : "Save appointment"}
+                  {busy ? "Saving..." : appointment ? "Update item" : "Save item"}
                 </Button>
               </div>
             </form>

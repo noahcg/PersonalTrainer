@@ -349,7 +349,7 @@ export type TrainerAppointment = {
   createdAt: string;
 };
 
-export type CalendarEventType = "appointment" | "bulletin_session" | "in_person_session";
+export type CalendarEventType = "appointment" | "calendar_item" | "bulletin_session" | "in_person_session";
 
 export type CalendarEvent = {
   id: string;
