@@ -440,7 +440,7 @@ export function TrainerWorkoutBuilder({
             </div>
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-[300px_minmax(520px,1fr)_300px]">
+          <div className="grid gap-5 xl:grid-cols-[minmax(240px,280px)_minmax(0,1fr)]">
             <Card className="flex h-[620px] min-h-0 flex-col overflow-hidden rounded-[1.25rem] bg-white/84 shadow-soft">
                   <div className="p-6 pb-4">
                     <div className="flex items-start justify-between gap-3">
@@ -623,7 +623,7 @@ function WizardSummary({
   onDraftChange: Dispatch<SetStateAction<DraftWorkout>>;
 }) {
   return (
-    <aside className="self-start">
+    <aside className="self-start xl:col-span-2">
       <Card className="rounded-[1.25rem] bg-white/84 p-5 shadow-soft">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -632,7 +632,7 @@ function WizardSummary({
           </div>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
           <Field label="Workout name">
             <Input value={draft.name} onChange={(event) => onDraftChange((current) => ({ ...current, name: event.target.value }))} placeholder="Lower Body Strength" />
           </Field>
@@ -658,7 +658,7 @@ function WizardSummary({
           </Field>
         </div>
 
-        <div className="mt-4 grid gap-2.5 rounded-2xl bg-stone-50/80 p-3.5 text-sm text-stone-600">
+        <div className="mt-4 grid gap-2.5 rounded-2xl bg-stone-50/80 p-3.5 text-sm text-stone-600 lg:grid-cols-3">
           <SummaryLine icon={Dumbbell} label="Exercises" value={String(draft.blocks.reduce((sum, block) => sum + block.exercises.length, 0))} />
           <SummaryLine icon={ListChecks} label="Sets" value={String(totalSets)} />
           <SummaryLine icon={Clock3} label="Time" value={draft.duration} />

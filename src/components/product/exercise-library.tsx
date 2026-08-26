@@ -2,8 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { BookOpenText, Dumbbell, Layers3, PencilLine, Plus, Search, Shapes, X } from "lucide-react";
-import type { ComponentType } from "react";
+import { Layers3, PencilLine, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ExerciseCard } from "@/components/product/exercise-card";
@@ -121,17 +120,6 @@ export function ExerciseLibrary({
       return matchesQuery && matchesFilter;
     });
   }, [activeFilter, exercises, query]);
-
-  const librarySummary = useMemo(
-    () => ({
-      total: exercises.length,
-      visible: visibleExercises.length,
-      custom: exercises.filter((exercise) => exercise.editable).length,
-      patterns: new Set(exercises.map((exercise) => exercise.pattern).filter(Boolean)).size,
-      categories: new Set(exercises.map((exercise) => exercise.category).filter(Boolean)).size,
-    }),
-    [exercises, visibleExercises.length],
-  );
 
   function updateDraft<K extends keyof DraftExercise>(key: K, value: DraftExercise[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -287,25 +275,7 @@ export function ExerciseLibrary({
   return (
     <>
       <Card className="mb-5 overflow-hidden p-0">
-        <div className="border-b border-border bg-white/35 p-5 sm:p-6">
-          <div className="max-w-2xl">
-            <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Library workspace</p>
-            <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">Movement references built for fast coaching.</h2>
-            <p className="mt-3 text-sm leading-6 text-stone-600">
-              Search, filter, and maintain the instructions, cues, mistakes, and substitutions clients rely on mid-session.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-5 sm:p-6">
-          <LibraryMetric icon={Dumbbell} label="Exercise bank" value={String(librarySummary.total)} detail="Saved references" tone="text-charcoal-950" />
-          <LibraryMetric icon={Search} label="Current view" value={String(librarySummary.visible)} detail="Matching filters" tone="text-sage-700" />
-          <LibraryMetric icon={PencilLine} label="Custom" value={String(librarySummary.custom)} detail="Trainer-created" tone="text-bronze-500" />
-          <LibraryMetric icon={Shapes} label="Patterns" value={String(librarySummary.patterns)} detail="Movement types" tone="text-stone-600" />
-          <LibraryMetric icon={BookOpenText} label="Categories" value={String(librarySummary.categories)} detail="Reference groups" tone="text-bronze-500" />
-        </div>
-
-        <div className="border-t border-border bg-stone-50/45 p-5 sm:p-6">
+        <div className="bg-stone-50/45 p-5 sm:p-6">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
             <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
@@ -555,30 +525,5 @@ export function ExerciseLibrary({
         </div>
       ) : null}
     </>
-  );
-}
-
-function LibraryMetric({
-  icon: Icon,
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  detail: string;
-  tone: string;
-}) {
-  return (
-    <div className="min-w-0 rounded-[1.25rem] border border-stone-200/80 bg-white/72 p-4 shadow-inner-soft">
-      <div className="flex items-center justify-between gap-3">
-        <p className="truncate text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">{label}</p>
-        <Icon className={`size-4 shrink-0 ${tone}`} />
-      </div>
-      <p className="mt-4 font-serif text-3xl font-semibold leading-none text-charcoal-950">{value}</p>
-      <p className="mt-2 truncate text-xs text-stone-500">{detail}</p>
-    </div>
   );
 }
