@@ -3,18 +3,14 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { Archive, Clock3, Copy, ExternalLink, Mail, PackagePlus, Save, Search, UserCheck, UserPlus, Users, X } from "lucide-react";
+import { PackagePlus, Save, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ClientCard } from "@/components/product/client-card";
-import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
-import { clientStatusLabel } from "@/lib/client-access";
 import { demoClientsStorageKey } from "@/lib/demo-client-storage";
-import { defaultInviteMessage, defaultInviteSubject } from "@/lib/invitations";
-import { createClient as createBrowserClient } from "@/lib/supabase-browser";
-import type { Client, ClientStatus, PackageType, PricingTier } from "@/lib/types";
+import type { Client, PackageType, PricingTier } from "@/lib/types";
 
 type DraftClient = {
   name: string;
@@ -27,12 +23,6 @@ type DraftClient = {
   availability: string;
   pricingTier: PricingTier;
   packageSessionLimit: string;
-};
-
-type InvitePreview = {
-  clientId: string;
-  clientName: string;
-  actionLink: string;
 };
 
 type PartnerSignupDraft = {
@@ -85,17 +75,13 @@ export function TrainerClientsManager({
   mode: "demo" | "supabase";
 }) {
   const [clients, setClients] = useState(initialClients);
-  const [query, setQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [signupOpen, setSignupOpen] = useState(false);
   const [signupKind, setSignupKind] = useState<SignupPackageKind>("one_on_one");
   const [selectedPackageTypeId, setSelectedPackageTypeId] = useState(initialPackageTypes.find((item) => item.kind === "one_on_one")?.id ?? "");
-  const [inviteOpen, setInviteOpen] = useState(false);
   const [draft, setDraft] = useState<DraftClient>(emptyDraft);
   const [partnerDraft, setPartnerDraft] = useState<PartnerSignupDraft>(emptyPartnerSignup);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [invitePreviews, setInvitePreviews] = useState<InvitePreview[]>([]);
 
   useEffect(() => {
     if (mode !== "demo") return;
@@ -113,32 +99,6 @@ export function TrainerClientsManager({
     return () => window.clearTimeout(timeout);
   }, [mode]);
 
-  const visibleClients = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return clients;
-    return clients.filter((client) =>
-      [client.name, client.email, client.goals, clientStatusLabel(client.status), client.accessStatus.replace("_", " ")]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [clients, query]);
-
-  const accessSummary = useMemo(
-    () => ({
-      active: clients.filter((client) => client.accessStatus === "account_active").length,
-      pending: clients.filter((client) => client.accessStatus === "invite_pending").length,
-      notInvited: clients.filter((client) => client.accessStatus === "not_invited").length,
-    }),
-    [clients],
-  );
-
-  const activeClients = useMemo(() => clients.filter((client) => client.status === "active").length, [clients]);
-  const needsAttention = useMemo(() => clients.filter((client) => client.status === "needs_attention").length, [clients]);
-  const selectedActiveIds = useMemo(
-    () => selectedIds.filter((id) => clients.some((client) => client.id === id && client.status !== "archived")),
-    [clients, selectedIds],
-  );
   const matchingPackageTypes = useMemo(
     () => initialPackageTypes.filter((packageType) => packageType.kind === signupKind && packageType.active),
     [initialPackageTypes, signupKind],
@@ -149,12 +109,6 @@ export function TrainerClientsManager({
     if (mode === "demo") {
       window.localStorage.setItem(demoClientsStorageKey, JSON.stringify(nextClients));
     }
-  }
-
-  function toggleSelect(id: string) {
-    const client = clients.find((item) => item.id === id);
-    if (client?.status === "archived") return;
-    setSelectedIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
   }
 
   function applyPackageType(packageType: PackageType | null) {
@@ -285,6 +239,7 @@ export function TrainerClientsManager({
       setSignupKind("one_on_one");
       setMessage("One-on-one signup created. Send the invite when the client is ready for setup.");
       window.setTimeout(() => setMessage(null), 2200);
+      if (mode === "supabase") window.location.assign(`/trainer/clients/${nextClient.id}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to create one-on-one signup.");
     } finally {
@@ -296,6 +251,7 @@ export function TrainerClientsManager({
     if (!partnerDraft.clientAName.trim() || !partnerDraft.clientAEmail.trim() || !partnerDraft.clientBName.trim() || !partnerDraft.clientBEmail.trim()) return;
     setBusy(true);
     setMessage(null);
+    let firstClientId: string | null = null;
 
     try {
       if (mode === "supabase") {
@@ -318,6 +274,7 @@ export function TrainerClientsManager({
 
         const payload = (await response.json()) as { error?: string; clientIds?: string[] };
         if (!response.ok) throw new Error(payload.error ?? "Unable to create partner signup.");
+        firstClientId = payload.clientIds?.[0] ?? null;
       } else {
         const startDate = new Date().toISOString().slice(0, 10);
         const sessionTotal = partnerDraft.totalSessions ? Number(partnerDraft.totalSessions) : null;
@@ -386,6 +343,7 @@ export function TrainerClientsManager({
             metrics: { bodyWeight: "—", workouts: 0, assignedWorkouts: { completed: 0, total: 0 }, streak: 0, lastCheckIn: "No check-in yet" },
           },
         ];
+        firstClientId = nextClients[0]?.id ?? null;
         const merged = [...nextClients, ...clients];
         setClients(merged);
         persist(merged);
@@ -396,134 +354,9 @@ export function TrainerClientsManager({
       setSignupKind("one_on_one");
       setMessage("Partner training signup created. Send invites when both clients are ready for setup.");
       window.setTimeout(() => setMessage(null), 2600);
-      if (mode === "supabase") window.location.assign("/trainer/packages");
+      if (mode === "supabase" && firstClientId) window.location.assign(`/trainer/clients/${firstClientId}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to create partner signup.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function archiveSelected() {
-    if (!selectedActiveIds.length) return;
-    setBusy(true);
-    setMessage(null);
-    try {
-      if (mode === "supabase") {
-        const supabase = createBrowserClient();
-        const { error } = await supabase.from("clients").update({ status: "archived" }).in("id", selectedActiveIds);
-        if (error) throw error;
-      }
-
-      const nextClients = clients.map((client) =>
-        selectedActiveIds.includes(client.id) ? { ...client, status: "archived" as ClientStatus } : client,
-      );
-      setClients(nextClients);
-      persist(nextClients);
-      setSelectedIds([]);
-      setMessage("Selected clients marked inactive.");
-      window.setTimeout(() => setMessage(null), 2200);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to mark selected clients inactive.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function inviteSelected(inviteDraft: { subject: string; message: string }) {
-    if (!selectedIds.length) return;
-
-    setBusy(true);
-    setMessage(null);
-
-    try {
-      if (mode === "supabase") {
-        const results = await Promise.all(
-          selectedIds.map(async (clientId) => {
-            const clientRecord = clients.find((item) => item.id === clientId);
-            const response = await fetch("/api/invitations/client", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                clientId,
-                subject: inviteDraft.subject,
-                message: inviteDraft.message,
-              }),
-            });
-
-            const payload = (await response.json()) as { error?: string; inviteSentAt?: string; actionLink?: string };
-            if (!response.ok) {
-              throw new Error(payload.error ?? "Unable to send invite.");
-            }
-
-            return {
-              clientId,
-              clientName: clientRecord?.name ?? "Client",
-              inviteSentAt: payload.inviteSentAt
-                ? new Date(payload.inviteSentAt).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })
-                : null,
-              actionLink: payload.actionLink ?? "",
-            };
-          }),
-        );
-
-        const nextClients = clients.map((client) => {
-          const update = results.find((result) => result.clientId === client.id);
-          if (!update) return client;
-
-          return {
-            ...client,
-            accessStatus: "invite_pending" as const,
-            inviteSentAt: update.inviteSentAt ?? client.inviteSentAt,
-          };
-        });
-
-        setClients(nextClients);
-        const nextInvitePreviews = results
-          .filter((result) => result.actionLink)
-          .map((result) => ({
-            clientId: result.clientId,
-            clientName: result.clientName,
-            actionLink: result.actionLink,
-          }));
-        setInvitePreviews(nextInvitePreviews);
-
-        setInviteOpen(false);
-        setMessage(
-          nextInvitePreviews.length
-            ? `${selectedIds.length} client invite${selectedIds.length === 1 ? "" : "s"} generated for local testing.`
-            : `${selectedIds.length} client invite${selectedIds.length === 1 ? "" : "s"} sent.`,
-        );
-      } else {
-        const inviteSentAt = new Date().toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        });
-        const nextClients = clients.map((client) =>
-          selectedIds.includes(client.id)
-            ? {
-                ...client,
-                accessStatus: "invite_pending" as const,
-                inviteSentAt,
-              }
-            : client,
-        );
-        setClients(nextClients);
-        persist(nextClients);
-      }
-
-      if (mode !== "supabase") {
-        setInviteOpen(false);
-        setMessage(`${selectedIds.length} client invite${selectedIds.length === 1 ? "" : "s"} sent.`);
-      }
-      window.setTimeout(() => setMessage(null), 2200);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to send invites.");
     } finally {
       setBusy(false);
     }
@@ -535,58 +368,16 @@ export function TrainerClientsManager({
         <div className="border-b border-border bg-white/35 p-5 sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-2xl">
-              <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Roster workspace</p>
-              <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">Client operations at a glance.</h2>
+              <p className="text-[0.66rem] uppercase tracking-[0.3em] text-bronze-600">Roster</p>
+              <h2 className="mt-2 font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">Clients</h2>
               <p className="mt-3 text-sm leading-6 text-stone-600">
-                Search the roster, track account access, and handle invite or inactive-status actions without opening every profile.
+                Open a client to edit their profile, assign workouts, review progress, or manage upcoming sessions.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 text-sm text-stone-600">
-              <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/70 px-3 py-2">
-                <Users className="size-4 text-bronze-500" />
-                {clients.length} total
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/70 px-3 py-2">
-                <UserCheck className="size-4 text-sage-700" />
-                {selectedIds.length} selected
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-5 sm:p-6">
-          <RosterMetric icon={Users} label="Total clients" value={String(clients.length)} detail={`${activeClients} active`} tone="text-charcoal-950" />
-          <RosterMetric icon={Clock3} label="Needs review" value={String(needsAttention)} detail="Status flags" tone="text-bronze-500" />
-          <RosterMetric icon={UserCheck} label="Account active" value={String(accessSummary.active)} detail="Setup complete" tone="text-sage-700" />
-          <RosterMetric icon={Mail} label="Invite pending" value={String(accessSummary.pending)} detail="Awaiting setup" tone="text-bronze-500" />
-          <RosterMetric icon={UserPlus} label="Not invited" value={String(accessSummary.notInvited)} detail="Ready to send" tone="text-stone-600" />
-        </div>
-
-        <div className="border-t border-border bg-stone-50/45 p-5 sm:p-6">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-            <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search clients by name, goal, status, or access..."
-                className="pl-10"
-              />
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row xl:justify-end">
-              <Button variant="warm" onClick={() => setSignupOpen(true)}>
-                <PackagePlus className="size-4" />
-                New signup
-              </Button>
-              <Button variant="secondary" onClick={() => setInviteOpen(true)} disabled={busy || selectedIds.length === 0}>
-                <Mail className="size-4" />
-                Send invites
-              </Button>
-              <Button variant="secondary" onClick={() => void archiveSelected()} disabled={busy || selectedActiveIds.length === 0}>
-                <Archive className="size-4" />
-                Mark inactive
-              </Button>
-            </div>
+            <Button variant="warm" onClick={() => setSignupOpen(true)} className="self-start">
+              <PackagePlus className="size-4" />
+              New signup
+            </Button>
           </div>
         </div>
       </Card>
@@ -597,59 +388,10 @@ export function TrainerClientsManager({
         </Card>
       ) : null}
 
-      {invitePreviews.length ? (
-        <Card className="mb-5 border-sage-200 bg-sage-50/55 p-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <p className="text-[0.66rem] uppercase tracking-[0.22em] text-sage-700">Local invite testing</p>
-              <p className="mt-2 text-sm leading-6 text-stone-700">
-                Email is not configured, so these invite setup links were generated for local testing. Open one in an incognito window to finish client setup.
-              </p>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setInvitePreviews([])}>
-              Dismiss
-            </Button>
-          </div>
-          <div className="mt-4 grid gap-3">
-            {invitePreviews.map((preview) => (
-              <div key={preview.clientId} className="rounded-[1.35rem] border border-sage-200/80 bg-white/80 p-4">
-                <p className="font-semibold text-charcoal-950">{preview.clientName}</p>
-                <p className="mt-2 break-all text-sm leading-6 text-stone-600">{preview.actionLink}</p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void navigator.clipboard.writeText(preview.actionLink)}
-                  >
-                    <Copy className="size-4" />
-                    Copy link
-                  </Button>
-                  <Button asChild variant="warm" size="sm">
-                    <Link href={preview.actionLink} target="_blank" rel="noreferrer">
-                      Open link
-                      <ExternalLink className="size-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      ) : null}
-
-      {selectedIds.length > 0 ? (
-        <Card className="mb-5 flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-stone-600">
-          <span>{selectedIds.length} client{selectedIds.length === 1 ? "" : "s"} selected for bulk actions.</span>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
-            Clear
-          </Button>
-        </Card>
-      ) : null}
-
       <div className="min-w-0 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {visibleClients.map((client) => (
+        {clients.map((client) => (
           <div key={client.id} className="min-w-0">
-            <ClientCard client={client} selectable selected={selectedIds.includes(client.id)} onToggleSelect={toggleSelect} />
+            <ClientCard client={client} />
           </div>
         ))}
       </div>
@@ -846,22 +588,6 @@ export function TrainerClientsManager({
         </Dialog.Portal>
       </Dialog.Root>
 
-      <InviteComposeDialog
-        key={selectedIds.join("|") || "empty-selection"}
-        open={inviteOpen}
-        onOpenChange={setInviteOpen}
-        title={selectedIds.length === 1 ? "Send client invite" : "Send client invites"}
-        description={
-          selectedIds.length === 1
-            ? "Write the email your selected client will receive with their setup link."
-            : "Write the email your selected clients will receive with their setup links."
-        }
-        defaultSubject={defaultInviteSubject(selectedIds.length === 1 ? clients.find((client) => client.id === selectedIds[0])?.name : undefined)}
-        defaultMessage={defaultInviteMessage(selectedIds.length === 1 ? clients.find((client) => client.id === selectedIds[0])?.name : undefined)}
-        busy={busy}
-        onSend={inviteSelected}
-      />
-
     </>
   );
 }
@@ -910,31 +636,6 @@ function PackageSummary({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-[0.62rem] uppercase tracking-[0.18em] text-stone-400">{label}</p>
       <p className="mt-1 font-semibold text-charcoal-950">{value}</p>
-    </div>
-  );
-}
-
-function RosterMetric({
-  icon: Icon,
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  detail: string;
-  tone: string;
-}) {
-  return (
-    <div className="min-w-0 rounded-[1.25rem] border border-stone-200/80 bg-white/72 p-4 shadow-inner-soft">
-      <div className="flex items-center justify-between gap-3">
-        <p className="truncate text-[0.65rem] uppercase tracking-[0.2em] text-stone-400">{label}</p>
-        <Icon className={`size-4 shrink-0 ${tone}`} />
-      </div>
-      <p className="mt-4 font-serif text-3xl font-semibold leading-none text-charcoal-950">{value}</p>
-      <p className="mt-2 truncate text-xs text-stone-500">{detail}</p>
     </div>
   );
 }

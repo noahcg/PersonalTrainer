@@ -8,6 +8,48 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.17.3] - 2026-08-26
+
+- Added page-specific app header eyebrow labels while keeping the trainer dashboard welcome intact.
+
+## [0.17.2] - 2026-08-26
+
+- Streamlined the trainer client profile header into a compact identity and action bar.
+
+## [0.17.1] - 2026-08-26
+
+- Route trainers from completed signups to the new client profile so the access invite step is visible immediately.
+
+## [0.17.0] - 2026-08-26
+
+- Simplified the trainer client roster by removing metric cards, roster search, and bulk selection actions.
+- Updated client roster cards with a direct edit affordance that opens each client's profile workspace.
+
+## [0.16.0] - 2026-08-26
+
+- Moved trainer workout assignment management from the global Workouts table into a new Workouts tab on each client profile.
+- Added client-specific workout assignment scheduling with per-client completion tracking.
+- Added workout deadline events to the trainer calendar and dashboard so timeboxed client homework stays visible.
+- Restored the global trainer Workouts table to a focused workout template library.
+
+## [0.15.0] - 2026-08-26
+
+- Changed the client home spotlight to prioritize the next upcoming appointment, then the first scheduled incomplete workout.
+- Added trainer-side workout assignment tracking with client names, assignment windows, overdue status, and completion status.
+- Hid completed direct workout assignments from the client's active workout list after logging.
+
+## [0.14.0] - 2026-08-26
+
+- Expanded workout assignment into a scheduled handoff with available dates, completion deadlines, and trainer notes.
+- Show scheduled workout windows and assignment notes on client workout cards.
+- Added Supabase assignment schedule fields for standalone workout due dates and trainer instructions.
+
+## [0.13.0] - 2026-08-26
+
+- Added direct trainer-to-client workout assignments so standalone workouts can appear in a client's workout list outside a full training plan.
+- Added Supabase workout assignment schema, policies, and migration support for direct workout visibility and logging.
+- Updated workout logging authorization so clients can only log workouts assigned through a plan or direct workout assignment.
+
 ## [0.12.4] - 2026-08-26
 
 - Let trainers customize reference exercises by saving trainer-owned copies instead of showing locked rows.

@@ -17,7 +17,8 @@ export default async function TrainerCalendarPage() {
     <AppShell
       role="trainer"
       title="Calendar"
-      subtitle="See client appointments, trainer-only work blocks, in-person sessions, and bulletin sessions in one place."
+      eyebrow="Schedule"
+      subtitle="See client appointments, trainer-only work blocks, in-person sessions, bulletin sessions, and workout deadlines in one place."
     >
       <TrainerCalendar
         mode={mode}

@@ -6,6 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getClientWorkoutCheckIns, getClientWorkouts } from "@/lib/workouts";
 
+function formatAssignmentDate(value?: string) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function assignmentWindowLabel(workout: { assignment?: { scheduledFor: string; dueOn: string } }) {
+  const scheduled = formatAssignmentDate(workout.assignment?.scheduledFor);
+  const due = formatAssignmentDate(workout.assignment?.dueOn);
+  if (scheduled && due) return scheduled === due ? `Scheduled ${scheduled}` : `Available ${scheduled} - due ${due}`;
+  if (due) return `Due ${due}`;
+  if (scheduled) return `Scheduled ${scheduled}`;
+  return "Assigned";
+}
+
 export default async function ClientWorkoutsPage() {
   const [{ workouts }, { workoutCheckIns }] = await Promise.all([
     getClientWorkouts(),
@@ -14,7 +33,7 @@ export default async function ClientWorkoutsPage() {
 
   if (!workouts.length && !workoutCheckIns.length) {
     return (
-      <AppShell role="client" title="My workouts" subtitle="Upcoming and completed workouts with clear guidance and logging.">
+      <AppShell role="client" title="My workouts" eyebrow="Workout schedule" subtitle="Upcoming and completed workouts with clear guidance and logging.">
         <Card className="max-w-3xl p-8">
           <p className="font-serif text-4xl font-semibold text-charcoal-950">No workouts assigned yet.</p>
           <p className="mt-3 text-sm leading-6 text-stone-600">
@@ -26,7 +45,7 @@ export default async function ClientWorkoutsPage() {
   }
 
   return (
-    <AppShell role="client" title="My workouts" subtitle="Upcoming and completed workouts with clear guidance and logging." mobileFocus>
+    <AppShell role="client" title="My workouts" eyebrow="Workout schedule" subtitle="Upcoming and completed workouts with clear guidance and logging." mobileFocus>
       <div className="space-y-5 sm:space-y-6">
         {workouts.length ? (
           <section>
@@ -39,9 +58,17 @@ export default async function ClientWorkoutsPage() {
             <div className="grid gap-3 md:grid-cols-2 md:gap-5">
               {workouts.map((workout) => (
                 <Card key={workout.id} className="p-4 sm:p-6">
-                  <Badge variant="bronze">Assigned</Badge>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="bronze">Assigned</Badge>
+                    <Badge>{assignmentWindowLabel(workout)}</Badge>
+                  </div>
                   <h3 className="mt-4 font-serif text-3xl font-semibold leading-tight sm:mt-5 sm:text-4xl">{workout.name}</h3>
                   <p className="mt-3 text-sm leading-6 text-stone-600">{workout.coachNotes}</p>
+                  {workout.assignment?.notes ? (
+                    <div className="mt-4 rounded-[1.15rem] bg-stone-50/88 px-4 py-3 text-sm leading-6 text-stone-700">
+                      {workout.assignment.notes}
+                    </div>
+                  ) : null}
                   <div className="mt-4 flex flex-wrap gap-2 text-sm text-stone-500 sm:mt-5">
                     <span>{workout.duration}</span>
                     <span>{workout.blocks.length} training blocks</span>

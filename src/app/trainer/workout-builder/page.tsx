@@ -9,6 +9,7 @@ export default function TrainerWorkoutBuilderPage() {
     <AppShell
       role="trainer"
       title="Workout builder"
+      eyebrow="Builder workspace"
       subtitle="A simple starting point for creating exercises, workouts, and training plans."
     >
       <TrainerWorkoutBuilderNav>

@@ -19,6 +19,7 @@ const nextEventCardCopy: Record<CalendarEvent["type"], { eyebrow: string; label:
   calendar_item: { eyebrow: "Next calendar item", label: "Planning session" },
   bulletin_session: { eyebrow: "Next bulletin session", label: "Bulletin session" },
   in_person_session: { eyebrow: "Next in-person session", label: "In-person session" },
+  workout_assignment: { eyebrow: "Next workout deadline", label: "Client workout due" },
 };
 
 function formatNextAppointmentDate(iso: string) {

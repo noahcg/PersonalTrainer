@@ -24,6 +24,7 @@ export default async function TrainerExerciseDetailPage({
     <AppShell
       role="trainer"
       title={exercise.name}
+      eyebrow="Exercise reference"
       subtitle="Exercise reference, coaching cues, mistakes to avoid, substitutions, and movement details."
     >
       <TrainerWorkoutBuilderNav>

@@ -1,6 +1,6 @@
 import { isSupabaseConfigured } from "@/lib/auth-server";
 import { createClient } from "@/lib/supabase-server";
-import { clientSessions as demoClientSessions, clients as demoClients, bulletins as demoBulletins } from "@/lib/demo-data";
+import { clientSessions as demoClientSessions, clients as demoClients, bulletins as demoBulletins, workouts as demoWorkouts } from "@/lib/demo-data";
 import type { CalendarEvent, TrainerAppointment } from "@/lib/types";
 
 type AppointmentRow = {
@@ -17,6 +17,30 @@ type AppointmentRow = {
   created_at: string;
   clients?: { full_name: string } | { full_name: string }[] | null;
 };
+
+type WorkoutAssignmentCalendarRow = {
+  workout_id: string;
+  client_id: string;
+  due_on: string | null;
+  scheduled_for: string | null;
+  assignment_notes: string | null;
+  clients?: { full_name: string } | { full_name: string }[] | null;
+  workouts?: { name: string } | { name: string }[] | null;
+};
+
+type WorkoutAssignmentLogRow = {
+  client_id: string;
+  workout_id: string;
+  status: string;
+};
+
+function firstJoinedRow<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function dueDateToReminderIso(date: string) {
+  return new Date(`${date}T09:00:00`).toISOString();
+}
 
 function mapAppointmentRow(row: AppointmentRow): TrainerAppointment {
   const clientRecord = Array.isArray(row.clients) ? row.clients[0] : row.clients;
@@ -93,6 +117,25 @@ export async function getTrainerCalendarData(): Promise<{
       });
     }
 
+    for (const workout of demoWorkouts) {
+      for (const assignment of workout.assignments ?? []) {
+        if (assignment.status === "completed" || !assignment.dueOn) continue;
+        events.push({
+          id: `workout-assignment-${workout.id}-${assignment.clientId}`,
+          type: "workout_assignment",
+          title: `${assignment.clientName ?? "Client"} due: ${workout.name}`,
+          startsAtIso: dueDateToReminderIso(assignment.dueOn),
+          durationMinutes: null,
+          location: "",
+          clientId: assignment.clientId,
+          clientName: assignment.clientName ?? null,
+          notes: assignment.notes,
+          reminderOffsetsMinutes: [],
+          status: assignment.status ?? "assigned",
+        });
+      }
+    }
+
     return { mode: "demo", appointments: [], events };
   }
 
@@ -101,7 +144,7 @@ export async function getTrainerCalendarData(): Promise<{
     return { mode: "supabase", appointments: [], events: [] };
   }
 
-  const [appointmentsResponse, sessionsResponse, bulletinsResponse] = await Promise.all([
+  const [appointmentsResponse, sessionsResponse, bulletinsResponse, assignmentsResponse] = await Promise.all([
     supabase
       .from("trainer_appointments")
       .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at, clients(full_name)")
@@ -118,6 +161,12 @@ export async function getTrainerCalendarData(): Promise<{
       .eq("trainer_id", trainerId)
       .eq("post_type", "session")
       .not("session_starts_at", "is", null),
+    supabase
+      .from("workout_assignments")
+      .select("workout_id, client_id, due_on, scheduled_for, assignment_notes, clients(full_name), workouts(name)")
+      .eq("assigned_by_trainer_id", trainerId)
+      .eq("status", "active")
+      .not("due_on", "is", null),
   ]);
 
   const appointmentRows = (appointmentsResponse.data ?? []) as AppointmentRow[];
@@ -185,6 +234,41 @@ export async function getTrainerCalendarData(): Promise<{
       notes: bulletinRow.body,
       reminderOffsetsMinutes: [],
       status: bulletinRow.status ?? "active",
+    });
+  }
+
+  const assignmentRows = (assignmentsResponse.data ?? []) as WorkoutAssignmentCalendarRow[];
+  const assignmentWorkoutIds = assignmentRows.map((row) => row.workout_id);
+  const assignmentClientIds = assignmentRows.map((row) => row.client_id);
+  const { data: completedLogs } = assignmentWorkoutIds.length
+    ? await supabase
+        .from("workout_logs")
+        .select("client_id, workout_id, status")
+        .in("workout_id", assignmentWorkoutIds)
+        .in("client_id", assignmentClientIds)
+        .eq("status", "completed")
+    : { data: [] as WorkoutAssignmentLogRow[] };
+  const completedSet = new Set(
+    ((completedLogs ?? []) as WorkoutAssignmentLogRow[]).map((log) => `${log.client_id}:${log.workout_id}`),
+  );
+
+  for (const row of assignmentRows) {
+    if (!row.due_on || completedSet.has(`${row.client_id}:${row.workout_id}`)) continue;
+    const client = firstJoinedRow(row.clients);
+    const workout = firstJoinedRow(row.workouts);
+    const nowDate = new Date().toISOString().slice(0, 10);
+    events.push({
+      id: `workout-assignment-${row.workout_id}-${row.client_id}-${row.due_on}`,
+      type: "workout_assignment",
+      title: `${client?.full_name ?? "Client"} due: ${workout?.name ?? "Workout"}`,
+      startsAtIso: dueDateToReminderIso(row.due_on),
+      durationMinutes: null,
+      location: "",
+      clientId: row.client_id,
+      clientName: client?.full_name ?? null,
+      notes: row.assignment_notes ?? "",
+      reminderOffsetsMinutes: [],
+      status: row.due_on < nowDate ? "overdue" : "assigned",
     });
   }
 

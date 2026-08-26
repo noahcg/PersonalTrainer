@@ -279,6 +279,26 @@ export const workouts: Workout[] = [
     warmup: "6 min incline walk, hip airplanes, dead bug breathing, bodyweight squats.",
     cooldown: "90/90 breathing, couch stretch, easy walk until heart rate settles.",
     coachNotes: "Stay two reps shy of failure today. Prioritize tempo and smooth bracing.",
+    assignedClientIds: ["nina-patel"],
+    assignedClientNames: ["Nina Patel"],
+    assignments: [
+      {
+        clientId: "nina-patel",
+        clientName: "Nina Patel",
+        assignedOn: "2026-08-26",
+        scheduledFor: "2026-08-28",
+        dueOn: "2026-08-31",
+        notes: "Complete this before the next 1:1 so we can review tempo and bracing.",
+      },
+    ],
+    assignment: {
+      clientId: "nina-patel",
+      clientName: "Nina Patel",
+      assignedOn: "2026-08-26",
+      scheduledFor: "2026-08-28",
+      dueOn: "2026-08-31",
+      notes: "Complete this before the next 1:1 so we can review tempo and bracing.",
+    },
     blocks: [
       {
         id: "main",

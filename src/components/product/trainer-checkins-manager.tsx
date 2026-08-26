@@ -47,7 +47,7 @@ export function TrainerCheckinsManager() {
   }
 
   return (
-    <AppShell role="trainer" title="Check-ins" subtitle="Review readiness, recovery, mood, and freeform client context before adjusting training.">
+    <AppShell role="trainer" title="Check-ins" eyebrow="Client readiness" subtitle="Review readiness, recovery, mood, and freeform client context before adjusting training.">
       <div className="grid gap-5 lg:grid-cols-3">
         {checkIns.map((checkIn) => (
           <Card key={checkIn.id} className="p-1">

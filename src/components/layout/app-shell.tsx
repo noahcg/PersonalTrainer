@@ -79,6 +79,7 @@ function getMobileNavLabel(label: string) {
 export function AppShell({
   role,
   title,
+  eyebrow,
   dynamicGreetingName,
   mobileFocus = false,
   navLocked = false,
@@ -88,6 +89,7 @@ export function AppShell({
   role: Role;
   title: string;
   subtitle: string;
+  eyebrow?: string;
   dynamicGreetingName?: string;
   mobileFocus?: boolean;
   navLocked?: boolean;
@@ -329,6 +331,7 @@ export function AppShell({
 
   const displayTitle =
     greetingName && greetingHour !== null ? getTimeBasedGreeting(greetingName, greetingHour) : title;
+  const headerEyebrow = eyebrow ?? (role === "trainer" ? brand.app.trainerHeaderLabel : brand.app.clientHeaderLabel);
 
   async function handleLogout() {
     if (hasSupabaseEnv()) {
@@ -402,7 +405,7 @@ export function AppShell({
                     mobileFocus ? "text-[0.62rem] tracking-[0.24em] sm:text-[0.66rem] sm:tracking-[0.34em]" : "text-[0.66rem] tracking-[0.34em]",
                   )}
                 >
-                  {role === "trainer" ? brand.app.trainerHeaderLabel : brand.app.clientHeaderLabel}
+                  {headerEyebrow}
                 </motion.p>
                 <motion.h1
                   initial={false}

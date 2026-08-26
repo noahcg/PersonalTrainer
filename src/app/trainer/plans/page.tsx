@@ -11,6 +11,7 @@ export default async function PlansPage() {
     <AppShell
       role="trainer"
       title="Training plans"
+      eyebrow="Plan templates"
       subtitle="Create reusable plan templates, duplicate proven cycles, and assign polished training journeys to clients."
     >
       <TrainerWorkoutBuilderNav>

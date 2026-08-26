@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { BellRing, BriefcaseBusiness, CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Megaphone, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
+import { BellRing, BriefcaseBusiness, CalendarDays, ChevronLeft, ChevronRight, Clock, Dumbbell, MapPin, Megaphone, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,12 @@ const eventTypeMeta: Record<
     tone: "Logged in-person session",
     dot: "bg-sage-500",
     chip: "bg-sage-100 text-sage-800 border-sage-200",
+  },
+  workout_assignment: {
+    label: "Workout deadline",
+    tone: "Client workout due",
+    dot: "bg-rose-500",
+    chip: "bg-rose-50 text-rose-700 border-rose-100",
   },
 };
 
@@ -751,6 +757,12 @@ function EventRow({
               <span className="inline-flex items-center gap-1.5">
                 <BriefcaseBusiness className="size-3.5" />
                 Trainer-only
+              </span>
+            ) : null}
+            {event.type === "workout_assignment" ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Dumbbell className="size-3.5" />
+                Client workout deadline
               </span>
             ) : null}
             {event.type === "appointment" && event.clientId && event.reminderOffsetsMinutes?.length ? (
