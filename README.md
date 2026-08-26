@@ -31,7 +31,6 @@ Next.js application for a personal training business with:
 - Training plans
 - Workout builder
 - Exercise library
-- Progress page with real roster/check-in signals
 - Resources
 - Settings
 

@@ -42,7 +42,6 @@ const trainerNav = [
   { href: "/trainer/plans", label: "Training Plans", icon: CalendarCheck },
   { href: "/trainer/workouts", label: "Workouts", icon: Dumbbell },
   { href: "/trainer/exercises", label: "Exercise Library", icon: Library },
-  { href: "/trainer/progress", label: "Progress", icon: TrendingUp },
   { href: "/trainer/resources", label: "Resources", icon: BookOpen },
   { href: "/trainer/settings", label: "Settings", icon: Settings },
 ];

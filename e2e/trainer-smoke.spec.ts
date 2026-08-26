@@ -10,7 +10,6 @@ const trainerRoutes = [
   { path: "/trainer/resources", heading: "Coaching resources", workspace: "Resource workspace" },
   { path: "/trainer/messages", heading: "Communications" },
   { path: "/trainer/check-ins", heading: "Communications" },
-  { path: "/trainer/progress", heading: "Progress intelligence" },
   { path: "/trainer/settings", heading: "Studio settings" },
 ];
 

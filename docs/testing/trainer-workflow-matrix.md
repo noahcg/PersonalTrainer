@@ -545,21 +545,6 @@ Expected result:
 
 - Check-in review closes the feedback loop.
 
-## Progress
-
-### Review trainer progress overview
-
-What to test:
-
-- Trainer can view progress data for clients.
-- Charts and summary cards render correctly with real, empty, and sparse data.
-- Client selection/filtering works if available.
-- Progress data matches related check-ins or session/workout logs where applicable.
-
-Expected result:
-
-- Trainer can use progress views to evaluate client trajectory.
-
 ## Trainer Settings
 
 ### Update trainer profile and business settings

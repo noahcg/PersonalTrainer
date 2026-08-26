@@ -123,7 +123,7 @@ Use this checklist during a manual QA pass. Mark each area as Pass, Fail, Blocke
 | Refresh preserves thread |  |  |
 | Confirm edit/delete expectation |  |  |
 
-## Check-ins And Progress
+## Check-ins
 
 | Workflow | Status | Notes |
 | --- | --- | --- |
@@ -132,8 +132,6 @@ Use this checklist during a manual QA pass. Mark each area as Pass, Fail, Blocke
 | Review/reply to check-in |  |  |
 | Reviewed state persists |  |  |
 | Dashboard count updates after review |  |  |
-| Progress page renders with normal data |  |  |
-| Progress page renders with empty/sparse data |  |  |
 
 ## Settings
 

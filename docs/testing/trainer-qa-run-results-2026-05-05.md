@@ -32,7 +32,6 @@ All main trainer routes were fetched from the local dev server and checked for H
 | `/trainer/resources` | Pass | `200`, no error marker |
 | `/trainer/messages` | Pass | `200`, no error marker |
 | `/trainer/check-ins` | Pass | `200`, no error marker |
-| `/trainer/progress` | Pass | `200`, no error marker |
 | `/trainer/settings` | Pass | `200`, no error marker |
 
 ## Source-Confirmed Workflow Coverage

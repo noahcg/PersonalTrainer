@@ -21,7 +21,6 @@ Trainer-facing areas in scope:
 - Resources
 - Messages
 - Check-ins
-- Progress
 - Trainer settings
 - Logout and return-session behavior
 
