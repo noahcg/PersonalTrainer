@@ -7,7 +7,7 @@ export default async function ClientResourcesPage() {
   const { resources } = await getClientResources();
 
   return (
-    <AppShell role="client" title="Resources" subtitle="Guides, support materials, and assigned references from your trainer.">
+    <AppShell role="client" title="Resources" eyebrow="Training resources" subtitle="Guides, support materials, and assigned references from your trainer.">
       {resources.length ? (
         <ClientResourcesGrid resources={resources} />
       ) : (

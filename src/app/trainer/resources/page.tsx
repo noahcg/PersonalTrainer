@@ -10,6 +10,7 @@ export default async function ResourcesPage() {
     <AppShell
       role="trainer"
       title="Coaching resources"
+      eyebrow="Resource library"
       subtitle="Build reusable education, references, and support materials that can be global or assigned directly to one client."
     >
       <TrainerResourcesManager initialResources={resources} clients={clients} mode={mode} />

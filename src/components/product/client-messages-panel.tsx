@@ -183,7 +183,7 @@ export function ClientMessagesPanel({
   }
 
   return (
-    <AppShell role="client" title="Messages" subtitle="Reply directly to your trainer." mobileFocus>
+    <AppShell role="client" title="Messages" eyebrow="Trainer messages" subtitle="Reply directly to your trainer." mobileFocus>
       <div className="flex h-[calc(100dvh-15.5rem)] min-h-[23rem] max-w-4xl flex-col sm:h-[calc(100dvh-16rem)] sm:min-h-[24rem]">
         <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.25rem] p-2 sm:rounded-[2rem] sm:p-4">
           <div

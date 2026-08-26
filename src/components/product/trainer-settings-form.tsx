@@ -114,7 +114,7 @@ export function TrainerSettingsForm() {
   }
 
   return (
-    <AppShell role="trainer" title="Studio settings" subtitle="Manage profile, coaching voice, notification defaults, and account preferences.">
+    <AppShell role="trainer" title="Studio settings" eyebrow="Account settings" subtitle="Manage profile, coaching voice, notification defaults, and account preferences.">
       <div className="max-w-4xl space-y-5">
         <TrainerNotificationSettings />
 

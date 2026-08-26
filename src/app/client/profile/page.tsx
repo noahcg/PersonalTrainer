@@ -10,7 +10,7 @@ export default async function ClientProfilePage() {
 
   if (!result.client) {
     return (
-      <AppShell role="client" title="Profile" subtitle="Your personal details, goals, and coaching preferences." clientPortalAccess={clientPortalAccess}>
+      <AppShell role="client" title="Profile" eyebrow="Your details" subtitle="Your personal details, goals, and coaching preferences." clientPortalAccess={clientPortalAccess}>
         <Card className="max-w-3xl p-8">
           <p className="font-serif text-4xl font-semibold text-charcoal-950">Your profile is not set up yet.</p>
           <p className="mt-3 text-sm leading-6 text-stone-600">

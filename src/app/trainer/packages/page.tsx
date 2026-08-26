@@ -10,6 +10,7 @@ export default async function TrainerPackagesPage() {
     <AppShell
       role="trainer"
       title="Training packages"
+      eyebrow="Package management"
       subtitle="Manage client package terms, balances, pricing, policies, status, and package-level history."
     >
       <TrainerPackagesManager initialPackages={packages} initialPackageTypes={packageTypes} mode={mode} />

@@ -364,6 +364,10 @@ export function TrainerWorkoutBuilder({
         warmup: warmupText,
         cooldown: cooldownText,
         coachNotes: draft.coachNotes,
+        assignedClientIds: draft.id ? workouts.find((workout) => workout.id === draft.id)?.assignedClientIds ?? [] : [],
+        assignedClientNames: draft.id ? workouts.find((workout) => workout.id === draft.id)?.assignedClientNames ?? [] : [],
+        assignments: draft.id ? workouts.find((workout) => workout.id === draft.id)?.assignments ?? [] : [],
+        assignment: draft.id ? workouts.find((workout) => workout.id === draft.id)?.assignment : undefined,
         blocks: draft.blocks,
       };
 

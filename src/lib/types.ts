@@ -234,9 +234,24 @@ export type WorkoutBlock = {
   exercises: WorkoutExercise[];
 };
 
+export type WorkoutAssignment = {
+  clientId: string;
+  clientName?: string;
+  assignedOn: string;
+  scheduledFor: string;
+  dueOn: string;
+  notes: string;
+  status?: "assigned" | "completed" | "overdue";
+  completedAt?: string;
+};
+
 export type Workout = {
   id: string;
   trainingPlanId?: string;
+  assignedClientIds?: string[];
+  assignedClientNames?: string[];
+  assignments?: WorkoutAssignment[];
+  assignment?: WorkoutAssignment;
   name: string;
   dayLabel: string;
   duration: string;
@@ -349,7 +364,7 @@ export type TrainerAppointment = {
   createdAt: string;
 };
 
-export type CalendarEventType = "appointment" | "calendar_item" | "bulletin_session" | "in_person_session";
+export type CalendarEventType = "appointment" | "calendar_item" | "bulletin_session" | "in_person_session" | "workout_assignment";
 
 export type CalendarEvent = {
   id: string;

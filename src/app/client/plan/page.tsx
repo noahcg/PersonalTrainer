@@ -10,7 +10,7 @@ export default async function ClientPlanPage() {
   const { plan } = await getClientAssignedPlan();
   if (!plan) {
     return (
-      <AppShell role="client" title="My plan" subtitle="Your training cycle will appear here as soon as your trainer assigns it.">
+      <AppShell role="client" title="My plan" eyebrow="Training plan" subtitle="Your training cycle will appear here as soon as your trainer assigns it.">
         <Card className="max-w-3xl p-8">
           <p className="font-serif text-4xl font-semibold">No plan assigned yet.</p>
           <p className="mt-3 text-sm leading-6 text-stone-600">
@@ -22,7 +22,7 @@ export default async function ClientPlanPage() {
   }
 
   return (
-    <AppShell role="client" title="My plan" subtitle="Your current training cycle, weekly rhythm, trainer notes, and assigned workouts.">
+    <AppShell role="client" title="My plan" eyebrow="Training plan" subtitle="Your current training cycle, weekly rhythm, trainer notes, and assigned workouts.">
       <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
         <CardHeader>
           <Badge variant="bronze">{plan.duration}</Badge>

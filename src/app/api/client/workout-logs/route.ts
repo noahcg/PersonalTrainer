@@ -106,6 +106,7 @@ export async function POST(request: Request) {
     if (!workout) return NextResponse.json({ error: "Workout not found." }, { status: 404 });
 
     let assignmentId: string | null = null;
+    let directAssignmentId: string | null = null;
     if (workout.training_plan_id) {
       const { data: assignment, error: assignmentError } = await admin
         .from("plan_assignments")
@@ -118,8 +119,24 @@ export async function POST(request: Request) {
         .maybeSingle<{ id: string }>();
 
       if (assignmentError) return NextResponse.json({ error: assignmentError.message }, { status: 500 });
-      if (!assignment?.id) return NextResponse.json({ error: "This workout is not assigned to your account." }, { status: 403 });
-      assignmentId = assignment.id;
+      assignmentId = assignment?.id ?? null;
+    }
+
+    const { data: directAssignment, error: directAssignmentError } = await admin
+      .from("workout_assignments")
+      .select("id")
+      .eq("client_id", client.id)
+      .eq("workout_id", workoutId)
+      .eq("status", "active")
+      .order("assigned_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ id: string }>();
+
+    if (directAssignmentError) return NextResponse.json({ error: directAssignmentError.message }, { status: 500 });
+    directAssignmentId = directAssignment?.id ?? null;
+
+    if (!assignmentId && !directAssignmentId) {
+      return NextResponse.json({ error: "This workout is not assigned to your account." }, { status: 403 });
     }
 
     const now = new Date().toISOString();

@@ -15,7 +15,7 @@ export default async function ClientIntakePage() {
 
   if (!intake) {
     return (
-      <AppShell role="client" title="Client intake" subtitle="Your trainer needs a linked client profile before intake can be completed." navLocked>
+      <AppShell role="client" title="Client intake" eyebrow="Onboarding" subtitle="Your trainer needs a linked client profile before intake can be completed." navLocked>
         <Card className="max-w-3xl p-8">
           <p className="font-serif text-4xl font-semibold text-charcoal-950">Your profile is not linked yet.</p>
           <p className="mt-3 text-sm leading-6 text-stone-600">
@@ -30,6 +30,7 @@ export default async function ClientIntakePage() {
     <AppShell
       role="client"
       title="Complete your intake."
+      eyebrow="Onboarding"
       subtitle="Your answers help your trainer plan safe, useful, and personal training from day one."
       navLocked
     >

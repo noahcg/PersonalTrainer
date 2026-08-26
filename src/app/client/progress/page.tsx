@@ -16,7 +16,7 @@ export default async function ClientProgressPage() {
 
   if (!client) {
     return (
-      <AppShell role="client" title="Your progress" subtitle="Consistency, milestones, and body metrics will appear here as you start logging." clientPortalAccess={clientPortalAccess}>
+      <AppShell role="client" title="Your progress" eyebrow="Progress tracking" subtitle="Consistency, milestones, and body metrics will appear here as you start logging." clientPortalAccess={clientPortalAccess}>
         <Card className="max-w-3xl p-8">
           <p className="font-serif text-4xl font-semibold text-charcoal-950">No progress data yet.</p>
           <p className="mt-3 text-sm leading-6 text-stone-600">
@@ -46,6 +46,7 @@ export default async function ClientProgressPage() {
     <AppShell
       role="client"
       title="Your progress"
+      eyebrow="Progress tracking"
       subtitle="Consistency, body weight trends, personal records, milestones, and photo metadata in one calm view."
       clientPortalAccess={clientPortalAccess}
     >

@@ -22,6 +22,7 @@ export default async function TrainerResourceDetailPage({
     <AppShell
       role="trainer"
       title={resource.title}
+      eyebrow="Resource detail"
       subtitle="Resource details, audience, and full coaching content."
     >
       <div className="space-y-5">

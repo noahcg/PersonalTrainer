@@ -6,7 +6,7 @@ export default async function TrainerBulletinPage() {
   const { bulletins, mode } = await getTrainerBulletins();
 
   return (
-    <AppShell role="trainer" title="Bulletin board" subtitle="Broadcast one message to every client from a calm, central studio noticeboard.">
+    <AppShell role="trainer" title="Bulletin board" eyebrow="Studio announcements" subtitle="Broadcast one message to every client from a calm, central studio noticeboard.">
       <TrainerBulletinBoard initialBulletins={bulletins} mode={mode} />
     </AppShell>
   );

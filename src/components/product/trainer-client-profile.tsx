@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, Dumbbell, ExternalLink, Mail, NotebookPen, Package, PencilLine, Save, StickyNote, Trash2, X } from "lucide-react";
+import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, Dumbbell, ExternalLink, Mail, NotebookPen, Package, PencilLine, Save, Search, Send, StickyNote, Trash2, X } from "lucide-react";
 import { forwardRef, type HTMLAttributes, useEffect, useMemo, useRef, useState } from "react";
 import { clientAccessDetail } from "@/lib/client-access";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
@@ -17,7 +17,45 @@ import { deleteStoredDemoClient, readStoredDemoClientProfile, syncDemoClientReco
 import { defaultInviteMessage, defaultInviteSubject } from "@/lib/invitations";
 import { pricingTierDetail, pricingTierLabel } from "@/lib/pricing";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
-import type { Client, ClientIntake, ClientSession, ClientStatus, CoachingEntry, PackageType, Plan, PricingTier } from "@/lib/types";
+import type { Client, ClientIntake, ClientSession, ClientStatus, CoachingEntry, PackageType, Plan, PricingTier, Workout, WorkoutAssignment } from "@/lib/types";
+
+function isoDateAfter(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDateOnly(value?: string) {
+  if (!value) return "Not scheduled";
+  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function assignmentWindowLabel(assignment: WorkoutAssignment) {
+  const scheduled = assignment.scheduledFor ? formatDateOnly(assignment.scheduledFor) : "";
+  const due = assignment.dueOn ? formatDateOnly(assignment.dueOn) : "";
+  if (scheduled && due) return scheduled === due ? `Scheduled ${scheduled}` : `${scheduled} - due ${due}`;
+  if (due) return `Due ${due}`;
+  if (scheduled) return `Scheduled ${scheduled}`;
+  return "No date set";
+}
+
+function assignmentStatusLabel(status?: WorkoutAssignment["status"]) {
+  if (status === "completed") return "Completed";
+  if (status === "overdue") return "Overdue";
+  return "Assigned";
+}
+
+function assignmentStatusVariant(status?: WorkoutAssignment["status"]) {
+  if (status === "completed") return "sage";
+  if (status === "overdue") return "alert";
+  return "bronze";
+}
 
 export function TrainerClientProfile({
   initialClient,
@@ -26,6 +64,7 @@ export function TrainerClientProfile({
   initialCoachingNotes,
   initialSessions,
   packageTypes,
+  initialWorkouts,
   mode,
 }: {
   initialClient: Client;
@@ -34,6 +73,7 @@ export function TrainerClientProfile({
   initialCoachingNotes: CoachingEntry[];
   initialSessions: ClientSession[];
   packageTypes: PackageType[];
+  initialWorkouts: Workout[];
   mode: "demo" | "supabase";
 }) {
   const [client, setClient] = useState(initialClient);
@@ -42,7 +82,13 @@ export function TrainerClientProfile({
   const [editOpen, setEditOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [detailTab, setDetailTab] = useState<"context" | "coaching" | "sessions">("context");
+  const [detailTab, setDetailTab] = useState<"context" | "workouts" | "coaching" | "sessions">("context");
+  const [workouts, setWorkouts] = useState(initialWorkouts);
+  const [workoutQuery, setWorkoutQuery] = useState("");
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState(initialWorkouts[0]?.id ?? "");
+  const [assignmentScheduledFor, setAssignmentScheduledFor] = useState(() => isoDateAfter(1));
+  const [assignmentDueOn, setAssignmentDueOn] = useState(() => isoDateAfter(7));
+  const [assignmentNotes, setAssignmentNotes] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(initialClient);
   const [draftPackageTypeId, setDraftPackageTypeId] = useState("");
@@ -629,25 +675,114 @@ export function TrainerClientProfile({
   const partnerPackage = client.partnerPackage;
   const assignablePackageTypes = partnerPackage ? [] : packageTypes.filter((packageType) => packageType.kind === "one_on_one" && packageType.active);
   const selectedDraftPackageType = assignablePackageTypes.find((item) => item.id === draftPackageTypeId) ?? null;
+  const clientWorkoutAssignments = useMemo(
+    () =>
+      workouts
+        .flatMap((workout) =>
+          (workout.assignments ?? [])
+            .filter((assignment) => assignment.clientId === client.id)
+            .map((assignment) => ({ workout, assignment })),
+        )
+        .sort((a, b) => {
+          const aStatus = a.assignment.status === "completed" ? 1 : 0;
+          const bStatus = b.assignment.status === "completed" ? 1 : 0;
+          if (aStatus !== bStatus) return aStatus - bStatus;
+          return (a.assignment.dueOn || "9999-12-31").localeCompare(b.assignment.dueOn || "9999-12-31");
+        }),
+    [client.id, workouts],
+  );
+  const filteredWorkoutOptions = useMemo(
+    () =>
+      workouts.filter((workout) =>
+        [workout.name, workout.dayLabel, workout.coachNotes].join(" ").toLowerCase().includes(workoutQuery.trim().toLowerCase()),
+      ),
+    [workoutQuery, workouts],
+  );
+  const selectedWorkout = workouts.find((workout) => workout.id === selectedWorkoutId) ?? workouts[0] ?? null;
+
+  async function assignClientWorkout() {
+    if (!selectedWorkout) return;
+    if (!assignmentScheduledFor && !assignmentDueOn) {
+      setMessage("Set an available date or completion deadline.");
+      window.setTimeout(() => setMessage(null), 2400);
+      return;
+    }
+    if (assignmentScheduledFor && assignmentDueOn && assignmentDueOn < assignmentScheduledFor) {
+      setMessage("Completion deadline cannot be before the available date.");
+      window.setTimeout(() => setMessage(null), 2400);
+      return;
+    }
+
+    setBusy(true);
+    setMessage(null);
+    try {
+      if (mode === "supabase") {
+        const response = await fetch(`/api/trainer/clients/${client.id}/workout-assignments`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            workoutId: selectedWorkout.id,
+            scheduledFor: assignmentScheduledFor,
+            dueOn: assignmentDueOn,
+            notes: assignmentNotes,
+          }),
+        });
+        const payload = (await response.json().catch(() => ({}))) as { error?: string };
+        if (!response.ok) throw new Error(payload.error ?? "Unable to assign workout.");
+      }
+
+      const nextAssignment: WorkoutAssignment = {
+        clientId: client.id,
+        clientName: client.name,
+        assignedOn: new Date().toISOString().slice(0, 10),
+        scheduledFor: assignmentScheduledFor,
+        dueOn: assignmentDueOn,
+        notes: assignmentNotes.trim(),
+        status: assignmentDueOn && assignmentDueOn < new Date().toISOString().slice(0, 10) ? "overdue" : "assigned",
+        completedAt: "",
+      };
+      setWorkouts((current) =>
+        current.map((workout) => {
+          if (workout.id !== selectedWorkout.id) return workout;
+          const otherAssignments = (workout.assignments ?? []).filter((assignment) => assignment.clientId !== client.id);
+          const assignments = [nextAssignment, ...otherAssignments];
+          return {
+            ...workout,
+            assignments,
+            assignment: assignments[0],
+            assignedClientIds: assignments.map((assignment) => assignment.clientId),
+            assignedClientNames: assignments.map((assignment) => assignment.clientName ?? "Client"),
+          };
+        }),
+      );
+      setAssignmentNotes("");
+      setMessage("Workout scheduled for client.");
+      window.setTimeout(() => setMessage(null), 2400);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to assign workout.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <>
       <div className="space-y-5">
         <Card className="overflow-hidden p-0">
-          <div className="border-b border-border bg-white/35 p-5 sm:p-6">
-            <Button asChild variant="ghost" size="sm" className="-ml-2 mb-5 w-fit">
+          <div className="border-b border-border bg-white/35 p-4 sm:p-5">
+            <Button asChild variant="ghost" size="sm" className="-ml-2 mb-4 w-fit">
               <Link href="/trainer/clients">
                 <ArrowLeft className="size-4" />
                 Back to roster
               </Link>
             </Button>
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
-                <Avatar name={client.name} src={client.photo} className="size-20 sm:size-24" />
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+              <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
+                <Avatar name={client.name} src={client.photo} className="size-16 sm:size-[4.5rem]" />
                 <div className="min-w-0">
-                  <h2 className="font-serif text-4xl font-semibold leading-tight text-charcoal-950 sm:text-5xl">{client.name}</h2>
-                  <p className="mt-2 break-all text-sm text-stone-500">{client.email}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <h2 className="font-serif text-3xl font-semibold leading-tight text-charcoal-950 sm:text-4xl">{client.name}</h2>
+                  <p className="mt-1 break-all text-sm text-stone-500">{client.email}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <Badge variant="sage">{client.level}</Badge>
                     <Badge variant="dark">{pricingTierLabel(client.pricingTier)}</Badge>
                     <Badge variant={client.status === "archived" ? "default" : "sage"}>
@@ -655,7 +790,7 @@ export function TrainerClientProfile({
                     </Badge>
                     {partnerPackage ? <Badge variant="bronze">Partner Training</Badge> : null}
                   </div>
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
                     {client.status === "archived"
                       ? "Client can log in with data-only access to profile, progress, and recorded history."
                       : client.accessStatus === "account_active"
@@ -665,15 +800,16 @@ export function TrainerClientProfile({
                 </div>
               </div>
 
-              <div className="grid gap-3 rounded-[1.75rem] border border-stone-200 bg-white/70 p-3 shadow-inner-soft lg:w-[22rem]">
+              <div className="flex flex-wrap gap-2 xl:max-w-[39rem] xl:justify-end">
                 {client.accessStatus !== "account_active" ? (
-                  <Button variant="secondary" onClick={() => setInviteOpen(true)} disabled={busy} className="bg-white">
+                  <Button variant="secondary" size="sm" onClick={() => setInviteOpen(true)} disabled={busy} className="bg-white">
                     <Mail className="size-4" />
                     {client.accessStatus === "invite_pending" ? "Resend access invite" : "Send access invite"}
                   </Button>
                 ) : null}
                 <Button
                   variant="warm"
+                  size="sm"
                   onClick={() => void logInPersonSession()}
                   disabled={busy || client.status === "archived"}
                   className="shadow-warm"
@@ -681,24 +817,26 @@ export function TrainerClientProfile({
                   <CheckCircle2 className="size-4" />
                   {client.status === "archived" ? "Client inactive" : busy ? "Logging..." : "Log in-person session"}
                 </Button>
-                <Button variant="secondary" onClick={() => setEditOpen(true)} className="bg-ivory-50">
+                <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)} className="bg-ivory-50">
                   <PencilLine className="size-4" />
                   Edit profile
                 </Button>
                 <Button
                   variant="ghost"
+                  size="sm"
                   onClick={deactivateClient}
                   disabled={busy}
-                  className="h-10 rounded-2xl bg-stone-50/80 px-4 text-stone-700 ring-1 ring-stone-200/80 hover:bg-white"
+                  className="bg-stone-50/80 text-stone-700 ring-1 ring-stone-200/80 hover:bg-white"
                 >
                   <Ban className="size-4" />
                   {client.status === "archived" ? "Reactivate client" : "Mark inactive"}
                 </Button>
                 <Button
                   variant="ghost"
+                  size="sm"
                   onClick={() => setDeleteOpen(true)}
                   disabled={busy}
-                  className="h-10 rounded-2xl bg-rose-50/70 px-4 text-rose-600 ring-1 ring-rose-100 hover:bg-rose-50 hover:text-rose-700"
+                  className="bg-rose-50/70 text-rose-600 ring-1 ring-rose-100 hover:bg-rose-50 hover:text-rose-700"
                 >
                   <Trash2 className="size-4" />
                   Delete client
@@ -804,11 +942,14 @@ export function TrainerClientProfile({
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <CardTitle>Client workspace</CardTitle>
-                <p className="text-sm leading-6 text-stone-500">Switch between overview details, coaching notes, and in-person session tracking.</p>
+                <p className="text-sm leading-6 text-stone-500">Switch between overview details, workout assignments, coaching notes, and in-person session tracking.</p>
               </div>
               <div className="flex flex-wrap gap-2 rounded-full bg-stone-100 p-1" role="tablist" aria-label="Client profile sections">
                 <DetailTabButton active={detailTab === "context"} onClick={() => setDetailTab("context")}>
                   Overview
+                </DetailTabButton>
+                <DetailTabButton active={detailTab === "workouts"} onClick={() => setDetailTab("workouts")}>
+                  Workouts
                 </DetailTabButton>
                 <DetailTabButton active={detailTab === "coaching"} onClick={() => setDetailTab("coaching")}>
                   Coaching
@@ -822,6 +963,106 @@ export function TrainerClientProfile({
           <CardContent className="p-0">
             {detailTab === "context" ? (
               <OverviewContextPanel profileRows={profileContextRows} intakeRows={intakeContextRows} />
+            ) : null}
+
+            {detailTab === "workouts" ? (
+              <div>
+                <div className="grid gap-5 border-b border-border p-5 lg:grid-cols-[1fr_22rem] sm:p-6">
+                  <div>
+                    <p className="text-sm font-semibold text-charcoal-950">Assign independent work</p>
+                    <p className="mt-1 text-sm leading-6 text-stone-500">
+                      Schedule the workouts this client should complete between 1:1 sessions.
+                    </p>
+                    <div className="relative mt-4 max-w-xl">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+                      <Input value={workoutQuery} onChange={(event) => setWorkoutQuery(event.target.value)} placeholder="Search saved workouts..." className="pl-9" />
+                    </div>
+                    <div className="mt-4 grid max-h-80 gap-2 overflow-y-auto pr-1">
+                      {filteredWorkoutOptions.map((workout) => {
+                        const selected = selectedWorkout?.id === workout.id;
+                        return (
+                          <button
+                            key={workout.id}
+                            type="button"
+                            onClick={() => setSelectedWorkoutId(workout.id)}
+                            className={`rounded-[1.25rem] border px-4 py-3 text-left transition ${
+                              selected ? "border-bronze-300 bg-bronze-50" : "border-stone-200 bg-white/75 hover:bg-white"
+                            }`}
+                          >
+                            <p className="font-semibold text-charcoal-950">{workout.name}</p>
+                            <p className="mt-1 line-clamp-1 text-sm text-stone-500">{workout.coachNotes || workout.dayLabel}</p>
+                          </button>
+                        );
+                      })}
+                      {!filteredWorkoutOptions.length ? (
+                        <div className="rounded-[1.25rem] border border-dashed border-stone-200 bg-white/70 p-4 text-sm text-stone-500">
+                          No workouts match this search.
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="grid content-start gap-3">
+                    <Field label="Available on">
+                      <Input type="date" value={assignmentScheduledFor} onChange={(event) => setAssignmentScheduledFor(event.target.value)} />
+                    </Field>
+                    <Field label="Complete by">
+                      <Input type="date" value={assignmentDueOn} onChange={(event) => setAssignmentDueOn(event.target.value)} />
+                    </Field>
+                    <Field label="Assignment notes">
+                      <Textarea
+                        className="min-h-28"
+                        value={assignmentNotes}
+                        onChange={(event) => setAssignmentNotes(event.target.value)}
+                        placeholder="Complete this before our next 1:1 and log how it felt."
+                      />
+                    </Field>
+                    <Button variant="warm" onClick={() => void assignClientWorkout()} disabled={busy || !selectedWorkout || client.status === "archived"}>
+                      <Send className="size-4" />
+                      {client.status === "archived" ? "Client inactive" : busy ? "Scheduling..." : "Schedule workout"}
+                    </Button>
+                  </div>
+                </div>
+                <div className="p-5 sm:p-6">
+                  <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Workout ledger</p>
+                      <p className="mt-1 text-sm text-stone-500">Due dates also appear on the trainer calendar until the workout is completed.</p>
+                    </div>
+                    <Badge variant="bronze">{clientWorkoutAssignments.filter((item) => item.assignment.status !== "completed").length} active</Badge>
+                  </div>
+                  <div className="grid gap-3">
+                    {clientWorkoutAssignments.length ? (
+                      clientWorkoutAssignments.map(({ workout, assignment }) => (
+                        <div key={`${workout.id}-${assignment.assignedOn}-${assignment.dueOn}`} className="rounded-[1.25rem] border border-stone-200 bg-white/78 p-4">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-semibold text-charcoal-950">{workout.name}</p>
+                                <Badge variant={assignmentStatusVariant(assignment.status)}>{assignmentStatusLabel(assignment.status)}</Badge>
+                              </div>
+                              <p className="mt-2 text-sm text-stone-500">{assignmentWindowLabel(assignment)}</p>
+                              {assignment.completedAt ? (
+                                <p className="mt-1 text-sm font-medium text-sage-700">Completed {formatDateOnly(assignment.completedAt)}</p>
+                              ) : null}
+                              {assignment.notes ? <p className="mt-3 text-sm leading-6 text-stone-600">{assignment.notes}</p> : null}
+                            </div>
+                            <Button asChild variant="secondary" size="sm">
+                              <Link href="/trainer/calendar">
+                                <CalendarClock className="size-4" />
+                                Calendar
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-[1.25rem] bg-stone-50 p-4 text-sm text-stone-500">
+                        No independent workouts assigned yet. Schedule one above when this client needs between-session work.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             ) : null}
 
             {detailTab === "coaching" ? (

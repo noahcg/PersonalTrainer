@@ -19,7 +19,7 @@ export default async function ClientResourceDetailPage({
   }
 
   return (
-    <AppShell role="client" title={resource.title} subtitle="Resource details and full guidance from your trainer.">
+    <AppShell role="client" title={resource.title} eyebrow="Resource detail" subtitle="Resource details and full guidance from your trainer.">
       <div className="space-y-5">
         <Link href="/client/resources" className="inline-flex items-center gap-2 text-sm font-medium text-stone-600 transition hover:text-charcoal-950">
           <ArrowLeft className="size-4" />

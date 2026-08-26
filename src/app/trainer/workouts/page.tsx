@@ -12,7 +12,7 @@ export default async function WorkoutsPage() {
   ]);
 
   return (
-    <AppShell role="trainer" title="Workouts" subtitle="Compose warm-ups, main blocks, accessories, finishers, cooldowns, and exercise prescriptions with coach-grade detail.">
+    <AppShell role="trainer" title="Workouts" eyebrow="Workout templates" subtitle="Compose warm-ups, main blocks, accessories, finishers, cooldowns, and exercise prescriptions with coach-grade detail.">
       <TrainerWorkoutBuilderNav>
         <TrainerWorkoutBuilder initialWorkouts={workouts} exercises={exercises} plans={plans} mode={mode} />
       </TrainerWorkoutBuilderNav>

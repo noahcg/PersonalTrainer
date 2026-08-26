@@ -150,6 +150,21 @@ create table public.plan_assignments (
   unique (training_plan_id, client_id, starts_on)
 );
 
+create table public.workout_assignments (
+  id uuid primary key default gen_random_uuid(),
+  workout_id uuid not null references public.workouts(id) on delete cascade,
+  client_id uuid not null references public.clients(id) on delete cascade,
+  assigned_by_trainer_id uuid not null references public.trainers(id) on delete cascade,
+  assigned_on date not null default current_date,
+  scheduled_for date,
+  due_on date,
+  assignment_notes text,
+  ends_on date,
+  status text not null default 'active',
+  assigned_at timestamptz not null default now(),
+  unique (workout_id, client_id, assigned_on)
+);
+
 create table public.workout_logs (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.clients(id) on delete cascade,
@@ -409,6 +424,8 @@ create index clients_trainer_idx on public.clients(trainer_id, status);
 create index exercises_trainer_idx on public.exercises(trainer_id, is_global);
 create index workouts_plan_idx on public.workouts(training_plan_id);
 create index plan_assignments_client_idx on public.plan_assignments(client_id, status);
+create index workout_assignments_client_idx on public.workout_assignments(client_id, status);
+create index workout_assignments_workout_idx on public.workout_assignments(workout_id, status);
 create index workout_logs_client_idx on public.workout_logs(client_id, status);
 create index client_sessions_client_idx on public.client_sessions(client_id, status, started_at desc);
 create index trainer_appointments_trainer_idx on public.trainer_appointments(trainer_id, starts_at);
@@ -432,6 +449,7 @@ alter table public.workouts enable row level security;
 alter table public.workout_blocks enable row level security;
 alter table public.workout_exercises enable row level security;
 alter table public.plan_assignments enable row level security;
+alter table public.workout_assignments enable row level security;
 alter table public.workout_logs enable row level security;
 alter table public.client_sessions enable row level security;
 alter table public.trainer_appointments enable row level security;
@@ -478,13 +496,15 @@ create policy "exercise tags visible" on public.exercise_tags for select using (
 create policy "exercise tags trainer writes" on public.exercise_tags for all using (exists (select 1 from public.exercises e where e.id = exercise_id and e.trainer_id = public.current_trainer_id())) with check (exists (select 1 from public.exercises e where e.id = exercise_id and e.trainer_id = public.current_trainer_id()));
 create policy "plans trainer select" on public.training_plans for select using (trainer_id = public.current_trainer_id() or id in (select training_plan_id from public.plan_assignments where client_id = public.current_client_id()));
 create policy "plans trainer writes" on public.training_plans for all using (trainer_id = public.current_trainer_id()) with check (trainer_id = public.current_trainer_id());
-create policy "workouts visible" on public.workouts for select using (trainer_id = public.current_trainer_id() or training_plan_id in (select training_plan_id from public.plan_assignments where client_id = public.current_client_id()));
+create policy "workouts visible" on public.workouts for select using (trainer_id = public.current_trainer_id() or training_plan_id in (select training_plan_id from public.plan_assignments where client_id = public.current_client_id()) or id in (select workout_id from public.workout_assignments where client_id = public.current_client_id() and status = 'active'));
 create policy "workouts trainer writes" on public.workouts for all using (trainer_id = public.current_trainer_id()) with check (trainer_id = public.current_trainer_id());
-create policy "blocks visible" on public.workout_blocks for select using (exists (select 1 from public.workouts w where w.id = workout_id and (w.trainer_id = public.current_trainer_id() or w.training_plan_id in (select training_plan_id from public.plan_assignments where client_id = public.current_client_id()))));
+create policy "blocks visible" on public.workout_blocks for select using (exists (select 1 from public.workouts w where w.id = workout_id and (w.trainer_id = public.current_trainer_id() or w.training_plan_id in (select training_plan_id from public.plan_assignments where client_id = public.current_client_id()) or w.id in (select workout_id from public.workout_assignments where client_id = public.current_client_id() and status = 'active'))));
 create policy "blocks trainer writes" on public.workout_blocks for all using (exists (select 1 from public.workouts w where w.id = workout_id and w.trainer_id = public.current_trainer_id())) with check (exists (select 1 from public.workouts w where w.id = workout_id and w.trainer_id = public.current_trainer_id()));
-create policy "workout exercises visible" on public.workout_exercises for select using (exists (select 1 from public.workout_blocks b join public.workouts w on w.id = b.workout_id where b.id = workout_block_id and (w.trainer_id = public.current_trainer_id() or w.training_plan_id in (select training_plan_id from public.plan_assignments where client_id = public.current_client_id()))));
+create policy "workout exercises visible" on public.workout_exercises for select using (exists (select 1 from public.workout_blocks b join public.workouts w on w.id = b.workout_id where b.id = workout_block_id and (w.trainer_id = public.current_trainer_id() or w.training_plan_id in (select training_plan_id from public.plan_assignments where client_id = public.current_client_id()) or w.id in (select workout_id from public.workout_assignments where client_id = public.current_client_id() and status = 'active'))));
 create policy "workout exercises trainer writes" on public.workout_exercises for all using (exists (select 1 from public.workout_blocks b join public.workouts w on w.id = b.workout_id where b.id = workout_block_id and w.trainer_id = public.current_trainer_id())) with check (exists (select 1 from public.workout_blocks b join public.workouts w on w.id = b.workout_id where b.id = workout_block_id and w.trainer_id = public.current_trainer_id()));
 create policy "assignments visible" on public.plan_assignments for select using (client_id = public.current_client_id() or exists (select 1 from public.training_plans p where p.id = training_plan_id and p.trainer_id = public.current_trainer_id()));
+create policy "workout assignments visible" on public.workout_assignments for select using (client_id = public.current_client_id() or exists (select 1 from public.workouts w where w.id = workout_id and w.trainer_id = public.current_trainer_id()));
+create policy "workout assignments trainer writes" on public.workout_assignments for all using (exists (select 1 from public.workouts w where w.id = workout_id and w.trainer_id = public.current_trainer_id())) with check (assigned_by_trainer_id = public.current_trainer_id() and exists (select 1 from public.workouts w where w.id = workout_id and w.trainer_id = public.current_trainer_id()) and exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id()));
 create policy "logs client trainer visible" on public.workout_logs for select using (client_id = public.current_client_id() or exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id()));
 create policy "logs client writes own" on public.workout_logs for all using (client_id = public.current_client_id()) with check (client_id = public.current_client_id());
 create policy "client sessions visible" on public.client_sessions for select using (client_id = public.current_client_id() or exists (select 1 from public.clients c where c.id = client_id and c.trainer_id = public.current_trainer_id()));

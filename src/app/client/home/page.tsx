@@ -15,7 +15,7 @@ import { getClientBulletins } from "@/lib/bulletins";
 import { getClientResources } from "@/lib/resources";
 import { getClientWorkoutCheckIns, getClientWorkouts } from "@/lib/workouts";
 import { clientPortalAccessFromStatus } from "@/lib/client-portal-access";
-import type { Workout } from "@/lib/types";
+import type { TrainerAppointment, Workout } from "@/lib/types";
 
 function normalizeLabel(value: string) {
   return value.toLowerCase().replace(/[^\w\s/.-]/g, " ").replace(/\s+/g, " ").trim();
@@ -41,7 +41,7 @@ function getTodayWorkoutTokens(today = new Date()) {
 }
 
 function isTodaysWorkout(workout: Workout, today = new Date()) {
-  const searchableLabel = normalizeLabel(`${workout.dayLabel} ${workout.name}`);
+  const searchableLabel = normalizeLabel(`${workout.assignment?.scheduledFor ?? ""} ${workout.assignment?.dueOn ?? ""} ${workout.dayLabel} ${workout.name}`);
   return getTodayWorkoutTokens(today).some((token) => searchableLabel.includes(token));
 }
 
@@ -50,9 +50,95 @@ function getRelevantWorkout(workouts: Workout[]) {
   const todaysWorkout = workouts.find((workout) => isTodaysWorkout(workout, today));
   if (todaysWorkout) return { workout: todaysWorkout, label: "Today's workout" };
 
+  const scheduledWorkout = [...workouts]
+    .filter((workout) => workout.assignment?.status !== "completed")
+    .sort((a, b) => {
+      const aDate = a.assignment?.scheduledFor || a.assignment?.dueOn || "9999-12-31";
+      const bDate = b.assignment?.scheduledFor || b.assignment?.dueOn || "9999-12-31";
+      return aDate.localeCompare(bDate);
+    })[0];
+
   return {
-    workout: workouts[0],
-    label: workouts[0] ? "Recommended next" : "Workout focus",
+    workout: scheduledWorkout,
+    label: scheduledWorkout ? "Scheduled workout" : "Workout focus",
+  };
+}
+
+function formatDateOnly(value?: string) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatAppointmentDateTime(iso: string) {
+  const date = new Date(iso);
+  return {
+    date: date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }),
+    time: date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+  };
+}
+
+function getNextAction(appointments: TrainerAppointment[], workouts: Workout[]) {
+  const now = Date.now();
+  const nextAppointment = appointments
+    .filter((appointment) => appointment.status === "scheduled" && new Date(appointment.startsAtIso).getTime() >= now - 60 * 60 * 1000)
+    .sort((a, b) => new Date(a.startsAtIso).getTime() - new Date(b.startsAtIso).getTime())[0];
+
+  if (nextAppointment) {
+    const formatted = formatAppointmentDateTime(nextAppointment.startsAtIso);
+    return {
+      type: "appointment" as const,
+      badge: "Upcoming appointment",
+      title: nextAppointment.title,
+      description: nextAppointment.notes || "Your next 1:1 session is on the schedule.",
+      primaryMeta: `${formatted.date} at ${formatted.time}`,
+      secondaryMeta: nextAppointment.durationMinutes ? `${nextAppointment.durationMinutes} min` : "Scheduled",
+      tertiaryMeta: nextAppointment.location || "Location TBD",
+      href: "/client/home",
+      action: "View appointment",
+    };
+  }
+
+  const featuredWorkout = getRelevantWorkout(workouts);
+  const workout = featuredWorkout.workout;
+  if (workout) {
+    const due = formatDateOnly(workout.assignment?.dueOn);
+    const scheduled = formatDateOnly(workout.assignment?.scheduledFor);
+    return {
+      type: "workout" as const,
+      badge: featuredWorkout.label,
+      title: workout.name,
+      description: workout.assignment?.notes || workout.coachNotes || "Complete this workout on your own and log how it went.",
+      primaryMeta: due ? `Due ${due}` : scheduled ? `Scheduled ${scheduled}` : workout.dayLabel,
+      secondaryMeta: workout.duration,
+      tertiaryMeta: `${workout.blocks.length} training blocks`,
+      href: `/client/workouts/${workout.id}`,
+      action: "Open workout",
+    };
+  }
+
+  return {
+    type: "empty" as const,
+    badge: brand.app.workspaceBadge,
+    title: "No upcoming item yet",
+    description: "Your trainer will place appointments and scheduled workouts here when they are ready.",
+    primaryMeta: "Awaiting schedule",
+    secondaryMeta: "Planned by coach",
+    tertiaryMeta: brand.tagline,
+    href: "/client/workouts",
+    action: "View workouts",
   };
 }
 
@@ -67,6 +153,7 @@ export default async function ClientHomePage() {
       <AppShell
         role="client"
         title="Your account is inactive."
+        eyebrow="Account status"
         subtitle="You can still access your profile, progress, and recorded history. Active training services are paused."
         clientPortalAccess={clientPortalAccess}
       >
@@ -185,14 +272,7 @@ export default async function ClientHomePage() {
     getClientBulletins(),
   ]);
 
-  const latestCompletedWorkout = workoutCheckIns[0];
-  const featuredWorkout = getRelevantWorkout(workouts);
-  const workout = featuredWorkout.workout;
-  const heroTitle = latestCompletedWorkout?.workoutName ?? workout?.name ?? "No workout assigned yet";
-  const heroBadge = latestCompletedWorkout ? "Latest completed workout" : workout ? featuredWorkout.label : brand.app.workspaceBadge;
-  const heroDescription = latestCompletedWorkout
-    ? latestCompletedWorkout.feedback || "Your trainer can review the workout you submitted and use it to guide what comes next."
-    : workout?.coachNotes ?? "Your trainer will place your next session here once your plan is live.";
+  const nextAction = getNextAction(appointments, workouts);
   const latestCheckIn = checkIns[0];
   const hasWorkspaceData = Boolean(client || plan || workouts.length || workoutCheckIns.length || checkIns.length || resources.length || bulletins.length || appointments.length);
   const assignedWorkoutDetail = client?.metrics.assignedWorkouts.total
@@ -204,6 +284,7 @@ export default async function ClientHomePage() {
       <AppShell
         role="client"
         title="Welcome"
+        eyebrow="Client workspace"
         subtitle="Your coaching workspace starts empty and fills in only with the plan, workouts, messages, and resources assigned to you."
         clientPortalAccess={clientPortalAccess}
       >
@@ -235,6 +316,7 @@ export default async function ClientHomePage() {
     <AppShell
       role="client"
       title="Your next session is clear."
+      eyebrow="Today"
       subtitle={`${brand.tagline} Everything is organized so you can train with calm structure, log performance, and feel supported.`}
       clientPortalAccess={clientPortalAccess}
     >
@@ -244,26 +326,26 @@ export default async function ClientHomePage() {
         <section className="space-y-5">
           <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
             <div className="p-5 sm:p-8">
-              <Badge variant={latestCompletedWorkout ? "sage" : "bronze"}>{heroBadge}</Badge>
-              <h2 className="mt-5 max-w-2xl font-serif text-5xl font-semibold leading-[0.95]">{heroTitle}</h2>
+              <Badge variant={nextAction.type === "workout" ? "bronze" : "sage"}>{nextAction.badge}</Badge>
+              <h2 className="mt-5 max-w-2xl font-serif text-5xl font-semibold leading-[0.95]">{nextAction.title}</h2>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-ivory-50/65">
-                {heroDescription}
+                {nextAction.description}
               </p>
               <div className="mt-7 flex flex-wrap gap-3 text-sm text-ivory-50/70">
                 <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">
-                  {latestCompletedWorkout?.completedAt ?? workout?.dayLabel ?? "Awaiting schedule"}
+                  {nextAction.primaryMeta}
                 </div>
                 <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">
-                  {latestCompletedWorkout?.dayLabel ?? workout?.duration ?? "Planned by coach"}
+                  {nextAction.secondaryMeta}
                 </div>
                 <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">
-                  {latestCompletedWorkout?.perceivedEffort ? `RPE ${latestCompletedWorkout.perceivedEffort}` : brand.tagline}
+                  {nextAction.tertiaryMeta}
                 </div>
               </div>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Button asChild variant="warm" size="lg">
-                  <Link href={latestCompletedWorkout ? `/client/workouts/${latestCompletedWorkout.workoutId}` : workout ? `/client/workouts/${workout.id}` : "/client/workouts"}>
-                    {latestCompletedWorkout ? "Review completed workout" : "Open workout"}
+                  <Link href={nextAction.href}>
+                    {nextAction.action}
                     <ArrowRight className="size-5" />
                   </Link>
                 </Button>

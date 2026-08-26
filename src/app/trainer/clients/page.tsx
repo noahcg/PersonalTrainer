@@ -7,7 +7,7 @@ export default async function ClientsPage() {
   const [{ clients, mode }, { packageTypes }] = await Promise.all([getTrainerClients(), getTrainerPackageTypes()]);
 
   return (
-    <AppShell role="trainer" title="Client roster" subtitle="Manage profiles, goals, limitations, coaching notes, status, and metrics in one polished client view.">
+    <AppShell role="trainer" title="Client roster" eyebrow="Roster" subtitle="Manage profiles, goals, limitations, coaching notes, status, and metrics in one polished client view.">
       <TrainerClientsManager initialClients={clients} initialPackageTypes={packageTypes} mode={mode} />
     </AppShell>
   );

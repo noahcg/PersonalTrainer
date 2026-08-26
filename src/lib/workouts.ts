@@ -2,7 +2,7 @@ import { clients as demoClients, workouts as demoWorkouts } from "@/lib/demo-dat
 import { isSupabaseConfigured } from "@/lib/auth-server";
 import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
-import type { Exercise, Plan, Workout, WorkoutBlock, WorkoutCheckIn, WorkoutExercise } from "@/lib/types";
+import type { Exercise, Plan, Workout, WorkoutAssignment, WorkoutBlock, WorkoutCheckIn, WorkoutExercise } from "@/lib/types";
 
 type WorkoutRow = {
   id: string;
@@ -69,6 +69,25 @@ type WorkoutLogRow = {
     | null;
 };
 
+type WorkoutAssignmentRow = {
+  id?: string;
+  workout_id: string;
+  client_id: string;
+  assigned_on: string | null;
+  scheduled_for: string | null;
+  due_on: string | null;
+  assignment_notes: string | null;
+  clients?: { full_name: string } | { full_name: string }[] | null;
+};
+
+type AssignmentLogRow = {
+  client_id: string;
+  workout_id: string;
+  completed_at: string | null;
+  created_at: string;
+  status: string;
+};
+
 async function getTrainerContext() {
   const supabase = await createClient();
   const {
@@ -90,7 +109,35 @@ function mapWorkout(
   blocks: WorkoutBlockRow[],
   items: WorkoutExerciseRow[],
   exercisesById: Map<string, Exercise>,
+  assignments: WorkoutAssignmentRow[] = [],
+  logs: AssignmentLogRow[] = [],
 ): Workout {
+  const nowDate = new Date().toISOString().slice(0, 10);
+  const completedLogByClientWorkout = new Map(
+    logs
+      .filter((log) => log.status === "completed")
+      .map((log) => [`${log.client_id}:${log.workout_id}`, log.completed_at ?? log.created_at]),
+  );
+  const workoutAssignments = assignments.filter((assignment) => assignment.workout_id === workout.id);
+  const mappedAssignments: WorkoutAssignment[] = workoutAssignments.map((assignment) => {
+    const completedAt = completedLogByClientWorkout.get(`${assignment.client_id}:${assignment.workout_id}`) ?? "";
+    const status: WorkoutAssignment["status"] = completedAt
+      ? "completed"
+      : assignment.due_on && assignment.due_on < nowDate
+        ? "overdue"
+        : "assigned";
+
+    return {
+      clientId: assignment.client_id,
+      clientName: firstJoinedRow(assignment.clients)?.full_name,
+      assignedOn: assignment.assigned_on ?? "",
+      scheduledFor: assignment.scheduled_for ?? "",
+      dueOn: assignment.due_on ?? "",
+      notes: assignment.assignment_notes ?? "",
+      completedAt,
+      status,
+    };
+  });
   const mappedBlocks: WorkoutBlock[] = blocks
     .filter((block) => block.workout_id === workout.id)
     .sort((a, b) => a.position - b.position)
@@ -129,6 +176,10 @@ function mapWorkout(
     warmup: workout.warmup ?? "",
     cooldown: workout.cooldown ?? "",
     coachNotes: workout.coach_notes ?? "",
+    assignedClientIds: mappedAssignments.map((assignment) => assignment.clientId),
+    assignedClientNames: mappedAssignments.map((assignment) => assignment.clientName ?? "Client"),
+    assignments: mappedAssignments,
+    assignment: mappedAssignments[0],
     blocks: mappedBlocks,
   };
 }
@@ -189,6 +240,23 @@ export async function getTrainerWorkouts() {
     db.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, is_global"),
   ]);
 
+  const workoutIds = (workoutRows ?? []).map((row: { id: string }) => row.id);
+  const [{ data: assignmentRows }, { data: logRows }] = workoutIds.length
+    ? await Promise.all([
+        db
+          .from("workout_assignments")
+          .select("workout_id, client_id, assigned_on, scheduled_for, due_on, assignment_notes, clients(full_name)")
+          .in("workout_id", workoutIds)
+          .eq("status", "active"),
+        db
+          .from("workout_logs")
+          .select("client_id, workout_id, completed_at, created_at, status")
+          .in("workout_id", workoutIds)
+          .eq("status", "completed")
+          .order("completed_at", { ascending: false }),
+      ])
+    : [{ data: [] as WorkoutAssignmentRow[] }, { data: [] as AssignmentLogRow[] }];
+
   const exercisesById = new Map(
     (exerciseRows ?? []).map((row: Record<string, unknown>) => [
       row.id as string,
@@ -217,7 +285,14 @@ export async function getTrainerWorkouts() {
   );
 
   const workouts = (workoutRows ?? []).map((row) =>
-    mapWorkout(row as WorkoutRow, (blockRows ?? []) as WorkoutBlockRow[], (itemRows ?? []) as WorkoutExerciseRow[], exercisesById),
+    mapWorkout(
+      row as WorkoutRow,
+      (blockRows ?? []) as WorkoutBlockRow[],
+      (itemRows ?? []) as WorkoutExerciseRow[],
+      exercisesById,
+      (assignmentRows ?? []) as WorkoutAssignmentRow[],
+      (logRows ?? []) as AssignmentLogRow[],
+    ),
   );
 
   return { mode: "supabase" as const, workouts };
@@ -232,27 +307,58 @@ export async function getClientWorkouts() {
   if (!clientId) return { mode: "supabase" as const, workouts: [] as Workout[] };
   const db = hasSupabaseAdminEnv() ? createAdminClient() : supabase;
 
-  const { data: assignments } = await db
+  const [{ data: assignments }, { data: directAssignments }, { data: completedLogs }] = await Promise.all([
+    db
     .from("plan_assignments")
     .select("training_plan_id")
     .eq("client_id", clientId)
-    .eq("status", "active");
+      .eq("status", "active"),
+    db
+      .from("workout_assignments")
+      .select("workout_id, client_id, assigned_on, scheduled_for, due_on, assignment_notes")
+      .eq("client_id", clientId)
+      .eq("status", "active"),
+    db
+      .from("workout_logs")
+      .select("client_id, workout_id, completed_at, created_at, status")
+      .eq("client_id", clientId)
+      .eq("status", "completed"),
+  ]);
 
   const planIds = (assignments ?? []).map((row: { training_plan_id: string }) => row.training_plan_id);
-  if (!planIds.length) return { mode: "supabase" as const, workouts: [] as Workout[] };
+  const directWorkoutIds = (directAssignments ?? []).map((row: { workout_id: string }) => row.workout_id);
+  if (!planIds.length && !directWorkoutIds.length) return { mode: "supabase" as const, workouts: [] as Workout[] };
 
-  const [{ data: workoutRows }, { data: blockRows }, { data: itemRows }, { data: exerciseRows }] = await Promise.all([
-    db
-      .from("workouts")
-      .select("id, training_plan_id, name, phase_label, warmup, cooldown, coach_notes")
-      .in("training_plan_id", planIds)
-      .order("created_at", { ascending: false }),
+  const planWorkoutQuery = planIds.length
+    ? db
+        .from("workouts")
+        .select("id, training_plan_id, name, phase_label, warmup, cooldown, coach_notes")
+        .in("training_plan_id", planIds)
+        .order("created_at", { ascending: false })
+    : Promise.resolve({ data: [] as WorkoutRow[] });
+  const directWorkoutQuery = directWorkoutIds.length
+    ? db
+        .from("workouts")
+        .select("id, training_plan_id, name, phase_label, warmup, cooldown, coach_notes")
+        .in("id", directWorkoutIds)
+        .order("created_at", { ascending: false })
+    : Promise.resolve({ data: [] as WorkoutRow[] });
+
+  const [{ data: planWorkoutRows }, { data: directWorkoutRows }, { data: blockRows }, { data: itemRows }, { data: exerciseRows }] = await Promise.all([
+    planWorkoutQuery,
+    directWorkoutQuery,
     db.from("workout_blocks").select("id, workout_id, label, intent, position"),
     db
       .from("workout_exercises")
       .select("id, workout_block_id, exercise_id, sets, reps, tempo, rest_time, rpe_target, load_guidance, duration, notes, position"),
     db.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, is_global"),
   ]);
+
+  const workoutRowsById = new Map<string, WorkoutRow>();
+  for (const row of [...((directWorkoutRows ?? []) as WorkoutRow[]), ...((planWorkoutRows ?? []) as WorkoutRow[])]) {
+    workoutRowsById.set(row.id, row);
+  }
+  const workoutRows = [...workoutRowsById.values()];
 
   const exercisesById = new Map(
     (exerciseRows ?? []).map((row: Record<string, unknown>) => [
@@ -281,8 +387,15 @@ export async function getClientWorkouts() {
   );
 
   const workouts = (workoutRows ?? []).map((row) =>
-    mapWorkout(row as WorkoutRow, (blockRows ?? []) as WorkoutBlockRow[], (itemRows ?? []) as WorkoutExerciseRow[], exercisesById),
-  );
+    mapWorkout(
+      row as WorkoutRow,
+      (blockRows ?? []) as WorkoutBlockRow[],
+      (itemRows ?? []) as WorkoutExerciseRow[],
+      exercisesById,
+      (directAssignments ?? []) as WorkoutAssignmentRow[],
+      (completedLogs ?? []) as AssignmentLogRow[],
+    ),
+  ).filter((workout) => workout.assignment?.status !== "completed");
 
   return { mode: "supabase" as const, workouts };
 }

@@ -114,6 +114,7 @@ export function ClientProfileEditor({
     <AppShell
       role="client"
       title="Profile"
+      eyebrow="Your details"
       subtitle="Review the profile your trainer manages from your intake and coaching updates."
       clientPortalAccess={clientPortalAccess}
     >

@@ -12,7 +12,7 @@ export default async function ClientWorkoutPage({ params }: { params: Promise<{ 
   if (!workout) notFound();
 
   return (
-    <AppShell role="client" title="Workout log" subtitle="Log sets, reps, load, notes, completion, and feedback with a mobile-first flow." mobileFocus>
+    <AppShell role="client" title="Workout log" eyebrow="Training log" subtitle="Log sets, reps, load, notes, completion, and feedback with a mobile-first flow." mobileFocus>
       <Button asChild variant="ghost" size="sm" className="-ml-2 mb-3 w-fit sm:mb-5">
         <Link href="/client/workouts">
           <ArrowLeft className="size-4" />
