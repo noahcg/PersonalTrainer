@@ -202,3 +202,48 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    if (!hasSupabaseAdminEnv()) {
+      return NextResponse.json({ error: "Supabase admin credentials are not configured." }, { status: 500 });
+    }
+
+    const workoutId = clean(new URL(request.url).searchParams.get("id"));
+    if (!workoutId) return NextResponse.json({ error: "Workout id is required." }, { status: 400 });
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+
+    const { data: trainer } = await supabase
+      .from("trainers")
+      .select("id")
+      .eq("profile_id", user.id)
+      .maybeSingle<{ id: string }>();
+
+    if (!trainer?.id) return NextResponse.json({ error: "Trainer profile not found." }, { status: 403 });
+
+    const admin = createAdminClient();
+    const { data: deleted, error } = await admin
+      .from("workouts")
+      .delete()
+      .eq("id", workoutId)
+      .eq("trainer_id", trainer.id)
+      .select("id")
+      .maybeSingle<{ id: string }>();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!deleted) return NextResponse.json({ error: "Workout not found." }, { status: 404 });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unable to delete workout." },
+      { status: 500 },
+    );
+  }
+}

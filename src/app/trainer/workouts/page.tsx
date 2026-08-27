@@ -2,19 +2,18 @@ import { AppShell } from "@/components/layout/app-shell";
 import { TrainerWorkoutBuilderNav } from "@/components/product/trainer-workout-builder-nav";
 import { TrainerWorkoutBuilder } from "@/components/product/trainer-workout-builder";
 import { getTrainerExercises } from "@/lib/exercises";
-import { getTrainerPlanOptions, getTrainerWorkouts } from "@/lib/workouts";
+import { getTrainerWorkouts } from "@/lib/workouts";
 
 export default async function WorkoutsPage() {
-  const [{ workouts, mode }, { exercises }, { plans }] = await Promise.all([
+  const [{ workouts, mode }, { exercises }] = await Promise.all([
     getTrainerWorkouts(),
     getTrainerExercises(),
-    getTrainerPlanOptions(),
   ]);
 
   return (
     <AppShell role="trainer" title="Workouts" eyebrow="Workout templates" subtitle="Compose warm-ups, main blocks, accessories, finishers, cooldowns, and exercise prescriptions with coach-grade detail.">
       <TrainerWorkoutBuilderNav>
-        <TrainerWorkoutBuilder initialWorkouts={workouts} exercises={exercises} plans={plans} mode={mode} />
+        <TrainerWorkoutBuilder initialWorkouts={workouts} exercises={exercises} mode={mode} />
       </TrainerWorkoutBuilderNav>
     </AppShell>
   );

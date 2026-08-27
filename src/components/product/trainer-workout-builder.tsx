@@ -1,16 +1,17 @@
 "use client";
 
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import Image from "next/image";
 import {
   ArrowLeft,
   Check,
   ChevronRight,
-  Clock3,
   Dumbbell,
   Flame,
   GripVertical,
   ListChecks,
   MoreHorizontal,
+  PencilLine,
   Plus,
   Save,
   Search,
@@ -23,7 +24,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
-import type { Exercise, Plan, Workout, WorkoutBlock, WorkoutExercise } from "@/lib/types";
+import type { Exercise, Workout, WorkoutBlock, WorkoutExercise } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type WizardStepId = "warm-up" | "section-1" | "section-2" | "section-3" | "cooldown";
@@ -40,7 +41,6 @@ type WizardStep = {
 
 type DraftWorkout = {
   id: string | null;
-  trainingPlanId: string;
   name: string;
   duration: string;
   coachNotes: string;
@@ -58,25 +58,25 @@ const wizardSteps: WizardStep[] = [
   },
   {
     id: "section-1",
-    title: "Section 1",
-    shortTitle: "Section 1",
-    helper: "Choose the first primary training section.",
+    title: "Stage 1",
+    shortTitle: "Stage 1",
+    helper: "Choose the first primary training stage.",
     intent: "Primary training focus.",
     icon: Dumbbell,
   },
   {
     id: "section-2",
-    title: "Section 2",
-    shortTitle: "Section 2",
-    helper: "Choose the second training section.",
+    title: "Stage 2",
+    shortTitle: "Stage 2",
+    helper: "Choose the second training stage.",
     intent: "Secondary strength or skill work.",
     icon: ListChecks,
   },
   {
     id: "section-3",
-    title: "Section 3",
-    shortTitle: "Section 3",
-    helper: "Choose the final training section.",
+    title: "Stage 3",
+    shortTitle: "Stage 3",
+    helper: "Choose the final training stage.",
     intent: "Accessory, conditioning, or core emphasis.",
     icon: Sparkles,
   },
@@ -105,18 +105,23 @@ function createTemplateBlocks() {
   return wizardSteps.map((step) => emptyExerciseForStep(step.id));
 }
 
+function isStageStep(stepId: WizardStepId) {
+  return stepId === "section-1" || stepId === "section-2" || stepId === "section-3";
+}
+
 function normalizeBlocks(blocks: WorkoutBlock[]) {
-  return wizardSteps.map((step) => {
+  return wizardSteps.map((step, index) => {
     const matchingBlock =
       blocks.find((block) => block.id === step.id) ??
       blocks.find((block) => block.label.toLowerCase() === step.title.toLowerCase()) ??
+      blocks[index] ??
       null;
 
     return matchingBlock
       ? {
           ...matchingBlock,
           id: step.id,
-          label: step.title,
+          label: isStageStep(step.id) ? matchingBlock.label || step.title : step.title,
           intent: matchingBlock.intent || step.intent,
         }
       : emptyExerciseForStep(step.id);
@@ -127,7 +132,6 @@ function toDraft(workout?: Workout): DraftWorkout {
   if (!workout) {
     return {
       id: null,
-      trainingPlanId: "",
       name: "",
       duration: "45-60 min",
       coachNotes: "",
@@ -137,7 +141,6 @@ function toDraft(workout?: Workout): DraftWorkout {
 
   return {
     id: workout.id,
-    trainingPlanId: workout.trainingPlanId ?? "",
     name: workout.name,
     duration: workout.duration || "45-60 min",
     coachNotes: workout.coachNotes,
@@ -217,29 +220,27 @@ function errorMessage(error: unknown) {
 export function TrainerWorkoutBuilder({
   initialWorkouts,
   exercises,
-  plans,
   mode,
 }: {
   initialWorkouts: Workout[];
   exercises: Exercise[];
-  plans: Array<Pick<Plan, "id" | "title">>;
   mode: "demo" | "supabase";
 }) {
   const [workouts, setWorkouts] = useState(initialWorkouts);
-  const [view, setView] = useState<BuilderView>(initialWorkouts.length ? "list" : "builder");
+  const [view, setView] = useState<BuilderView>("list");
   const [draft, setDraft] = useState<DraftWorkout>(() => toDraft());
   const [activeStepId, setActiveStepId] = useState<WizardStepId>("warm-up");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
+  const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const activeStep = wizardSteps.find((step) => step.id === activeStepId) ?? wizardSteps[0];
   const activeStepIndex = wizardSteps.findIndex((step) => step.id === activeStepId);
   const activeBlock = draft.blocks.find((block) => block.id === activeStepId) ?? emptyExerciseForStep(activeStepId);
-  const allSelectedExercises = draft.blocks.flatMap((block) => block.exercises);
+  const activeStepLabel = activeBlock.label.trim() || activeStep.title;
   const completedSteps = new Set(draft.blocks.filter((block) => block.exercises.length > 0).map((block) => block.id as WizardStepId));
   const isWorkoutComplete = wizardSteps.every((step) => completedSteps.has(step.id)) && !!draft.name.trim();
-  const totalSets = allSelectedExercises.reduce((sum, exercise) => sum + exercise.sets, 0);
 
   const recommendedExercises = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -322,7 +323,7 @@ export function TrainerWorkoutBuilder({
 
   async function saveWorkout() {
     if (!isWorkoutComplete) {
-      setMessage("Complete every section and add a workout name before saving.");
+      setMessage("Complete every stage and add a workout name before saving.");
       window.setTimeout(() => setMessage(null), 2600);
       return;
     }
@@ -332,8 +333,12 @@ export function TrainerWorkoutBuilder({
 
     try {
       let nextWorkoutId = draft.id;
-      const warmupText = draft.blocks.find((block) => block.id === "warm-up")?.exercises.map((exercise) => exercise.name).join(", ") ?? "";
-      const cooldownText = draft.blocks.find((block) => block.id === "cooldown")?.exercises.map((exercise) => exercise.name).join(", ") ?? "";
+      const blocksForSave = draft.blocks.map((block) => {
+        const step = wizardSteps.find((item) => item.id === block.id);
+        return { ...block, label: block.label.trim() || step?.title || block.label };
+      });
+      const warmupText = blocksForSave.find((block) => block.id === "warm-up")?.exercises.map((exercise) => exercise.name).join(", ") ?? "";
+      const cooldownText = blocksForSave.find((block) => block.id === "cooldown")?.exercises.map((exercise) => exercise.name).join(", ") ?? "";
 
       if (mode === "supabase") {
         const response = await fetch("/api/trainer/workouts", {
@@ -341,11 +346,10 @@ export function TrainerWorkoutBuilder({
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             id: draft.id,
-            trainingPlanId: draft.trainingPlanId,
             name: draft.name,
             duration: draft.duration,
             coachNotes: draft.coachNotes,
-            blocks: draft.blocks,
+            blocks: blocksForSave,
           }),
         });
         const result = (await response.json()) as { id?: string; error?: string };
@@ -357,7 +361,6 @@ export function TrainerWorkoutBuilder({
 
       const savedWorkout: Workout = {
         id: nextWorkoutId!,
-        trainingPlanId: draft.trainingPlanId || undefined,
         name: draft.name.trim(),
         dayLabel: "Template workout",
         duration: draft.duration,
@@ -368,7 +371,7 @@ export function TrainerWorkoutBuilder({
         assignedClientNames: draft.id ? workouts.find((workout) => workout.id === draft.id)?.assignedClientNames ?? [] : [],
         assignments: draft.id ? workouts.find((workout) => workout.id === draft.id)?.assignments ?? [] : [],
         assignment: draft.id ? workouts.find((workout) => workout.id === draft.id)?.assignment : undefined,
-        blocks: draft.blocks,
+        blocks: blocksForSave,
       };
 
       setWorkouts((current) =>
@@ -386,10 +389,42 @@ export function TrainerWorkoutBuilder({
     }
   }
 
+  async function deleteWorkout(workout: Workout) {
+    const confirmed = window.confirm(`Delete "${workout.name}"? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeletingWorkoutId(workout.id);
+    setMessage(null);
+
+    try {
+      if (mode === "supabase") {
+        const response = await fetch(`/api/trainer/workouts?id=${encodeURIComponent(workout.id)}`, {
+          method: "DELETE",
+        });
+        const result = (await response.json().catch(() => ({}))) as { error?: string };
+        if (!response.ok) throw new Error(result.error ?? "Unable to delete workout.");
+      }
+
+      setWorkouts((current) => current.filter((item) => item.id !== workout.id));
+      setMessage("Workout deleted.");
+      window.setTimeout(() => setMessage(null), 2200);
+    } catch (error) {
+      setMessage(errorMessage(error));
+    } finally {
+      setDeletingWorkoutId(null);
+    }
+  }
+
   return (
     <div className="space-y-5">
       {view === "list" ? (
-        <WorkoutList workouts={workouts} onNewWorkout={startNewWorkout} onEditWorkout={editWorkout} />
+        <WorkoutList
+          workouts={workouts}
+          deletingWorkoutId={deletingWorkoutId}
+          onNewWorkout={startNewWorkout}
+          onEditWorkout={editWorkout}
+          onDeleteWorkout={(workout) => void deleteWorkout(workout)}
+        />
       ) : (
         <div className="space-y-5">
           <div className="rounded-[1.25rem] border border-stone-200/80 bg-white/78 p-4 shadow-soft backdrop-blur-xl sm:p-5">
@@ -407,12 +442,16 @@ export function TrainerWorkoutBuilder({
               </div>
             </div>
 
+            <WorkoutDetailsHeader draft={draft} onDraftChange={setDraft} />
+
             <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto md:grid md:grid-cols-5 md:overflow-visible">
               {wizardSteps.map((step, index) => {
                 const isActive = step.id === activeStepId;
                 const isComplete = completedSteps.has(step.id);
                 const isAvailable = canOpenStep(step.id);
                 const Icon = step.icon;
+                const stepBlock = draft.blocks.find((block) => block.id === step.id);
+                const stepLabel = stepBlock?.label.trim() || step.shortTitle;
 
                 return (
                   <button
@@ -435,7 +474,7 @@ export function TrainerWorkoutBuilder({
                       {isComplete ? <Check className="size-4" /> : <Icon className="size-4" />}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-charcoal-950">{step.shortTitle}</span>
+                      <span className="block truncate text-sm font-semibold text-charcoal-950">{stepLabel}</span>
                       <span className="text-xs text-stone-500">Step {index + 1}</span>
                     </span>
                   </button>
@@ -450,14 +489,14 @@ export function TrainerWorkoutBuilder({
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-bronze-600">Exercise selection</p>
-                        <h3 className="mt-2 font-serif text-2xl font-semibold">{activeStep.title}</h3>
+                        <h3 className="mt-2 font-serif text-2xl font-semibold">{activeStepLabel}</h3>
                         <p className="mt-2 text-sm leading-6 text-stone-600">{activeStep.helper}</p>
                       </div>
                     </div>
 
                     <div className="relative mt-4">
                       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
-                      <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${activeStep.title.toLowerCase()} exercises...`} className="pl-9" />
+                      <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${activeStepLabel.toLowerCase()} exercises...`} className="pl-9" />
                     </div>
                     <div className="mt-3 text-xs text-stone-500">{recommendedExercises.length} exercise options</div>
                   </div>
@@ -476,13 +515,34 @@ export function TrainerWorkoutBuilder({
 
             <Card className="h-[620px] overflow-hidden rounded-[1.25rem] bg-white/84 p-6 shadow-soft">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <h3 className="font-serif text-2xl font-semibold">{activeStep.title}</h3>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-serif text-2xl font-semibold">{activeStepLabel}</h3>
                       <p className="mt-2 text-sm text-stone-600">
                         {activeBlock.exercises.length
                           ? `${activeBlock.exercises.length} selected. Adjust the prescription inline.`
                           : "Add at least one exercise before moving to the next step."}
                       </p>
+                      {isStageStep(activeStepId) ? (
+                        <label className="mt-4 grid max-w-md gap-2 text-sm font-semibold text-charcoal-950">
+                          Stage name
+                          <Input
+                            value={activeBlock.label}
+                            onBlur={() =>
+                              updateBlock(activeStepId, (block) => ({
+                                ...block,
+                                label: block.label.trim() || activeStep.title,
+                              }))
+                            }
+                            onChange={(event) =>
+                              updateBlock(activeStepId, (block) => ({
+                                ...block,
+                                label: event.target.value,
+                              }))
+                            }
+                            placeholder={activeStep.title}
+                          />
+                        </label>
+                      ) : null}
                     </div>
                     <Button variant="secondary" onClick={goNext} disabled={!completedSteps.has(activeStepId) || activeStepIndex === wizardSteps.length - 1}>
                       Next
@@ -513,13 +573,6 @@ export function TrainerWorkoutBuilder({
                   </div>
             </Card>
 
-            <WizardSummary
-              draft={draft}
-              plans={plans}
-              totalSets={totalSets}
-              isWorkoutComplete={isWorkoutComplete}
-              onDraftChange={setDraft}
-            />
           </div>
         </div>
       )}
@@ -535,12 +588,16 @@ export function TrainerWorkoutBuilder({
 
 function WorkoutList({
   workouts,
+  deletingWorkoutId,
   onNewWorkout,
   onEditWorkout,
+  onDeleteWorkout,
 }: {
   workouts: Workout[];
+  deletingWorkoutId: string | null;
   onNewWorkout: () => void;
   onEditWorkout: (workout: Workout) => void;
+  onDeleteWorkout: (workout: Workout) => void;
 }) {
   const [query, setQuery] = useState("");
   const filteredWorkouts = workouts.filter((workout) =>
@@ -577,10 +634,8 @@ function WorkoutList({
             <span />
           </div>
           {filteredWorkouts.map((workout) => (
-            <button
+            <div
               key={workout.id}
-              type="button"
-              onClick={() => onEditWorkout(workout)}
               className="grid w-full gap-3 border-t border-stone-200 px-4 py-4 text-left transition first:border-t-0 hover:bg-stone-50 md:grid-cols-[minmax(0,1fr)_8rem_8rem_8rem_3rem] md:items-center"
             >
               <span>
@@ -592,8 +647,13 @@ function WorkoutList({
               <span className="text-sm text-stone-600">5 steps</span>
               <span className="text-sm text-stone-600">{workoutExerciseCount(workout)}</span>
               <span className="text-sm text-stone-600">{workout.duration}</span>
-              <MoreHorizontal className="size-4 text-stone-400" />
-            </button>
+              <WorkoutRowActions
+                workout={workout}
+                deleting={deletingWorkoutId === workout.id}
+                onEdit={() => onEditWorkout(workout)}
+                onDelete={() => onDeleteWorkout(workout)}
+              />
+            </div>
           ))}
           {!filteredWorkouts.length ? (
             <div className="grid min-h-60 place-items-center p-8 text-center">
@@ -613,66 +673,85 @@ function WorkoutList({
   );
 }
 
-function WizardSummary({
+function WorkoutRowActions({
+  workout,
+  deleting,
+  onEdit,
+  onDelete,
+}: {
+  workout: Workout;
+  deleting: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-9 justify-self-start text-stone-500 hover:text-charcoal-950 md:justify-self-center"
+          aria-label={`Open actions for ${workout.name}`}
+          disabled={deleting}
+        >
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={8}
+          className="z-50 min-w-40 rounded-2xl border border-stone-200 bg-white p-1.5 shadow-soft"
+        >
+          <DropdownMenu.Item
+            onSelect={onEdit}
+            className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-charcoal-950 outline-none transition hover:bg-stone-50 focus:bg-stone-50"
+          >
+            <PencilLine className="size-4 text-stone-500" />
+            Edit
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={onDelete}
+            className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-700 outline-none transition hover:bg-red-50 focus:bg-red-50"
+          >
+            <Trash2 className="size-4" />
+            {deleting ? "Deleting..." : "Delete"}
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+function WorkoutDetailsHeader({
   draft,
-  plans,
-  totalSets,
-  isWorkoutComplete,
   onDraftChange,
 }: {
   draft: DraftWorkout;
-  plans: Array<Pick<Plan, "id" | "title">>;
-  totalSets: number;
-  isWorkoutComplete: boolean;
   onDraftChange: Dispatch<SetStateAction<DraftWorkout>>;
 }) {
   return (
-    <aside className="self-start xl:col-span-2">
-      <Card className="rounded-[1.25rem] bg-white/84 p-5 shadow-soft">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="font-serif text-xl font-semibold">Workout Details</h3>
-            <p className="mt-1 text-sm text-stone-500">Name the workout, connect it to a plan if needed, and save once every section is complete.</p>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
-          <Field label="Workout name">
-            <Input value={draft.name} onChange={(event) => onDraftChange((current) => ({ ...current, name: event.target.value }))} placeholder="Lower Body Strength" />
-          </Field>
-          <Field label="Duration">
-            <Input value={draft.duration} onChange={(event) => onDraftChange((current) => ({ ...current, duration: event.target.value }))} />
-          </Field>
-          <Field label="Linked plan">
-            <select
-              value={draft.trainingPlanId}
-              onChange={(event) => onDraftChange((current) => ({ ...current, trainingPlanId: event.target.value }))}
-              className="h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
-            >
-              <option value="">Unassigned workout</option>
-              {plans.map((plan) => (
-                <option key={plan.id} value={plan.id}>
-                  {plan.title}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Trainer notes">
-            <Textarea className="min-h-20" value={draft.coachNotes} onChange={(event) => onDraftChange((current) => ({ ...current, coachNotes: event.target.value }))} placeholder="Coaching emphasis, load guidance, or client-specific notes." />
-          </Field>
-        </div>
-
-        <div className="mt-4 grid gap-2.5 rounded-2xl bg-stone-50/80 p-3.5 text-sm text-stone-600 lg:grid-cols-3">
-          <SummaryLine icon={Dumbbell} label="Exercises" value={String(draft.blocks.reduce((sum, block) => sum + block.exercises.length, 0))} />
-          <SummaryLine icon={ListChecks} label="Sets" value={String(totalSets)} />
-          <SummaryLine icon={Clock3} label="Time" value={draft.duration} />
-        </div>
-
-        {!isWorkoutComplete ? (
-          <p className="mt-3 text-center text-xs leading-5 text-stone-500">Complete each section and add a workout name to save.</p>
-        ) : null}
-      </Card>
-    </aside>
+    <div className="mt-5 grid gap-3 border-t border-stone-200/80 pt-5 lg:grid-cols-[minmax(0,1.1fr)_10rem_minmax(0,1.4fr)]">
+      <Field label="Workout name">
+        <Input
+          value={draft.name}
+          onChange={(event) => onDraftChange((current) => ({ ...current, name: event.target.value }))}
+          placeholder="Lower Body Strength"
+        />
+      </Field>
+      <Field label="Duration">
+        <Input value={draft.duration} onChange={(event) => onDraftChange((current) => ({ ...current, duration: event.target.value }))} />
+      </Field>
+      <Field label="Trainer notes">
+        <Textarea
+          className="min-h-11 resize-none py-3"
+          value={draft.coachNotes}
+          onChange={(event) => onDraftChange((current) => ({ ...current, coachNotes: event.target.value }))}
+          placeholder="Coaching emphasis, load guidance, or client-specific notes."
+        />
+      </Field>
+    </div>
   );
 }
 
@@ -768,15 +847,5 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {label}
       {children}
     </label>
-  );
-}
-
-function SummaryLine({ icon: Icon, label, value }: { icon: ComponentType<{ className?: string }>; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <Icon className="size-4 text-bronze-600" />
-      <span className="flex-1">{label}</span>
-      <span className="font-semibold text-charcoal-950">{value}</span>
-    </div>
   );
 }

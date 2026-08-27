@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, CalendarCheck, Dumbbell, Library } from "lucide-react";
+import { ArrowRight, Dumbbell, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const workoutBuilderSections = [
@@ -17,12 +17,6 @@ export const workoutBuilderSections = [
     label: "Workouts",
     description: "Build complete sessions from library exercises, then set the warm-up, training blocks, prescriptions, and coaching details.",
     icon: Dumbbell,
-  },
-  {
-    href: "/trainer/plans",
-    label: "Training Plans",
-    description: "Turn your finished workouts into reusable multi-day or multi-week plans that can be assigned to clients.",
-    icon: CalendarCheck,
   },
 ];
 
@@ -88,13 +82,13 @@ export function TrainerWorkoutBuilderOverview() {
               cues, instructions, demo media, and movement details ready to drop into a workout.
             </p>
             <p>
-              If the movement is not there yet, create it once. Then build workouts from those blocks, collect your
-              finished workouts into a full training plan, and assign the plan when it is ready.
+              If the movement is not there yet, create it once. Then build workouts from those blocks with the warm-up,
+              stage work, prescriptions, and coaching notes ready for clients.
             </p>
           </div>
 
           <p className="max-w-2xl text-sm font-medium leading-6 text-charcoal-950">
-            Exercises become workouts. Workouts become plans. The builder is just the path between them.
+            Exercises become workouts. The builder is just the path between movement details and a finished session.
           </p>
         </div>
       </div>

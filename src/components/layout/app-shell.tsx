@@ -48,7 +48,7 @@ const trainerNav: AppNavItem[] = [
     href: "/trainer/workout-builder",
     label: "Workout Builder",
     icon: Dumbbell,
-    matchHrefs: ["/trainer/workout-builder", "/trainer/exercises", "/trainer/workouts", "/trainer/plans"],
+    matchHrefs: ["/trainer/workout-builder", "/trainer/exercises", "/trainer/workouts"],
   },
   { href: "/trainer/settings", label: "Settings", icon: Settings },
 ];

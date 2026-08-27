@@ -10,7 +10,7 @@ export default function TrainerWorkoutBuilderPage() {
       role="trainer"
       title="Workout builder"
       eyebrow="Builder workspace"
-      subtitle="A simple starting point for creating exercises, workouts, and training plans."
+      subtitle="A simple starting point for creating exercises and workouts."
     >
       <TrainerWorkoutBuilderNav>
         <TrainerWorkoutBuilderOverview />

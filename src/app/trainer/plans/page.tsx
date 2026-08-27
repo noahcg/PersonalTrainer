@@ -1,22 +1,5 @@
-import { AppShell } from "@/components/layout/app-shell";
-import { TrainerWorkoutBuilderNav } from "@/components/product/trainer-workout-builder-nav";
-import { TrainerPlansManager } from "@/components/product/trainer-plans-manager";
-import { getTrainerClients } from "@/lib/clients";
-import { getTrainerPlans } from "@/lib/plans";
+import { redirect } from "next/navigation";
 
-export default async function PlansPage() {
-  const [{ plans, mode }, { clients }] = await Promise.all([getTrainerPlans(), getTrainerClients()]);
-
-  return (
-    <AppShell
-      role="trainer"
-      title="Training plans"
-      eyebrow="Plan templates"
-      subtitle="Create reusable plan templates, duplicate proven cycles, and assign polished training journeys to clients."
-    >
-      <TrainerWorkoutBuilderNav>
-        <TrainerPlansManager initialPlans={plans} mode={mode} clients={clients} />
-      </TrainerWorkoutBuilderNav>
-    </AppShell>
-  );
+export default function PlansPage() {
+  redirect("/trainer/workouts");
 }

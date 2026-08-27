@@ -8,6 +8,26 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.22.0] - 2026-08-27
+
+- Hid the trainer Training Plans workspace and removed trainer-facing plan actions from the workout builder flow.
+
+## [0.21.0] - 2026-08-27
+
+- Added trainer workout row actions for editing and deleting saved workouts.
+
+## [0.20.1] - 2026-08-27
+
+- Keep the trainer Workouts page on the workout library view when no workouts exist.
+
+## [0.20.0] - 2026-08-27
+
+- Let trainers customize workout stage names while keeping Stage 1, Stage 2, and Stage 3 as defaults.
+
+## [0.19.1] - 2026-08-27
+
+- Streamlined the trainer workout builder by moving workout details above the section builder and removing linked-plan selection.
+
 ## [0.19.0] - 2026-08-27
 
 - Let trainers edit reference exercises directly so replacing an exercise image no longer creates a custom copy.

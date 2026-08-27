@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarCheck, CalendarDays, Clock, MapPin, MessageCircle, Plus, UserRound, Users } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock, MapPin, MessageCircle, Plus, UserRound, Users } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
 import { Avatar } from "@/components/ui/avatar";
@@ -222,7 +222,6 @@ export default async function TrainerDashboardPage() {
               {[
                 ["Create client", "/trainer/clients", Users],
                 ["Build workout", "/trainer/workouts", Plus],
-                ["Assign plan", "/trainer/plans", CalendarCheck],
                 ["Review check-ins", "/trainer/check-ins", MessageCircle],
               ].map(([label, href, Icon]) => (
                 <Button key={label as string} asChild variant="secondary" className="w-full justify-between rounded-[1.25rem]">
