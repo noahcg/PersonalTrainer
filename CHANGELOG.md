@@ -8,6 +8,14 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.19.0] - 2026-08-27
+
+- Let trainers edit reference exercises directly so replacing an exercise image no longer creates a custom copy.
+
+## [0.18.0] - 2026-08-27
+
+- Added trainer-owned exercise deletion from the Exercise Library edit dialog.
+
 ## [0.17.3] - 2026-08-26
 
 - Added page-specific app header eyebrow labels while keeping the trainer dashboard welcome intact.

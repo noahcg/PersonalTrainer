@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { ImagePlus, Layers3, Plus, Search, X } from "lucide-react";
+import { ImagePlus, Layers3, Plus, Search, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ExerciseCard } from "@/components/product/exercise-card";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +67,16 @@ function isImageSource(value: string) {
   );
 }
 
+function deleteErrorMessage(error: unknown) {
+  if (typeof error === "object" && error && "code" in error && error.code === "23503") {
+    return "This exercise is used in a workout. Remove it from saved workouts before deleting it from the library.";
+  }
+
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error && "message" in error && typeof error.message === "string") return error.message;
+  return "Unable to delete exercise.";
+}
+
 async function readExerciseImagePreview(file: File) {
   if (!file.type.startsWith("image/")) {
     throw new Error("Please choose an image file.");
@@ -122,9 +132,10 @@ export function ExerciseLibrary({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DraftExercise>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [customizingReferenceName, setCustomizingReferenceName] = useState<string | null>(null);
+  const [editingCanDelete, setEditingCanDelete] = useState(false);
   const [pendingDemoFile, setPendingDemoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -219,18 +230,16 @@ export function ExerciseLibrary({
   }
 
   function beginEditingExercise(exercise: Exercise) {
-    const isDirectlyEditable = exercise.editable ?? mode === "demo";
-
     populateDraft(exercise);
-    setEditingId(isDirectlyEditable ? exercise.id : null);
-    setCustomizingReferenceName(isDirectlyEditable ? null : exercise.name);
+    setEditingId(exercise.id);
+    setEditingCanDelete(exercise.editable ?? mode === "demo");
     setOpen(true);
   }
 
   function resetDialogState() {
     setDraft(emptyDraft);
     setEditingId(null);
-    setCustomizingReferenceName(null);
+    setEditingCanDelete(false);
     setPendingDemoFile(null);
   }
 
@@ -281,7 +290,23 @@ export function ExerciseLibrary({
 
   async function persistExercise(nextExercise: Exercise, currentEditingId: string | null) {
     const { supabase, trainerId } = await resolveTrainerId();
-      const payload = {
+
+    if (currentEditingId) {
+      const response = await fetch(`/api/trainer/exercises/${currentEditingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextExercise),
+      });
+      const payload = (await response.json()) as { error?: string; id?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to update exercise.");
+      }
+
+      return payload.id ?? currentEditingId;
+    }
+
+    const payload = {
       trainer_id: trainerId,
       name: nextExercise.name,
       category: nextExercise.category,
@@ -296,22 +321,6 @@ export function ExerciseLibrary({
       demo_url: nextExercise.demoUrl,
       is_global: false,
     };
-
-    if (currentEditingId) {
-      const { error } = await supabase.from("exercises").update(payload).eq("id", currentEditingId);
-      if (error) throw error;
-      await supabase.from("exercise_tags").delete().eq("exercise_id", currentEditingId);
-      if (nextExercise.tags.length) {
-        const { error: tagsError } = await supabase.from("exercise_tags").insert(
-          nextExercise.tags.map((tag) => ({
-            exercise_id: currentEditingId,
-            tag,
-          })),
-        );
-        if (tagsError) throw tagsError;
-      }
-      return currentEditingId;
-    }
 
     const { data: inserted, error } = await supabase
       .from("exercises")
@@ -334,6 +343,50 @@ export function ExerciseLibrary({
     return inserted.id;
   }
 
+  async function deleteExercise() {
+    if (!editingId) return;
+
+    const exercise = exercises.find((item) => item.id === editingId);
+    if (!exercise) return;
+
+    const confirmed = window.confirm(`Delete "${exercise.name}" from the exercise library? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setMessage(null);
+
+    try {
+      if (mode === "supabase") {
+        const { supabase, trainerId } = await resolveTrainerId();
+        const { data: deleted, error } = await supabase
+          .from("exercises")
+          .delete()
+          .eq("id", editingId)
+          .eq("trainer_id", trainerId)
+          .select("id")
+          .maybeSingle<{ id: string }>();
+
+        if (error) throw error;
+        if (!deleted?.id) throw new Error("Only trainer-owned custom exercises can be deleted.");
+      }
+
+      const nextExercises = exercises.filter((item) => item.id !== editingId);
+      setExercises(nextExercises);
+      if (mode === "demo") {
+        window.localStorage.setItem(storageKey, JSON.stringify(nextExercises));
+      }
+
+      resetDialogState();
+      setOpen(false);
+      setMessage("Exercise deleted.");
+      window.setTimeout(() => setMessage(null), 2400);
+    } catch (error) {
+      setMessage(deleteErrorMessage(error));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   async function createExercise(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -349,7 +402,12 @@ export function ExerciseLibrary({
         demoUrl: uploadedDemoUrl.trim() || fallbackDemoUrl,
       };
       const resolvedId = mode === "supabase" ? await persistExercise(nextExercise, editingId) : nextExercise.id;
-      const resolvedExercise = { ...nextExercise, id: resolvedId };
+      const existingExercise = editingId ? exercises.find((exercise) => exercise.id === editingId) : null;
+      const resolvedExercise = {
+        ...nextExercise,
+        id: resolvedId,
+        editable: existingExercise?.editable ?? nextExercise.editable,
+      };
 
       const nextExercises = editingId
         ? exercises.map((exercise) => (exercise.id === editingId ? resolvedExercise : exercise))
@@ -361,10 +419,10 @@ export function ExerciseLibrary({
       }
       setDraft(emptyDraft);
       setEditingId(null);
-      setCustomizingReferenceName(null);
+      setEditingCanDelete(false);
       setPendingDemoFile(null);
       setOpen(false);
-      setMessage(editingId ? "Exercise updated." : customizingReferenceName ? "Custom exercise saved." : "Exercise created.");
+      setMessage(editingId ? "Exercise updated." : "Exercise created.");
       window.setTimeout(() => setMessage(null), 2400);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save exercise.");
@@ -411,13 +469,11 @@ export function ExerciseLibrary({
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <Dialog.Title className="font-serif text-4xl font-semibold text-charcoal-950">
-                        {editingId ? "Edit exercise" : customizingReferenceName ? "Customize exercise" : "Create exercise"}
+                        {editingId ? "Edit exercise" : "Create exercise"}
                       </Dialog.Title>
                       <Dialog.Description className="mt-2 text-sm leading-6 text-stone-600">
                         {editingId
                           ? "Refine the coaching reference clients see when they need a reminder."
-                          : customizingReferenceName
-                            ? `Start from ${customizingReferenceName} and save your own trainer-owned version.`
                           : "Add enough context for a client to execute the movement safely and confidently."}
                       </Dialog.Description>
                     </div>
@@ -599,20 +655,38 @@ export function ExerciseLibrary({
                     </div>
 
                     <div className="flex flex-col-reverse gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:justify-between">
-                      <div className="text-sm text-stone-500">
-                        {editingId
-                          ? "Review the changes before saving."
-                          : customizingReferenceName
-                            ? "This will save as your own editable exercise."
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        {editingId && editingCanDelete ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => void deleteExercise()}
+                            disabled={saving || deleting}
+                            className="justify-start text-red-700 hover:bg-red-50 hover:text-red-800"
+                          >
+                            <Trash2 className="size-4" />
+                            {deleting ? "Deleting..." : "Delete exercise"}
+                          </Button>
+                        ) : null}
+                        <div className="text-sm text-stone-500">
+                          {editingId
+                            ? "Review the changes before saving."
                             : "Add the details your clients need to follow this exercise."}
+                        </div>
                       </div>
                       <div className="flex flex-col-reverse gap-3 sm:flex-row">
-                      <Dialog.Close asChild>
-                        <Button type="button" variant="secondary">Cancel</Button>
-                      </Dialog.Close>
-                      <Button type="submit" variant="warm" disabled={saving}>
-                        {saving ? "Saving..." : editingId ? "Save changes" : customizingReferenceName ? "Save custom copy" : "Create exercise"}
-                      </Button>
+                        <Dialog.Close asChild>
+                          <Button type="button" variant="secondary" disabled={saving || deleting}>
+                            Cancel
+                          </Button>
+                        </Dialog.Close>
+                        <Button type="submit" variant="warm" disabled={saving || deleting}>
+                          {saving
+                            ? "Saving..."
+                            : editingId
+                              ? "Save changes"
+                              : "Create exercise"}
+                        </Button>
                       </div>
                     </div>
                   </form>

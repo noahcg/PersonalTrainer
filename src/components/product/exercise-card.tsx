@@ -74,8 +74,8 @@ export function ExerciseCard({
       <div className="absolute right-2 top-1/2 -translate-y-1/2">
         <button
           type="button"
-          aria-label={`${canEdit ? "Edit" : "Customize"} ${exercise.name}`}
-          title={canEdit ? "Edit exercise" : "Customize exercise"}
+          aria-label={`Edit ${exercise.name}`}
+          title="Edit exercise"
           onClick={onEdit}
           className={cn(
             "grid size-9 place-items-center border border-stone-200 bg-white/85 text-charcoal-950 shadow-sm transition",
