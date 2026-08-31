@@ -11,7 +11,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
 import { applyStoredReminderSettings, archiveStoredBulletinId, deleteStoredBulletinId, writeStoredReminderSettings } from "@/lib/bulletin-reminder-storage";
 import { emptyBulletinLocationDetails, formatBulletinLocation, isValidMapUrl, normalizeBulletinLocationDetails } from "@/lib/bulletin-location";
-import { formatScheduledDateTime } from "@/lib/date-format";
+import { dateKeyInTimeZone, formatScheduledDateTime, getDateTimePartsInTimeZone, timeValueInTimeZone, zonedDateTimeToIso } from "@/lib/date-format";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { BulletinPost } from "@/lib/types";
 
@@ -65,17 +65,11 @@ const sessionTimeOptions = Array.from({ length: 65 }, (_, index) => {
   };
 });
 
-function toLocalDateValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function getRelativeDateValue(daysFromToday: number) {
-  const date = new Date();
+  const today = getDateTimePartsInTimeZone(new Date());
+  const date = new Date(today.year, today.month - 1, today.day);
   date.setDate(date.getDate() + daysFromToday);
-  return toLocalDateValue(date);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function getSessionDateValue(value: string) {
@@ -252,7 +246,7 @@ export function TrainerBulletinBoard({
     setPinned(post.pinned);
     setRequiresRsvp(post.requiresRsvp);
     setPostType(post.postType);
-    setSessionStartsAt(post.sessionStartsAt ? post.sessionStartsAt.slice(0, 16) : "");
+    setSessionStartsAt(post.sessionStartsAt ? `${dateKeyInTimeZone(post.sessionStartsAt)}T${timeValueInTimeZone(post.sessionStartsAt)}` : "");
     setSessionLocationDetails(normalizeBulletinLocationDetails(post.sessionLocationDetails) ?? {
       ...emptyBulletinLocationDetails,
       placeName: post.sessionLocation ?? "",
@@ -298,6 +292,15 @@ export function TrainerBulletinBoard({
     setComposerErrors({});
     try {
       let nextPost: BulletinPost;
+      const sessionStartsAtIso =
+        postType === "session" && sessionDate && sessionTime
+          ? zonedDateTimeToIso(sessionDate, sessionTime)
+          : null;
+      if (postType === "session" && !sessionStartsAtIso) {
+        setComposerErrors({ sessionStartsAt: "That session date and time don't look valid." });
+        setBusy(false);
+        return;
+      }
       if (mode === "supabase") {
         const response = await fetch("/api/trainer/bulletins", {
           method: "POST",
@@ -311,7 +314,7 @@ export function TrainerBulletinBoard({
             pinned,
             postType,
             requiresRsvp,
-            sessionStartsAt: postType === "session" ? sessionStartsAt : null,
+            sessionStartsAt: postType === "session" ? sessionStartsAtIso : null,
             sessionLocationDetails: postType === "session" ? sessionLocationDetails : null,
             sessionCapacity: postType === "session" && sessionCapacity ? Number(sessionCapacity) : null,
             reminderEnabled: postType === "session" ? reminderEnabled : false,
@@ -369,7 +372,7 @@ export function TrainerBulletinBoard({
           status: "active",
           postType,
           requiresRsvp: postType === "session" ? true : requiresRsvp,
-          sessionStartsAt: postType === "session" ? new Date(sessionStartsAt).toISOString() : null,
+          sessionStartsAt: postType === "session" ? sessionStartsAtIso : null,
           sessionLocation: postType === "session" ? formatBulletinLocation(sessionLocationDetails) : null,
           sessionLocationDetails: postType === "session" ? sessionLocationDetails : null,
           sessionCapacity: postType === "session" && sessionCapacity ? Number(sessionCapacity) : null,

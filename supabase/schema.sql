@@ -198,6 +198,7 @@ create table public.trainer_appointments (
   client_id uuid references public.clients(id) on delete set null,
   title text not null,
   starts_at timestamptz not null,
+  time_zone text not null default 'America/Los_Angeles',
   duration_minutes int not null default 60 check (duration_minutes > 0),
   location text,
   notes text,

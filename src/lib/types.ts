@@ -356,6 +356,7 @@ export type TrainerAppointment = {
   clientName: string | null;
   title: string;
   startsAtIso: string;
+  timeZone?: string | null;
   durationMinutes: number;
   location: string;
   notes: string;
@@ -371,6 +372,7 @@ export type CalendarEvent = {
   type: CalendarEventType;
   title: string;
   startsAtIso: string;
+  timeZone?: string | null;
   durationMinutes: number | null;
   location: string;
   clientId: string | null;

@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
 import { formatBulletinLocation, normalizeBulletinLocationDetails } from "@/lib/bulletin-location";
 import { applyStoredReminderSettings, filterArchivedBulletins } from "@/lib/bulletin-reminder-storage";
-import { formatScheduledDateTime } from "@/lib/date-format";
+import { formatClientScheduledDateTime } from "@/lib/date-format";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { BulletinPost } from "@/lib/types";
 
@@ -18,7 +18,7 @@ const demoClient = { id: "mara-lee", name: "Mara Lee" };
 
 function formatSessionDate(value?: string | null) {
   if (!value) return null;
-  return formatScheduledDateTime(value, { weekday: "short", month: "short" });
+  return formatClientScheduledDateTime(value, { weekday: "short", month: "short", timeZoneName: "short" });
 }
 
 function hydrateRsvps(posts: BulletinPost[], rawStorage: string | null) {

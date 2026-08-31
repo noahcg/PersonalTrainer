@@ -74,6 +74,7 @@ type AppointmentRow = {
   client_id: string | null;
   title: string;
   starts_at: string;
+  time_zone?: string | null;
   duration_minutes: number;
   location: string | null;
   notes: string | null;
@@ -301,6 +302,7 @@ function toTrainerAppointment(row: AppointmentRow, clientName: string | null = n
     clientName,
     title: row.title,
     startsAtIso: row.starts_at,
+    timeZone: row.time_zone ?? null,
     durationMinutes: row.duration_minutes,
     location: row.location ?? "",
     notes: row.notes ?? "",

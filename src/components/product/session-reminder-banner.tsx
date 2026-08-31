@@ -6,7 +6,7 @@ import { CalendarCheck, Clock3, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { applyStoredReminderSettings, filterArchivedBulletins } from "@/lib/bulletin-reminder-storage";
-import { formatScheduledDateTime } from "@/lib/date-format";
+import { formatClientScheduledDateTime, formatScheduledDateTime } from "@/lib/date-format";
 import type { BulletinPost, Role } from "@/lib/types";
 
 const bulletinStorageKey = "nick-glushien-bulletins";
@@ -14,9 +14,10 @@ const rsvpStorageKey = "nick-glushien-bulletin-rsvps";
 const dismissedStorageKey = "nick-glushien-session-reminders-dismissed";
 const demoClient = { id: "mara-lee", name: "Mara Lee" };
 
-function formatSessionDate(value?: string | null) {
+function formatSessionDate(value: string | null | undefined, role: Role) {
   if (!value) return "Timing pending";
-  return formatScheduledDateTime(value, { weekday: "short", month: "short" });
+  const formatter = role === "client" ? formatClientScheduledDateTime : formatScheduledDateTime;
+  return formatter(value, { weekday: "short", month: "short", timeZoneName: "short" });
 }
 
 function formatReminderLead(minutes: number) {
@@ -173,7 +174,7 @@ export function SessionReminderBanner({
             <p className="mt-1 text-sm leading-6 text-stone-700">
               {reminder.title} starts {formatReminderLead(reminder.reminderMinutesBefore ?? 60)} from the reminder window:
               {" "}
-              <span suppressHydrationWarning>{formatSessionDate(reminder.sessionStartsAt)}</span>
+              <span suppressHydrationWarning>{formatSessionDate(reminder.sessionStartsAt, role)}</span>
               {reminder.sessionLocation ? ` at ${reminder.sessionLocation}` : ""}.
             </p>
           </div>

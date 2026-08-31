@@ -3,6 +3,7 @@ import { ArrowRight, CalendarCheck, CheckCircle2, NotebookPen, TrendingUp, UserR
 import { brand } from "@/lib/brand";
 import { AppShell } from "@/components/layout/app-shell";
 import { AppointmentReminderBanner, ClientUpcomingAppointments } from "@/components/product/client-upcoming-appointments";
+import { ClientLocalDateTime } from "@/components/product/client-local-date-time";
 import { ProgressChart } from "@/components/product/progress-chart";
 import { SessionReminderBanner } from "@/components/product/session-reminder-banner";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +87,7 @@ function formatAppointmentDateTime(iso: string) {
     time: date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
+      timeZoneName: "short",
     }),
   };
 }
@@ -104,6 +106,7 @@ function getNextAction(appointments: TrainerAppointment[], workouts: Workout[]) 
       title: nextAppointment.title,
       description: nextAppointment.notes || "Your next 1:1 session is on the schedule.",
       primaryMeta: `${formatted.date} at ${formatted.time}`,
+      primaryMetaIso: nextAppointment.startsAtIso,
       secondaryMeta: nextAppointment.durationMinutes ? `${nextAppointment.durationMinutes} min` : "Scheduled",
       tertiaryMeta: nextAppointment.location || "Location TBD",
       href: "/client/home",
@@ -121,7 +124,8 @@ function getNextAction(appointments: TrainerAppointment[], workouts: Workout[]) 
       badge: featuredWorkout.label,
       title: workout.name,
       description: workout.assignment?.notes || workout.coachNotes || "Complete this workout on your own and log how it went.",
-      primaryMeta: due ? `Due ${due}` : scheduled ? `Scheduled ${scheduled}` : workout.dayLabel,
+    primaryMeta: due ? `Due ${due}` : scheduled ? `Scheduled ${scheduled}` : workout.dayLabel,
+    primaryMetaIso: null,
       secondaryMeta: workout.duration,
       tertiaryMeta: `${workout.blocks.length} training blocks`,
       href: `/client/workouts/${workout.id}`,
@@ -135,6 +139,7 @@ function getNextAction(appointments: TrainerAppointment[], workouts: Workout[]) 
     title: "No upcoming item yet",
     description: "Your trainer will place appointments and scheduled workouts here when they are ready.",
     primaryMeta: "Awaiting schedule",
+    primaryMetaIso: null,
     secondaryMeta: "Planned by coach",
     tertiaryMeta: brand.tagline,
     href: "/client/workouts",
@@ -333,7 +338,11 @@ export default async function ClientHomePage() {
               </p>
               <div className="mt-7 flex flex-wrap gap-3 text-sm text-ivory-50/70">
                 <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">
-                  {nextAction.primaryMeta}
+                  {nextAction.primaryMetaIso ? (
+                    <ClientLocalDateTime iso={nextAction.primaryMetaIso} fallback={nextAction.primaryMeta} />
+                  ) : (
+                    nextAction.primaryMeta
+                  )}
                 </div>
                 <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2">
                   {nextAction.secondaryMeta}
