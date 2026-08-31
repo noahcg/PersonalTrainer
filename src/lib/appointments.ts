@@ -1,6 +1,7 @@
 import { isSupabaseConfigured } from "@/lib/auth-server";
 import { createClient } from "@/lib/supabase-server";
 import { clientSessions as demoClientSessions, clients as demoClients, bulletins as demoBulletins, workouts as demoWorkouts } from "@/lib/demo-data";
+import { zonedDateTimeToIso } from "@/lib/date-format";
 import type { CalendarEvent, TrainerAppointment } from "@/lib/types";
 
 type AppointmentRow = {
@@ -9,6 +10,7 @@ type AppointmentRow = {
   client_id: string | null;
   title: string;
   starts_at: string;
+  time_zone?: string | null;
   duration_minutes: number;
   location: string | null;
   notes: string | null;
@@ -39,7 +41,7 @@ function firstJoinedRow<T>(value: T | T[] | null | undefined) {
 }
 
 function dueDateToReminderIso(date: string) {
-  return new Date(`${date}T09:00:00`).toISOString();
+  return zonedDateTimeToIso(date, "09:00") ?? new Date(`${date}T09:00:00`).toISOString();
 }
 
 function mapAppointmentRow(row: AppointmentRow): TrainerAppointment {
@@ -51,6 +53,7 @@ function mapAppointmentRow(row: AppointmentRow): TrainerAppointment {
     clientName: clientRecord?.full_name ?? null,
     title: row.title,
     startsAtIso: row.starts_at,
+    timeZone: row.time_zone ?? null,
     durationMinutes: row.duration_minutes,
     location: row.location ?? "",
     notes: row.notes ?? "",
@@ -73,6 +76,22 @@ async function getTrainerContext() {
     .eq("profile_id", user.id)
     .maybeSingle<{ id: string }>();
   return { supabase, trainerId: trainer?.id ?? null };
+}
+
+async function getAppointmentRows(supabase: Awaited<ReturnType<typeof createClient>>, trainerId: string) {
+  const response = await supabase
+    .from("trainer_appointments")
+    .select("id, trainer_id, client_id, title, starts_at, time_zone, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at, clients(full_name)")
+    .eq("trainer_id", trainerId)
+    .order("starts_at", { ascending: true });
+
+  if (!response.error || !/time_zone/i.test(response.error.message)) return response;
+
+  return supabase
+    .from("trainer_appointments")
+    .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at, clients(full_name)")
+    .eq("trainer_id", trainerId)
+    .order("starts_at", { ascending: true });
 }
 
 export async function getTrainerCalendarData(): Promise<{
@@ -145,11 +164,7 @@ export async function getTrainerCalendarData(): Promise<{
   }
 
   const [appointmentsResponse, sessionsResponse, bulletinsResponse, assignmentsResponse] = await Promise.all([
-    supabase
-      .from("trainer_appointments")
-      .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at, clients(full_name)")
-      .eq("trainer_id", trainerId)
-      .order("starts_at", { ascending: true }),
+    getAppointmentRows(supabase, trainerId),
     supabase
       .from("client_sessions")
       .select("id, client_id, started_at, completed_at, status, location, notes, duration_minutes, clients(full_name)")
@@ -176,6 +191,7 @@ export async function getTrainerCalendarData(): Promise<{
     type: appt.clientId ? "appointment" : "calendar_item",
     title: appt.title,
     startsAtIso: appt.startsAtIso,
+    timeZone: appt.timeZone,
     durationMinutes: appt.durationMinutes,
     location: appt.location,
     clientId: appt.clientId,

@@ -91,7 +91,7 @@ export function AppointmentReminderBanner({ appointments }: { appointments: Trai
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-charcoal-950">Upcoming appointment reminder</p>
-            <p className="mt-1 text-sm leading-6 text-stone-700">
+            <p suppressHydrationWarning className="mt-1 text-sm leading-6 text-stone-700">
               {reminder.appointment.title} is scheduled for {formatted.date} at {formatted.time}
               {reminder.appointment.location ? ` at ${reminder.appointment.location}` : ""}.
             </p>
@@ -134,7 +134,7 @@ export function ClientUpcomingAppointments({ appointments }: { appointments: Tra
             const formatted = formatAppointmentDateTime(appointment.startsAtIso);
             return (
               <div key={appointment.id} className="rounded-[1.35rem] border border-stone-200 bg-white/80 p-4 shadow-[0_10px_28px_rgba(41,37,36,0.06)]">
-                <p className="text-sm font-semibold">
+                <p suppressHydrationWarning className="text-sm font-semibold">
                   {formatted.date} at {formatted.time}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-stone-600">

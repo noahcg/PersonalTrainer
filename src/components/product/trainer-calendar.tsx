@@ -9,7 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { readStoredDemoAppointments, writeStoredDemoAppointments } from "@/lib/demo-appointment-storage";
-import { appTimeZone, formatScheduledTime } from "@/lib/date-format";
+import {
+  dateKeyInTimeZone,
+  formatScheduledTime,
+  getBrowserTimeZone,
+  getDateTimePartsInTimeZone,
+  timeValueInTimeZone,
+  trainerTimeZone as fallbackTrainerTimeZone,
+  zonedDateTimeToIso,
+} from "@/lib/date-format";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, TrainerAppointment } from "@/lib/types";
@@ -24,6 +32,7 @@ type AppointmentInput = {
   clientId: string | null;
   clientName: string | null;
   startsAtIso: string;
+  timeZone: string;
   durationMinutes: number;
   location: string;
   notes: string;
@@ -39,6 +48,16 @@ const reminderOptions = [
   { label: "1 hr", minutes: 60 },
   { label: "2 hr", minutes: 120 },
   { label: "1 day", minutes: 1440 },
+];
+
+const appointmentTimeZoneOptions = [
+  { value: "America/Los_Angeles", label: "Pacific" },
+  { value: "America/Denver", label: "Mountain" },
+  { value: "America/Chicago", label: "Central" },
+  { value: "America/New_York", label: "Eastern" },
+  { value: "America/Anchorage", label: "Alaska" },
+  { value: "Pacific/Honolulu", label: "Hawaii" },
+  { value: "UTC", label: "UTC" },
 ];
 
 const eventTypeMeta: Record<
@@ -92,18 +111,22 @@ function isoDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function eventDateKey(event: CalendarEvent | TrainerAppointment) {
+function eventTimeZone(event: CalendarEvent | TrainerAppointment, fallback: string) {
+  return event.timeZone || fallback;
+}
+
+function eventDateKey(event: CalendarEvent | TrainerAppointment, fallback = fallbackTrainerTimeZone) {
   const iso = "startsAtIso" in event ? event.startsAtIso : "";
   if (!iso) return "";
-  return isoDateKey(new Date(iso));
+  return dateKeyInTimeZone(iso, eventTimeZone(event, fallback));
 }
 
-function formatEventTime(iso: string) {
-  return formatScheduledTime(iso, { timeZoneName: "short" });
+function formatEventTime(event: CalendarEvent | TrainerAppointment, fallback = fallbackTrainerTimeZone) {
+  return formatScheduledTime(event.startsAtIso, { timeZone: eventTimeZone(event, fallback), timeZoneName: "short" });
 }
 
-function localTimeZoneLabel() {
-  return appTimeZone.replaceAll("_", " ");
+function timeZoneLabel(timeZone: string) {
+  return appointmentTimeZoneOptions.find((option) => option.value === timeZone)?.label ?? timeZone.replaceAll("_", " ");
 }
 
 function formatReminderLead(minutes: number) {
@@ -119,13 +142,28 @@ function normalizeReminderOffsets(values: number[]) {
     .sort((a, b) => a - b);
 }
 
-function formatLongDate(date: Date) {
-  return date.toLocaleDateString("en-US", {
+function formatDateKeyLong(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  if (!year || !month || !day) return dateKey;
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
   });
+}
+
+function formatMonthLabel(date: Date) {
+  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function getTodayKey(timeZone: string) {
+  return dateKeyInTimeZone(new Date(), timeZone);
+}
+
+function getTodayDate(timeZone: string) {
+  const parts = getDateTimePartsInTimeZone(new Date(), timeZone);
+  return new Date(parts.year, parts.month - 1, parts.day);
 }
 
 function buildMonthGrid(anchor: Date) {
@@ -149,6 +187,7 @@ function appointmentToEvent(appointment: TrainerAppointment): CalendarEvent {
     type: appointment.clientId ? "appointment" : "calendar_item",
     title: appointment.title,
     startsAtIso: appointment.startsAtIso,
+    timeZone: appointment.timeZone,
     durationMinutes: appointment.durationMinutes,
     location: appointment.location,
     clientId: appointment.clientId,
@@ -176,13 +215,14 @@ export function TrainerCalendar({
 }) {
   const [appointments, setAppointments] = useState<TrainerAppointment[]>(initialAppointments);
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
-  const [anchor, setAnchor] = useState<Date>(() => startOfMonth(new Date()));
-  const [selectedDateKey, setSelectedDateKey] = useState<string>(() => isoDateKey(new Date()));
+  const [anchor, setAnchor] = useState<Date>(() => startOfMonth(getTodayDate(fallbackTrainerTimeZone)));
+  const [selectedDateKey, setSelectedDateKey] = useState<string>(() => getTodayKey(fallbackTrainerTimeZone));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<TrainerAppointment | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [nowMs, setNowMs] = useState<number | null>(null);
+  const [calendarTimeZone, setCalendarTimeZone] = useState(fallbackTrainerTimeZone);
 
   const hydrateDemoAppointments = useEffectEvent(() => {
     const stored = readStoredDemoAppointments();
@@ -211,10 +251,20 @@ export function TrainerCalendar({
     return () => window.clearTimeout(timeout);
   }, []);
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const browserTimeZone = getBrowserTimeZone();
+      setCalendarTimeZone(browserTimeZone);
+      setAnchor(startOfMonth(getTodayDate(browserTimeZone)));
+      setSelectedDateKey(getTodayKey(browserTimeZone));
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
   const eventsByDate = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
     for (const event of events) {
-      const key = eventDateKey(event);
+      const key = eventDateKey(event, calendarTimeZone);
       if (!key) continue;
       const list = map.get(key) ?? [];
       list.push(event);
@@ -224,14 +274,10 @@ export function TrainerCalendar({
       list.sort((a, b) => new Date(a.startsAtIso).getTime() - new Date(b.startsAtIso).getTime());
     }
     return map;
-  }, [events]);
+  }, [events, calendarTimeZone]);
 
   const monthCells = useMemo(() => buildMonthGrid(anchor), [anchor]);
-  const monthLabel = anchor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const selectedDate = useMemo(() => {
-    const [year, month, day] = selectedDateKey.split("-").map(Number);
-    return new Date(year, month - 1, day);
-  }, [selectedDateKey]);
+  const monthLabel = formatMonthLabel(anchor);
   const selectedEvents = eventsByDate.get(selectedDateKey) ?? [];
 
   const upcomingEvents = useMemo(() => {
@@ -284,6 +330,7 @@ export function TrainerCalendar({
           clientName: input.clientName,
           title: input.title,
           startsAtIso: input.startsAtIso,
+          timeZone: input.timeZone,
           durationMinutes: input.durationMinutes,
           location: input.location,
           notes: input.notes,
@@ -313,19 +360,21 @@ export function TrainerCalendar({
             client_id: input.clientId,
             title: input.title,
             starts_at: input.startsAtIso,
+            time_zone: input.timeZone,
             duration_minutes: input.durationMinutes,
             location: input.location || null,
             notes: input.notes || null,
             reminder_offsets_minutes: input.reminderOffsetsMinutes,
             status: "scheduled",
           })
-          .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at")
+          .select("id, trainer_id, client_id, title, starts_at, time_zone, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at")
           .single<{
             id: string;
             trainer_id: string;
             client_id: string | null;
             title: string;
             starts_at: string;
+            time_zone?: string | null;
             duration_minutes: number;
             location: string | null;
             notes: string | null;
@@ -345,6 +394,11 @@ export function TrainerCalendar({
               "Appointment reminders need a database upgrade. Re-run supabase/trainer-appointments-migration.sql in your Supabase project.",
             );
           }
+          if (/time_zone/i.test(message)) {
+            throw new Error(
+              "Appointment timezones need a database upgrade. Run supabase/trainer-appointment-time-zone-migration.sql in your Supabase project.",
+            );
+          }
           throw error ?? new Error("Unable to save appointment.");
         }
 
@@ -355,6 +409,7 @@ export function TrainerCalendar({
           clientName: input.clientName,
           title: inserted.title,
           startsAtIso: inserted.starts_at,
+          timeZone: inserted.time_zone ?? input.timeZone,
           durationMinutes: inserted.duration_minutes,
           location: inserted.location ?? "",
           notes: inserted.notes ?? "",
@@ -365,7 +420,7 @@ export function TrainerCalendar({
         await persistAppointments([...appointments, created]);
       }
 
-      setSelectedDateKey(eventDateKey({ startsAtIso: input.startsAtIso } as CalendarEvent));
+      setSelectedDateKey(eventDateKey({ startsAtIso: input.startsAtIso, timeZone: input.timeZone } as CalendarEvent, calendarTimeZone));
       flashMessage(input.clientId ? "Appointment added to your calendar." : "Calendar item added.");
       setDialogOpen(false);
       return { ok: true };
@@ -390,19 +445,21 @@ export function TrainerCalendar({
             client_id: input.clientId,
             title: input.title,
             starts_at: input.startsAtIso,
+            time_zone: input.timeZone,
             duration_minutes: input.durationMinutes,
             location: input.location || null,
             notes: input.notes || null,
             reminder_offsets_minutes: input.reminderOffsetsMinutes,
           })
           .eq("id", appointmentId)
-          .select("id, trainer_id, client_id, title, starts_at, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at")
+          .select("id, trainer_id, client_id, title, starts_at, time_zone, duration_minutes, location, notes, reminder_offsets_minutes, status, created_at")
           .single<{
             id: string;
             trainer_id: string;
             client_id: string | null;
             title: string;
             starts_at: string;
+            time_zone?: string | null;
             duration_minutes: number;
             location: string | null;
             notes: string | null;
@@ -412,6 +469,11 @@ export function TrainerCalendar({
           }>();
 
         if (error || !updated) {
+          if (error?.message && /time_zone/i.test(error.message)) {
+            throw new Error(
+              "Appointment timezones need a database upgrade. Run supabase/trainer-appointment-time-zone-migration.sql in your Supabase project.",
+            );
+          }
           if (error?.message && /reminder_offsets_minutes/i.test(error.message)) {
             throw new Error(
               "Appointment reminders need a database upgrade. Re-run supabase/trainer-appointments-migration.sql in your Supabase project.",
@@ -427,6 +489,7 @@ export function TrainerCalendar({
           clientName: input.clientName,
           title: updated.title,
           startsAtIso: updated.starts_at,
+          timeZone: updated.time_zone ?? input.timeZone,
           durationMinutes: updated.duration_minutes,
           location: updated.location ?? "",
           notes: updated.notes ?? "",
@@ -447,6 +510,7 @@ export function TrainerCalendar({
           clientName: input.clientName,
           title: input.title,
           startsAtIso: input.startsAtIso,
+          timeZone: input.timeZone,
           durationMinutes: input.durationMinutes,
           location: input.location,
           notes: input.notes,
@@ -455,7 +519,7 @@ export function TrainerCalendar({
         await persistAppointments(appointments.map((appointment) => (appointment.id === appointmentId ? nextAppointment : appointment)));
       }
 
-      setSelectedDateKey(eventDateKey({ startsAtIso: input.startsAtIso } as CalendarEvent));
+      setSelectedDateKey(eventDateKey({ startsAtIso: input.startsAtIso, timeZone: input.timeZone } as CalendarEvent, calendarTimeZone));
       flashMessage(input.clientId ? "Appointment updated." : "Calendar item updated.");
       setEditingAppointment(null);
       setDialogOpen(false);
@@ -553,9 +617,9 @@ export function TrainerCalendar({
                 size="sm"
                 className="h-9 min-w-20 bg-stone-50 px-4 text-xs ring-stone-200 hover:bg-ivory-50"
                 onClick={() => {
-                  const today = new Date();
+                  const today = getTodayDate(calendarTimeZone);
                   setAnchor(startOfMonth(today));
-                  setSelectedDateKey(isoDateKey(today));
+                  setSelectedDateKey(getTodayKey(calendarTimeZone));
                 }}
               >
                 Today
@@ -582,7 +646,7 @@ export function TrainerCalendar({
             {monthCells.map((cell) => {
               const dateKey = isoDateKey(cell);
               const inMonth = cell.getMonth() === anchor.getMonth();
-              const isToday = isoDateKey(new Date()) === dateKey;
+              const isToday = getTodayKey(calendarTimeZone) === dateKey;
               const isSelected = dateKey === selectedDateKey;
               const dayEvents = eventsByDate.get(dateKey) ?? [];
               return (
@@ -611,7 +675,7 @@ export function TrainerCalendar({
                       return (
                         <div key={event.id} className={cn("flex items-center gap-1 truncate rounded-md px-1.5 py-0.5 text-[11px]", meta.chip, "border")}>
                           <span className={cn("size-1.5 shrink-0 rounded-full", meta.dot)} />
-                          <span className="truncate">{formatEventTime(event.startsAtIso)} · {event.title}</span>
+                          <span className="truncate">{formatEventTime(event, calendarTimeZone)} · {event.title}</span>
                         </div>
                       );
                     })}
@@ -629,7 +693,7 @@ export function TrainerCalendar({
           <Card className="p-5">
             <div>
               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.28em] text-bronze-600">Selected day</p>
-              <p className="mt-1 font-serif text-xl font-semibold leading-tight text-charcoal-950">{formatLongDate(selectedDate)}</p>
+              <p className="mt-1 font-serif text-xl font-semibold leading-tight text-charcoal-950">{formatDateKeyLong(selectedDateKey)}</p>
               <div className="mt-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
                 <span className={cn("size-2 rounded-full", selectedEvents.length ? "bg-bronze-500" : "bg-stone-300")} />
                 <span>
@@ -646,7 +710,7 @@ export function TrainerCalendar({
                 </p>
               ) : (
                 selectedEvents.map((event) => (
-                  <EventRow key={event.id} event={event} onEdit={openEditAppointment} onDelete={deleteAppointment} busy={busy} />
+                  <EventRow key={event.id} event={event} onEdit={openEditAppointment} onDelete={deleteAppointment} busy={busy} fallbackTimeZone={calendarTimeZone} />
                 ))
               )}
             </div>
@@ -666,13 +730,14 @@ export function TrainerCalendar({
                     type="button"
                     key={event.id}
                     onClick={() => {
-                      const date = new Date(event.startsAtIso);
-                      setAnchor(startOfMonth(date));
-                      setSelectedDateKey(isoDateKey(date));
+                      const key = eventDateKey(event, calendarTimeZone);
+                      const [year, month, day] = key.split("-").map(Number);
+                      setAnchor(startOfMonth(new Date(year, month - 1, day)));
+                      setSelectedDateKey(key);
                     }}
                     className="block w-full rounded-[1.25rem] border border-stone-200 bg-white/70 p-3 text-left transition hover:bg-white"
                   >
-                    <UpcomingRow event={event} />
+                    <UpcomingRow event={event} fallbackTimeZone={calendarTimeZone} />
                   </button>
                 ))
               )}
@@ -692,6 +757,7 @@ export function TrainerCalendar({
         clientOptions={clientOptions}
         onSubmit={saveAppointment}
         busy={busy}
+        defaultTimeZone={calendarTimeZone}
       />
 
       {message ? (
@@ -708,11 +774,13 @@ function EventRow({
   onEdit,
   onDelete,
   busy,
+  fallbackTimeZone,
 }: {
   event: CalendarEvent;
   onEdit: (appointmentId: string) => void;
   onDelete: (appointmentId: string) => Promise<void> | void;
   busy: boolean;
+  fallbackTimeZone: string;
 }) {
   const meta = eventTypeMeta[event.type];
   const isTrainerEditableItem = event.type === "appointment" || event.type === "calendar_item";
@@ -733,7 +801,7 @@ function EventRow({
           <div className="mt-2 grid gap-1 text-xs text-stone-500">
             <span className="inline-flex items-center gap-1.5">
               <Clock className="size-3.5" />
-              {formatEventTime(event.startsAtIso)}
+              {formatEventTime(event, fallbackTimeZone)}
               {event.durationMinutes ? ` · ${event.durationMinutes} min` : ""}
             </span>
             {event.location ? (
@@ -801,9 +869,10 @@ function EventRow({
   );
 }
 
-function UpcomingRow({ event }: { event: CalendarEvent }) {
+function UpcomingRow({ event, fallbackTimeZone }: { event: CalendarEvent; fallbackTimeZone: string }) {
   const meta = eventTypeMeta[event.type];
-  const date = new Date(event.startsAtIso);
+  const parts = getDateTimePartsInTimeZone(event.startsAtIso, eventTimeZone(event, fallbackTimeZone));
+  const date = new Date(parts.year, parts.month - 1, parts.day);
   return (
     <div className="flex items-center gap-3">
       <div className="grid size-11 place-items-center rounded-2xl bg-stone-50 text-center">
@@ -818,7 +887,7 @@ function UpcomingRow({ event }: { event: CalendarEvent }) {
           <span className="truncate text-sm font-semibold text-charcoal-950">{event.title}</span>
         </div>
         <p className="mt-1 truncate text-xs text-stone-500">
-          {formatEventTime(event.startsAtIso)}
+          {formatEventTime(event, fallbackTimeZone)}
           {event.clientName ? ` · ${event.clientName}` : ""}
           {event.location ? ` · ${event.location}` : ""}
         </p>
@@ -835,6 +904,7 @@ function AppointmentDialog({
   clientOptions,
   onSubmit,
   busy,
+  defaultTimeZone,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -843,6 +913,7 @@ function AppointmentDialog({
   clientOptions: ClientOption[];
   onSubmit: (input: AppointmentInput) => Promise<{ ok: true } | { ok: false; error: string }>;
   busy: boolean;
+  defaultTimeZone: string;
 }) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(defaultDateKey);
@@ -852,15 +923,17 @@ function AppointmentDialog({
   const [notes, setNotes] = useState("");
   const [itemKind, setItemKind] = useState<CalendarItemKind>("planning_session");
   const [clientId, setClientId] = useState<string>("");
+  const [timeZone, setTimeZone] = useState(defaultTimeZone);
   const [reminderOffsets, setReminderOffsets] = useState<number[]>([60]);
   const [error, setError] = useState<string | null>(null);
 
   const resetForm = useEffectEvent(() => {
     if (appointment) {
-      const startsAt = new Date(appointment.startsAtIso);
-      setDate(isoDateKey(startsAt));
+      const appointmentTimeZone = appointment.timeZone || defaultTimeZone;
+      setDate(dateKeyInTimeZone(appointment.startsAtIso, appointmentTimeZone));
       setTitle(appointment.title);
-      setTime(`${String(startsAt.getHours()).padStart(2, "0")}:${String(startsAt.getMinutes()).padStart(2, "0")}`);
+      setTime(timeValueInTimeZone(appointment.startsAtIso, appointmentTimeZone));
+      setTimeZone(appointmentTimeZone);
       setDuration(String(appointment.durationMinutes));
       setLocation(appointment.location);
       setNotes(appointment.notes);
@@ -874,6 +947,7 @@ function AppointmentDialog({
     setDate(defaultDateKey);
     setTitle("");
     setTime("09:00");
+    setTimeZone(defaultTimeZone);
     setDuration("60");
     setLocation("");
     setNotes("");
@@ -892,6 +966,9 @@ function AppointmentDialog({
   const selectedClient = itemKind === "client_appointment"
     ? clientOptions.find((option) => option.id === clientId) ?? null
     : null;
+  const timeZoneOptions = appointmentTimeZoneOptions.some((option) => option.value === timeZone)
+    ? appointmentTimeZoneOptions
+    : [{ value: timeZone, label: timeZoneLabel(timeZone) }, ...appointmentTimeZoneOptions];
 
   function toggleReminderOffset(minutes: number) {
     setReminderOffsets((current) => {
@@ -918,8 +995,8 @@ function AppointmentDialog({
       setError("Add a date and start time.");
       return;
     }
-    const startsAt = new Date(`${date}T${time}`);
-    if (Number.isNaN(startsAt.getTime())) {
+    const startsAtIso = zonedDateTimeToIso(date, time, timeZone);
+    if (!startsAtIso) {
       setError("That date and time don't look valid.");
       return;
     }
@@ -929,7 +1006,8 @@ function AppointmentDialog({
       title: trimmedTitle,
       clientId: selectedClient?.id ?? null,
       clientName: selectedClient?.name ?? null,
-      startsAtIso: startsAt.toISOString(),
+      startsAtIso,
+      timeZone,
       durationMinutes,
       location: location.trim(),
       notes: notes.trim(),
@@ -1030,7 +1108,7 @@ function AppointmentDialog({
                   </div>
                 ) : null}
 
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,0.85fr)]">
                   <div>
                     <label htmlFor="appointment-date" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
                       Date
@@ -1042,7 +1120,24 @@ function AppointmentDialog({
                       Start time
                     </label>
                     <Input id="appointment-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} className="mt-2" />
-                    <p className="mt-1 text-xs text-stone-500">{localTimeZoneLabel()}</p>
+                    <p className="mt-1 text-xs text-stone-500">{timeZoneLabel(timeZone)} time</p>
+                  </div>
+                  <div>
+                    <label htmlFor="appointment-time-zone" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                      Timezone
+                    </label>
+                    <select
+                      id="appointment-time-zone"
+                      value={timeZone}
+                      onChange={(e) => setTimeZone(e.target.value)}
+                      className="mt-2 h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm text-charcoal-950 shadow-inner-soft focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
+                    >
+                      {timeZoneOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label htmlFor="appointment-duration" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">

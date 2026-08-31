@@ -22,8 +22,8 @@ const nextEventCardCopy: Record<CalendarEvent["type"], { eyebrow: string; label:
   workout_assignment: { eyebrow: "Next workout deadline", label: "Client workout due" },
 };
 
-function formatNextAppointmentDate(iso: string) {
-  return formatScheduledDateTime(iso, { weekday: "long", month: "long" });
+function formatNextAppointmentDate(event: CalendarEvent) {
+  return formatScheduledDateTime(event.startsAtIso, { weekday: "long", month: "long", timeZone: event.timeZone ?? undefined, timeZoneName: "short" });
 }
 
 export default async function TrainerDashboardPage() {
@@ -93,7 +93,7 @@ export default async function TrainerDashboardPage() {
                   <div className="grid gap-2 text-sm text-ivory-50/75 sm:grid-cols-2">
                     <span className="inline-flex items-center gap-2">
                       <Clock className="size-4 text-bronze-200" />
-                      {formatNextAppointmentDate(nextEvent.startsAtIso)}
+                      {formatNextAppointmentDate(nextEvent)}
                       {nextEvent.durationMinutes ? ` · ${nextEvent.durationMinutes} min` : ""}
                     </span>
                     {nextEvent.clientName ? (

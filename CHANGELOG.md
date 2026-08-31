@@ -8,6 +8,16 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.24.0] - 2026-08-31
+
+- Added trainer appointment timezone selection that defaults to the trainer's browser timezone.
+- Added Supabase migration support for saving each trainer appointment's selected timezone.
+
+## [0.23.0] - 2026-08-31
+
+- Changed trainer scheduling surfaces to default to Pacific time and save Pacific-entered appointments as the correct absolute time.
+- Updated client appointment and session displays to use the client's browser timezone with timezone labels.
+
 ## [0.22.0] - 2026-08-27
 
 - Hid the trainer Training Plans workspace and removed trainer-facing plan actions from the workout builder flow.

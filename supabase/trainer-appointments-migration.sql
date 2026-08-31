@@ -26,6 +26,9 @@ create table if not exists public.trainer_appointments (
 alter table public.trainer_appointments
   add column if not exists reminder_offsets_minutes int[] not null default '{}'::int[];
 
+alter table public.trainer_appointments
+  add column if not exists time_zone text not null default 'America/Los_Angeles';
+
 create index if not exists trainer_appointments_trainer_idx
   on public.trainer_appointments(trainer_id, starts_at);
 
