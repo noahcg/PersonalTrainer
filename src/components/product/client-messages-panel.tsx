@@ -6,7 +6,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/input";
 import { messages as demoMessages } from "@/lib/demo-data";
 import { messagesChangedEventName, readDemoMessages, writeDemoMessages } from "@/lib/demo-message-storage";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
@@ -234,19 +234,20 @@ export function ClientMessagesPanel({
             )}
           </div>
           <div className="mt-2 flex flex-none gap-2 rounded-[1.15rem] border border-stone-200/80 bg-white/76 p-2 shadow-inner-soft sm:mt-3 sm:gap-3 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-            <Input
+            <Textarea
               value={reply}
               onChange={(event) => setReply(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                if (event.key !== "Enter" || (!event.metaKey && !event.ctrlKey) || event.nativeEvent.isComposing) return;
 
                 event.preventDefault();
                 void sendReply();
               }}
               placeholder="Reply to Nick..."
-              className="min-w-0 flex-1 rounded-full bg-white"
+              aria-keyshortcuts="Control+Enter Meta+Enter"
+              className="!min-h-11 field-sizing-content max-h-40 min-w-0 flex-1 resize-none overflow-y-auto rounded-[1.15rem] bg-white py-3 sm:rounded-2xl"
             />
-            <Button variant="warm" onClick={() => void sendReply()} className="size-11 shrink-0 px-0 sm:size-auto sm:px-5" aria-label="Send reply">
+            <Button variant="warm" onClick={() => void sendReply()} className="size-11 shrink-0 self-start px-0 sm:w-auto sm:px-5" aria-label="Send reply">
               <Send className="size-4" />
               <span className="hidden sm:inline">Send</span>
             </Button>

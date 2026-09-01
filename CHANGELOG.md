@@ -8,6 +8,10 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.24.1] - 2026-09-01
+
+- Updated message composers to wrap and grow with multi-line drafts, with Send kept top-aligned.
+
 ## [0.24.0] - 2026-08-31
 
 - Added trainer appointment timezone selection that defaults to the trainer's browser timezone.
