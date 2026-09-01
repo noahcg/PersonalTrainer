@@ -7,7 +7,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/input";
 import { messages as demoMessages } from "@/lib/demo-data";
 import { messagesChangedEventName, readDemoMessages, writeDemoMessages } from "@/lib/demo-message-storage";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
@@ -358,19 +358,20 @@ export function TrainerMessagesManager({
 
               <div className="flex-none border-t border-border bg-stone-50/45 p-3 sm:p-5">
                 <div className="flex gap-2 sm:gap-3">
-                  <Input
+                  <Textarea
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={(event) => {
-                      if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+                      if (event.key !== "Enter" || (!event.metaKey && !event.ctrlKey) || event.nativeEvent.isComposing) return;
 
                       event.preventDefault();
                       void sendMessage();
                     }}
                     placeholder={`Message ${selectedClient.name}...`}
-                    className="min-w-0 flex-1 bg-white"
+                    aria-keyshortcuts="Control+Enter Meta+Enter"
+                    className="!min-h-11 field-sizing-content max-h-40 min-w-0 flex-1 resize-none overflow-y-auto bg-white py-3"
                   />
-                  <Button variant="warm" onClick={sendMessage} disabled={busy} className="size-11 shrink-0 px-0 sm:size-auto sm:px-5" aria-label="Send message">
+                  <Button variant="warm" onClick={sendMessage} disabled={busy} className="size-11 shrink-0 self-start px-0 sm:w-auto sm:px-5" aria-label="Send message">
                     <Send className="size-4" />
                     <span className="hidden sm:inline">{busy ? "Sending..." : "Send"}</span>
                   </Button>
