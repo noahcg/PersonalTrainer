@@ -8,6 +8,26 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.27.0] - 2026-09-04
+
+- Added a pill-based Exercise Library filter that lets trainers choose Category or Pattern before selecting one concise, non-wrapping filter value.
+
+## [0.26.1] - 2026-09-04
+
+- Restored the aligned two-column Exercise Library form layout after adding the category and pattern selects.
+
+## [0.26.0] - 2026-09-04
+
+- Replaced free-text exercise categories and patterns with consistent select lists.
+- Updated Exercise Library filters by removing Gym and adding TRX, while retaining the trainer's other preferred categories.
+- Standardized legacy category names whenever an exercise is edited.
+
+## [0.25.0] - 2026-09-04
+
+- Added exercise prescription styles for strength, timed cardio, distance cardio, and intervals.
+- Updated workout creation and client logging to show and record the fields appropriate to each prescription.
+- Added Supabase migration support for saving exercise and workout prescription styles.
+
 ## [0.24.1] - 2026-09-01
 
 - Updated message composers to wrap and grow with multi-line drafts, with Send kept top-aligned.

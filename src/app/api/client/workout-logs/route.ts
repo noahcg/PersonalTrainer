@@ -7,6 +7,8 @@ type SetEntryPayload = {
   setNumber?: number;
   reps?: string;
   weight?: string;
+  durationMinutes?: string;
+  distance?: string;
   notes?: string;
   completed?: boolean;
 };
@@ -42,12 +44,16 @@ function normalizeSets(sets: SetEntryPayload[]) {
       const setNumber = typeof set.setNumber === "number" ? Math.round(set.setNumber) : 0;
       const reps = parsePositiveNumber(clean(set.reps));
       const weight = parseNonNegativeNumber(clean(set.weight));
+      const durationMinutes = parsePositiveNumber(clean(set.durationMinutes));
+      const distance = parsePositiveNumber(clean(set.distance));
 
       return {
         workout_exercise_id: exerciseId,
         set_number: setNumber,
         reps,
         weight,
+        duration_seconds: durationMinutes === null || Number.isNaN(durationMinutes) ? durationMinutes : Math.round(durationMinutes * 60),
+        distance,
         notes: clean(set.notes) || null,
         completed: Boolean(set.completed),
       };
@@ -73,11 +79,11 @@ export async function POST(request: Request) {
     }
 
     const sets = normalizeSets(payload.sets ?? []);
-    if (sets.some((set) => Number.isNaN(set.reps) || Number.isNaN(set.weight))) {
-      return NextResponse.json({ error: "Set reps and weight must be valid numbers." }, { status: 400 });
+    if (sets.some((set) => Number.isNaN(set.reps) || Number.isNaN(set.weight) || Number.isNaN(set.duration_seconds) || Number.isNaN(set.distance))) {
+      return NextResponse.json({ error: "Set reps, weight, duration, and distance must be valid numbers." }, { status: 400 });
     }
-    if (status === "completed" && (!sets.length || sets.some((set) => !set.completed || set.reps === null))) {
-      return NextResponse.json({ error: "Log reps for every set before completing the workout." }, { status: 400 });
+    if (status === "completed" && (!sets.length || sets.some((set) => !set.completed || (set.reps === null && set.duration_seconds === null && set.distance === null)))) {
+      return NextResponse.json({ error: "Log each exercise before completing the workout." }, { status: 400 });
     }
 
     const supabase = await createClient();

@@ -195,6 +195,8 @@ export type ClientIntake = {
   };
 };
 
+export type ExercisePrescriptionType = "strength" | "duration" | "distance" | "intervals";
+
 export type Exercise = {
   id: string;
   name: string;
@@ -209,6 +211,7 @@ export type Exercise = {
   substitutions: string[];
   demoUrl: string;
   tags: string[];
+  prescriptionType?: ExercisePrescriptionType;
   editable?: boolean;
 };
 
@@ -224,6 +227,8 @@ export type WorkoutExercise = {
   rpe: string;
   load: string;
   duration?: string;
+  distance?: string;
+  prescriptionType?: ExercisePrescriptionType;
   notes: string;
 };
 

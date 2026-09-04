@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
+import { parseExercisePrescriptionType } from "@/lib/exercise-prescriptions";
 import { createClient } from "@/lib/supabase-server";
 import type { Exercise } from "@/lib/types";
 
@@ -9,6 +10,7 @@ type ExerciseUpdatePayload = {
   muscleGroups?: string[];
   equipment?: string[];
   pattern?: string;
+  prescriptionType?: Exercise["prescriptionType"];
   difficulty?: Exercise["difficulty"];
   instructions?: string;
   cues?: string[];
@@ -72,6 +74,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const difficulty = difficultyValues.includes(payload.difficulty as Exercise["difficulty"])
       ? (payload.difficulty as Exercise["difficulty"])
       : "Beginner";
+    const prescriptionType = parseExercisePrescriptionType(payload.prescriptionType) ?? "strength";
 
     const { error: updateError } = await admin
       .from("exercises")
@@ -81,6 +84,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         muscle_groups: cleanList(payload.muscleGroups),
         equipment: cleanList(payload.equipment),
         movement_pattern: clean(payload.pattern) || "General",
+        prescription_type: prescriptionType,
         difficulty: difficulty.toLowerCase(),
         instructions: clean(payload.instructions) || "Add detailed instructions before assigning this exercise.",
         coaching_cues: cleanList(payload.cues),
