@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
+import { parseExercisePrescriptionType } from "@/lib/exercise-prescriptions";
 
 type WorkoutExercisePayload = {
   exerciseId?: string;
@@ -12,6 +13,8 @@ type WorkoutExercisePayload = {
   rpe?: string;
   load?: string;
   duration?: string;
+  distance?: string;
+  prescriptionType?: string;
   notes?: string;
 };
 
@@ -50,6 +53,8 @@ function normalizeBlocks(payload: WorkoutPayload) {
         rpe_target: clean(exercise.rpe) || null,
         load_guidance: clean(exercise.load) || null,
         duration: clean(exercise.duration) || null,
+        distance: clean(exercise.distance) || null,
+        prescription_type: parseExercisePrescriptionType(exercise.prescriptionType) ?? "strength",
         notes: clean(exercise.notes) || null,
       })),
   }));
@@ -185,6 +190,8 @@ export async function POST(request: Request) {
           rpe_target: exercise.rpe_target,
           load_guidance: exercise.load_guidance,
           duration: exercise.duration,
+          distance: exercise.distance,
+          prescription_type: exercise.prescription_type,
           notes: exercise.notes,
         })),
       );

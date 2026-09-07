@@ -12,12 +12,15 @@ import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { exercises as exerciseLibrary } from "@/lib/demo-data";
+import { getWorkoutExercisePrescriptionType } from "@/lib/exercise-prescriptions";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import type { Exercise, Workout, WorkoutExercise } from "@/lib/types";
 
 type SetEntry = {
   reps: string;
   weight: string;
+  durationMinutes: string;
+  distance: string;
   notes: string;
   completed: boolean;
 };
@@ -39,17 +42,50 @@ function entryKey(exerciseId: string, setNumber: number) {
   return `${exerciseId}:${setNumber}`;
 }
 
+function emptySetEntry(): SetEntry {
+  return { reps: "", weight: "", durationMinutes: "", distance: "", notes: "", completed: false };
+}
+
+function setEntry(entry?: Partial<SetEntry>): SetEntry {
+  return { ...emptySetEntry(), ...entry };
+}
+
+function logUnitCount(exercise: WorkoutExercise) {
+  const prescriptionType = getWorkoutExercisePrescriptionType(exercise);
+  return prescriptionType === "strength" || prescriptionType === "intervals" ? Math.max(exercise.sets, 1) : 1;
+}
+
+function logUnitLabel(exercise: WorkoutExercise, unitNumber: number) {
+  switch (getWorkoutExercisePrescriptionType(exercise)) {
+    case "intervals":
+      return `Round ${unitNumber}`;
+    case "duration":
+    case "distance":
+      return "Session";
+    default:
+      return `Set ${unitNumber}`;
+  }
+}
+
+function exerciseStatusLabel(exercise: WorkoutExercise) {
+  switch (getWorkoutExercisePrescriptionType(exercise)) {
+    case "duration":
+      return exercise.duration || "Timed cardio";
+    case "distance":
+      return exercise.distance || "Distance cardio";
+    case "intervals":
+      return `${exercise.sets} rounds`;
+    default:
+      return `${exercise.sets} sets`;
+  }
+}
+
 function buildInitialSetState(workout: Workout) {
   const state: SetState = {};
   workout.blocks.forEach((block) => {
     block.exercises.forEach((exercise) => {
-      for (let setNumber = 1; setNumber <= exercise.sets; setNumber += 1) {
-        state[entryKey(exercise.id, setNumber)] = {
-          reps: "",
-          weight: "",
-          notes: "",
-          completed: false,
-        };
+      for (let setNumber = 1; setNumber <= logUnitCount(exercise); setNumber += 1) {
+        state[entryKey(exercise.id, setNumber)] = emptySetEntry();
       }
     });
   });
@@ -159,7 +195,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
 
         const { data: setLogs } = await supabase
           .from("set_logs")
-          .select("workout_exercise_id, set_number, reps, weight, notes, completed")
+          .select("workout_exercise_id, set_number, reps, weight, duration_seconds, distance, notes, completed")
           .eq("workout_log_id", workoutLog.id);
 
         if (cancelled) return;
@@ -172,21 +208,25 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
           set_number: number;
           reps: number | null;
           weight: number | null;
+          duration_seconds: number | null;
+          distance: number | null;
           notes: string | null;
           completed: boolean;
         }) => {
           const key = entryKey(setLog.workout_exercise_id, setLog.set_number);
-          nextSetState[key] = {
+          nextSetState[key] = setEntry({
             reps: setLog.reps?.toString() ?? "",
             weight: setLog.weight?.toString() ?? "",
+            durationMinutes: setLog.duration_seconds ? String(setLog.duration_seconds / 60) : "",
+            distance: setLog.distance?.toString() ?? "",
             notes: setLog.notes ?? "",
             completed: Boolean(setLog.completed),
-          };
+          });
         });
 
         workout.blocks.forEach((block) => {
           block.exercises.forEach((exercise) => {
-            const allSetsDone = Array.from({ length: exercise.sets }).every((_, index) => {
+            const allSetsDone = Array.from({ length: logUnitCount(exercise) }).every((_, index) => {
               const entry = nextSetState[entryKey(exercise.id, index + 1)];
               return entry?.completed;
             });
@@ -237,12 +277,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
     setSetState((current) => ({
       ...current,
       [entryKey(exerciseId, setNumber)]: {
-        ...(current[entryKey(exerciseId, setNumber)] ?? {
-          reps: "",
-          weight: "",
-          notes: "",
-          completed: false,
-        }),
+        ...setEntry(current[entryKey(exerciseId, setNumber)]),
         ...patch,
       },
     }));
@@ -251,20 +286,17 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
   function serializeSetState(nextSetState = setState) {
     return workout.blocks.flatMap((block) =>
       block.exercises.flatMap((exercise) =>
-        Array.from({ length: exercise.sets }).map((_, index) => {
+        Array.from({ length: logUnitCount(exercise) }).map((_, index) => {
           const setNumber = index + 1;
-          const entry = nextSetState[entryKey(exercise.id, setNumber)] ?? {
-            reps: "",
-            weight: "",
-            notes: "",
-            completed: false,
-          };
+          const entry = setEntry(nextSetState[entryKey(exercise.id, setNumber)]);
 
           return {
             exerciseId: exercise.id,
             setNumber,
             reps: entry.reps,
             weight: entry.weight,
+            durationMinutes: entry.durationMinutes,
+            distance: entry.distance,
             notes: entry.notes,
             completed: entry.completed,
           };
@@ -274,17 +306,41 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
   }
 
   function validateExercise(exercise: WorkoutExercise, nextSetState = setState) {
-    for (let setNumber = 1; setNumber <= exercise.sets; setNumber += 1) {
-      const entry = nextSetState[entryKey(exercise.id, setNumber)];
-      const reps = entry?.reps.trim() ?? "";
-      const weight = entry?.weight.trim() ?? "";
+    const prescriptionType = getWorkoutExercisePrescriptionType(exercise);
 
-      if (!reps) return `Add reps for ${exercise.name}, set ${setNumber}.`;
-      if (!Number.isFinite(Number(reps)) || Number(reps) <= 0) {
-        return `Reps for ${exercise.name}, set ${setNumber} must be a number above 0.`;
+    if (prescriptionType === "intervals" && !exercise.duration && !exercise.distance) {
+      return `${exercise.name} needs a work time or distance from your trainer before it can be logged.`;
+    }
+
+    for (let setNumber = 1; setNumber <= logUnitCount(exercise); setNumber += 1) {
+      const entry = setEntry(nextSetState[entryKey(exercise.id, setNumber)]);
+      const unitLabel = logUnitLabel(exercise, setNumber).toLowerCase();
+      const reps = entry.reps.trim();
+      const weight = entry.weight.trim();
+      const durationMinutes = entry.durationMinutes.trim();
+      const distance = entry.distance.trim();
+
+      if (prescriptionType === "strength") {
+        if (!reps) return `Add reps for ${exercise.name}, ${unitLabel}.`;
+        if (!Number.isFinite(Number(reps)) || Number(reps) <= 0) {
+          return `Reps for ${exercise.name}, ${unitLabel} must be a number above 0.`;
+        }
+        if (weight && (!Number.isFinite(Number(weight)) || Number(weight) < 0)) {
+          return `Weight for ${exercise.name}, ${unitLabel} must be 0 or higher.`;
+        }
+        continue;
       }
-      if (weight && (!Number.isFinite(Number(weight)) || Number(weight) < 0)) {
-        return `Weight for ${exercise.name}, set ${setNumber} must be 0 or higher.`;
+
+      if (prescriptionType === "duration" || (prescriptionType === "intervals" && exercise.duration)) {
+        if (!durationMinutes || !Number.isFinite(Number(durationMinutes)) || Number(durationMinutes) <= 0) {
+          return `Add minutes for ${exercise.name}, ${unitLabel}.`;
+        }
+      }
+
+      if (prescriptionType === "distance" || (prescriptionType === "intervals" && exercise.distance)) {
+        if (!distance || !Number.isFinite(Number(distance)) || Number(distance) <= 0) {
+          return `Add distance for ${exercise.name}, ${unitLabel}.`;
+        }
       }
     }
 
@@ -346,11 +402,11 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
         : [...completed, exercise.id];
       const nextSetState = { ...setState };
 
-      Array.from({ length: exercise.sets }).forEach((_, index) => {
+      Array.from({ length: logUnitCount(exercise) }).forEach((_, index) => {
         const setNumber = index + 1;
         const key = entryKey(exercise.id, setNumber);
         nextSetState[key] = {
-          ...(nextSetState[key] ?? { reps: "", weight: "", notes: "", completed: false }),
+          ...setEntry(nextSetState[key]),
           completed: !done,
         };
       });
@@ -491,7 +547,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <h4 className="text-base font-semibold sm:text-lg">{exercise.name}</h4>
-                          <Badge variant={done ? "sage" : "default"}>{done ? "Complete" : `${exercise.sets} sets`}</Badge>
+                          <Badge variant={done ? "sage" : "default"}>{done ? "Complete" : exerciseStatusLabel(exercise)}</Badge>
                         </div>
                         <p className="mt-2 text-sm leading-6 text-stone-600">{exercise.notes}</p>
                       </div>
@@ -546,45 +602,22 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                       </button>
                     ) : null}
                     <div className="mt-4 grid gap-2.5 sm:grid-cols-5 sm:gap-3">
-                      {Array.from({ length: exercise.sets }).map((_, setIndex) => {
+                      {Array.from({ length: logUnitCount(exercise) }).map((_, setIndex) => {
                         const setNumber = setIndex + 1;
-                        const currentEntry = setState[entryKey(exercise.id, setNumber)] ?? {
-                          reps: "",
-                          weight: "",
-                          notes: "",
-                          completed: false,
-                        };
+                        const currentEntry = setEntry(setState[entryKey(exercise.id, setNumber)]);
                         return (
                           <div key={setNumber} className="rounded-[1rem] bg-white/86 p-2.5 sm:rounded-[1.15rem] sm:p-3">
-                            <p className="mb-2 text-xs font-semibold text-stone-500">Set {setNumber}</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              <Input
-                                value={currentEntry.reps}
-                                onChange={(event) => updateEntry(exercise.id, setNumber, { reps: event.target.value })}
-                                placeholder={exercise.reps}
-                                aria-label="reps"
-                                inputMode="numeric"
-                                className="h-10 rounded-xl px-3 sm:h-11 sm:rounded-2xl sm:px-4"
-                              />
-                              <Input
-                                value={currentEntry.weight}
-                                onChange={(event) => updateEntry(exercise.id, setNumber, { weight: event.target.value })}
-                                placeholder="lbs"
-                                aria-label="weight"
-                                inputMode="decimal"
-                                className="h-10 rounded-xl px-3 sm:h-11 sm:rounded-2xl sm:px-4"
-                              />
-                            </div>
+                            <p className="mb-2 text-xs font-semibold text-stone-500">{logUnitLabel(exercise, setNumber)}</p>
+                            <WorkoutLogInputs
+                              exercise={exercise}
+                              entry={currentEntry}
+                              onChange={(patch) => updateEntry(exercise.id, setNumber, patch)}
+                            />
                           </div>
                         );
                       })}
                     </div>
-                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-stone-500 sm:grid-cols-4 sm:gap-3">
-                      <span>Tempo: {exercise.tempo}</span>
-                      <span>Rest: {exercise.rest}</span>
-                      <span>RPE: {exercise.rpe}</span>
-                      <span>Load: {exercise.load}</span>
-                    </div>
+                    <WorkoutPrescriptionDetails exercise={exercise} />
                   </div>
                 );
               })}
@@ -680,6 +713,131 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
   );
 }
 
+function WorkoutLogInputs({
+  exercise,
+  entry,
+  onChange,
+}: {
+  exercise: WorkoutExercise;
+  entry: SetEntry;
+  onChange: (patch: Partial<SetEntry>) => void;
+}) {
+  const inputClassName = "h-10 rounded-xl px-3 sm:h-11 sm:rounded-2xl sm:px-4";
+  const prescriptionType = getWorkoutExercisePrescriptionType(exercise);
+
+  if (prescriptionType === "duration") {
+    return (
+      <Input
+        value={entry.durationMinutes}
+        onChange={(event) => onChange({ durationMinutes: event.target.value })}
+        placeholder="Minutes completed"
+        aria-label="minutes completed"
+        inputMode="decimal"
+        className={inputClassName}
+      />
+    );
+  }
+
+  if (prescriptionType === "distance") {
+    return (
+      <Input
+        value={entry.distance}
+        onChange={(event) => onChange({ distance: event.target.value })}
+        placeholder="Distance completed"
+        aria-label="distance completed"
+        inputMode="decimal"
+        className={inputClassName}
+      />
+    );
+  }
+
+  if (prescriptionType === "intervals") {
+    return (
+      <div className="grid gap-2" style={{ gridTemplateColumns: exercise.duration && exercise.distance ? "repeat(2, minmax(0, 1fr))" : undefined }}>
+        {exercise.duration ? (
+          <Input
+            value={entry.durationMinutes}
+            onChange={(event) => onChange({ durationMinutes: event.target.value })}
+            placeholder="Minutes"
+            aria-label="minutes completed"
+            inputMode="decimal"
+            className={inputClassName}
+          />
+        ) : null}
+        {exercise.distance ? (
+          <Input
+            value={entry.distance}
+            onChange={(event) => onChange({ distance: event.target.value })}
+            placeholder="Distance"
+            aria-label="distance completed"
+            inputMode="decimal"
+            className={inputClassName}
+          />
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <Input
+        value={entry.reps}
+        onChange={(event) => onChange({ reps: event.target.value })}
+        placeholder={exercise.reps || "Reps"}
+        aria-label="reps"
+        inputMode="numeric"
+        className={inputClassName}
+      />
+      <Input
+        value={entry.weight}
+        onChange={(event) => onChange({ weight: event.target.value })}
+        placeholder="lbs"
+        aria-label="weight"
+        inputMode="decimal"
+        className={inputClassName}
+      />
+    </div>
+  );
+}
+
+function WorkoutPrescriptionDetails({ exercise }: { exercise: WorkoutExercise }) {
+  const prescriptionType = getWorkoutExercisePrescriptionType(exercise);
+  const details =
+    prescriptionType === "duration"
+      ? [
+          ["Duration", exercise.duration],
+          ["Intensity", exercise.rpe],
+          ["Pace / resistance", exercise.load],
+        ]
+      : prescriptionType === "distance"
+        ? [
+            ["Distance", exercise.distance],
+            ["Target pace", exercise.load],
+            ["Intensity", exercise.rpe],
+          ]
+        : prescriptionType === "intervals"
+          ? [
+              ["Rounds", String(exercise.sets)],
+              ["Work", [exercise.duration, exercise.distance].filter(Boolean).join(" / ")],
+              ["Recovery", exercise.rest],
+              ["Intensity", exercise.rpe],
+            ]
+          : [
+              ["Tempo", exercise.tempo],
+              ["Rest", exercise.rest],
+              ["RPE", exercise.rpe],
+              ["Load", exercise.load],
+            ];
+
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-stone-500 sm:grid-cols-4 sm:gap-3">
+      {details.filter(([, value]) => value).map(([label, value]) => (
+        <span key={label}>{label}: {value}</span>
+      ))}
+    </div>
+  );
+}
+
 function ExerciseReferenceDialog({
   open,
   onOpenChange,
@@ -749,10 +907,9 @@ function ExerciseReferenceDialog({
 
                 {prescription ? (
                   <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <MiniMetric label="Sets" value={String(prescription.sets)} />
-                    <MiniMetric label="Reps" value={prescription.reps} />
-                    <MiniMetric label="Tempo" value={prescription.tempo} />
-                    <MiniMetric label="Rest" value={prescription.rest} />
+                    {referenceMetrics(prescription).map(([label, value]) => (
+                      <MiniMetric key={label} label={label} value={value} />
+                    ))}
                   </div>
                 ) : null}
 
@@ -783,6 +940,37 @@ function ExerciseReferenceDialog({
       </Dialog.Portal>
     </Dialog.Root>
   );
+}
+
+function referenceMetrics(prescription: WorkoutExercise): Array<[string, string]> {
+  switch (getWorkoutExercisePrescriptionType(prescription)) {
+    case "duration":
+      return [
+        ["Duration", prescription.duration ?? ""],
+        ["Intensity", prescription.rpe],
+        ["Pace / resistance", prescription.load],
+      ].filter(([, value]) => value) as Array<[string, string]>;
+    case "distance":
+      return [
+        ["Distance", prescription.distance ?? ""],
+        ["Target pace", prescription.load],
+        ["Intensity", prescription.rpe],
+      ].filter(([, value]) => value) as Array<[string, string]>;
+    case "intervals":
+      return [
+        ["Rounds", String(prescription.sets)],
+        ["Work", [prescription.duration, prescription.distance].filter(Boolean).join(" / ")],
+        ["Recovery", prescription.rest],
+        ["Intensity", prescription.rpe],
+      ].filter(([, value]) => value) as Array<[string, string]>;
+    default:
+      return [
+        ["Sets", String(prescription.sets)],
+        ["Reps", prescription.reps],
+        ["Tempo", prescription.tempo],
+        ["Rest", prescription.rest],
+      ].filter(([, value]) => value) as Array<[string, string]>;
+  }
 }
 
 function MiniMetric({ label, value }: { label: string; value: string }) {

@@ -1,6 +1,7 @@
 import { exercises as demoExercises } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/auth-server";
 import { createClient } from "@/lib/supabase-server";
+import { getExercisePrescriptionType } from "@/lib/exercise-prescriptions";
 import type { Exercise } from "@/lib/types";
 
 type ExerciseRow = {
@@ -18,6 +19,7 @@ type ExerciseRow = {
   mistakes_to_avoid: string[];
   substitutions: string[];
   demo_url: string | null;
+  prescription_type: string | null;
   exercise_tags?: { tag: string }[] | null;
 };
 
@@ -41,6 +43,7 @@ export function fromExerciseRow(row: ExerciseRow): Exercise {
     substitutions: row.substitutions ?? [],
     demoUrl: row.demo_url ?? "",
     tags: row.exercise_tags?.map((tag) => tag.tag) ?? [],
+    prescriptionType: getExercisePrescriptionType({ category: row.category, prescriptionType: row.prescription_type ?? undefined }),
     editable: !row.is_global,
   };
 }
@@ -73,7 +76,7 @@ export async function getTrainerExercises() {
   const { data } = await supabase
     .from("exercises")
     .select(
-      "id, trainer_id, is_global, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, exercise_tags(tag)",
+      "id, trainer_id, is_global, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, prescription_type, exercise_tags(tag)",
     )
     .or(trainerId ? `is_global.eq.true,trainer_id.eq.${trainerId}` : "is_global.eq.true")
     .order("created_at", { ascending: false });
@@ -109,7 +112,7 @@ export async function getTrainerExerciseById(id: string) {
   const { data } = await supabase
     .from("exercises")
     .select(
-      "id, trainer_id, is_global, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, exercise_tags(tag)",
+      "id, trainer_id, is_global, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, prescription_type, exercise_tags(tag)",
     )
     .eq("id", id)
     .or(trainerId ? `is_global.eq.true,trainer_id.eq.${trainerId}` : "is_global.eq.true")

@@ -2,6 +2,7 @@ import { clients as demoClients, workouts as demoWorkouts } from "@/lib/demo-dat
 import { isSupabaseConfigured } from "@/lib/auth-server";
 import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
+import { getExercisePrescriptionType, parseExercisePrescriptionType } from "@/lib/exercise-prescriptions";
 import type { Exercise, Plan, Workout, WorkoutAssignment, WorkoutBlock, WorkoutCheckIn, WorkoutExercise } from "@/lib/types";
 
 type WorkoutRow = {
@@ -32,7 +33,9 @@ type WorkoutExerciseRow = {
   rest_time: string | null;
   rpe_target: string | null;
   load_guidance: string | null;
+  distance: string | null;
   duration: string | null;
+  prescription_type: string | null;
   notes: string | null;
   position: number;
 };
@@ -162,6 +165,8 @@ function mapWorkout(
             rpe: item.rpe_target ?? "",
             load: item.load_guidance ?? "",
             duration: item.duration ?? undefined,
+            distance: item.distance ?? undefined,
+            prescriptionType: parseExercisePrescriptionType(item.prescription_type) ?? "strength",
             notes: item.notes ?? "",
           } satisfies WorkoutExercise;
         }),
@@ -236,8 +241,8 @@ export async function getTrainerWorkouts() {
     db.from("workout_blocks").select("id, workout_id, label, intent, position"),
     db
       .from("workout_exercises")
-      .select("id, workout_block_id, exercise_id, sets, reps, tempo, rest_time, rpe_target, load_guidance, duration, notes, position"),
-    db.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, is_global"),
+      .select("id, workout_block_id, exercise_id, sets, reps, tempo, rest_time, rpe_target, load_guidance, distance, duration, prescription_type, notes, position"),
+    db.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, prescription_type, is_global"),
   ]);
 
   const workoutIds = (workoutRows ?? []).map((row: { id: string }) => row.id);
@@ -279,6 +284,10 @@ export async function getTrainerWorkouts() {
         substitutions: (row.substitutions as string[]) ?? [],
         demoUrl: (row.demo_url as string) ?? "",
         tags: [],
+        prescriptionType: getExercisePrescriptionType({
+          category: (row.category as string) ?? "",
+          prescriptionType: parseExercisePrescriptionType(row.prescription_type),
+        }),
         editable: !(row.is_global as boolean),
       } satisfies Exercise,
     ]),
@@ -350,8 +359,8 @@ export async function getClientWorkouts() {
     db.from("workout_blocks").select("id, workout_id, label, intent, position"),
     db
       .from("workout_exercises")
-      .select("id, workout_block_id, exercise_id, sets, reps, tempo, rest_time, rpe_target, load_guidance, duration, notes, position"),
-    db.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, is_global"),
+      .select("id, workout_block_id, exercise_id, sets, reps, tempo, rest_time, rpe_target, load_guidance, distance, duration, prescription_type, notes, position"),
+    db.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, prescription_type, is_global"),
   ]);
 
   const workoutRowsById = new Map<string, WorkoutRow>();
@@ -382,6 +391,10 @@ export async function getClientWorkouts() {
         substitutions: (row.substitutions as string[]) ?? [],
         demoUrl: (row.demo_url as string) ?? "",
         tags: [],
+        prescriptionType: getExercisePrescriptionType({
+          category: (row.category as string) ?? "",
+          prescriptionType: parseExercisePrescriptionType(row.prescription_type),
+        }),
       } satisfies Exercise,
     ]),
   );

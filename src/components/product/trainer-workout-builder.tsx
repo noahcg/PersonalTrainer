@@ -24,6 +24,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
+import { getExercisePrescriptionType, getWorkoutExercisePrescriptionType, prescriptionTypeLabel } from "@/lib/exercise-prescriptions";
 import type { Exercise, Workout, WorkoutBlock, WorkoutExercise } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -149,21 +150,29 @@ function toDraft(workout?: Workout): DraftWorkout {
 }
 
 function createExerciseItem(exercise: Exercise, suffix: number, stepId: WizardStepId): WorkoutExercise {
-  const isTimed = stepId === "warm-up" || stepId === "cooldown" || exercise.category.toLowerCase().includes("conditioning");
-
-  return {
+  const prescriptionType = getExercisePrescriptionType(exercise);
+  const base = {
     id: `draft-${stepId}-${exercise.id}-${Date.now()}-${suffix}`,
     exerciseId: exercise.id,
     name: exercise.name,
-    sets: stepId === "warm-up" || stepId === "cooldown" ? 1 : 3,
-    reps: isTimed ? "30-60s" : "8-10",
     tempo: "",
-    rest: stepId === "warm-up" || stepId === "cooldown" ? "30s" : "90s",
-    rpe: stepId === "warm-up" || stepId === "cooldown" ? "Easy" : "7",
-    load: "",
-    duration: isTimed ? "30-60s" : "",
     notes: "",
+    prescriptionType,
   };
+
+  if (prescriptionType === "duration") {
+    return { ...base, sets: 0, reps: "", rest: "", rpe: "RPE 5", load: "", duration: "30 min", distance: "" };
+  }
+
+  if (prescriptionType === "distance") {
+    return { ...base, sets: 0, reps: "", rest: "", rpe: "RPE 5", load: "", duration: "", distance: "2 mi" };
+  }
+
+  if (prescriptionType === "intervals") {
+    return { ...base, sets: 6, reps: "", rest: "1 min", rpe: "RPE 8", load: "", duration: "1 min", distance: "" };
+  }
+
+  return { ...base, sets: 3, reps: "8-10", rest: "90s", rpe: "7", load: "", duration: "", distance: "" };
 }
 
 function exerciseScoreForStep(exercise: Exercise, stepId: WizardStepId) {
@@ -764,7 +773,7 @@ function ExerciseChoice({ exercise, onAdd }: { exercise: Exercise; onAdd: () => 
           <p className="truncate text-sm font-semibold text-charcoal-950">{exercise.name}</p>
         </div>
         <p className="mt-1 truncate text-xs text-stone-500">
-          {compactCategory(exercise.category)} <span className="px-1">•</span> {exercise.pattern}
+          {compactCategory(exercise.category)} <span className="px-1">•</span> {prescriptionTypeLabel(getExercisePrescriptionType(exercise))}
         </p>
       </div>
       <Button variant="secondary" size="icon" className="size-9" aria-label={`Add ${exercise.name}`} onClick={onAdd}>
@@ -787,25 +796,70 @@ function SelectedExerciseRow({
   onUpdate: (updater: (exercise: WorkoutExercise) => WorkoutExercise) => void;
   onRemove: () => void;
 }) {
+  const prescriptionType = getWorkoutExercisePrescriptionType(exercise);
+  const summary = workoutPrescriptionSummary(exercise);
+
   return (
-    <div className="grid gap-3 rounded-2xl border border-stone-200 bg-white/88 p-3 shadow-inner-soft transition hover:border-bronze-200 md:grid-cols-[1rem_3rem_1.75rem_minmax(0,1fr)_4.5rem_5rem_4.5rem_2.5rem] md:items-center">
+    <div className="grid gap-3 rounded-2xl border border-stone-200 bg-white/88 p-3 shadow-inner-soft transition hover:border-bronze-200 md:grid-cols-[1rem_3rem_1.75rem_minmax(10rem,1fr)_minmax(17rem,auto)_2.5rem] md:items-center">
       <GripVertical className="hidden size-4 text-stone-400 md:block" />
       <ExerciseThumb exercise={source} />
       <span className="grid size-7 place-items-center rounded-full bg-stone-100 text-xs font-semibold text-stone-500">{index + 1}</span>
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-charcoal-950">{exercise.name}</p>
         <p className="mt-1 text-xs text-stone-500 md:hidden">
-          {exercise.sets} x {exercise.duration || exercise.reps} · Rest {exercise.rest}
+          {summary}
         </p>
       </div>
-      <MiniInput label="Sets" value={String(exercise.sets)} onChange={(value) => onUpdate((current) => ({ ...current, sets: Number(value) || 0 }))} />
-      <MiniInput label={exercise.duration ? "Time" : "Reps"} value={exercise.duration || exercise.reps} onChange={(value) => onUpdate((current) => ({ ...current, reps: value, duration: current.duration ? value : current.duration }))} />
-      <MiniInput label="Rest" value={exercise.rest} onChange={(value) => onUpdate((current) => ({ ...current, rest: value }))} />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:min-w-[17rem]">
+        {prescriptionType === "strength" ? (
+          <>
+            <MiniInput label="Sets" value={String(exercise.sets)} onChange={(value) => onUpdate((current) => ({ ...current, sets: Number(value) || 0 }))} />
+            <MiniInput label="Reps" value={exercise.reps} onChange={(value) => onUpdate((current) => ({ ...current, reps: value }))} />
+            <MiniInput label="Rest" value={exercise.rest} onChange={(value) => onUpdate((current) => ({ ...current, rest: value }))} />
+          </>
+        ) : null}
+        {prescriptionType === "duration" ? (
+          <>
+            <MiniInput label="Duration" value={exercise.duration ?? ""} onChange={(value) => onUpdate((current) => ({ ...current, duration: value }))} />
+            <MiniInput label="Intensity" value={exercise.rpe} onChange={(value) => onUpdate((current) => ({ ...current, rpe: value }))} />
+            <MiniInput label="Pace / resistance" value={exercise.load} onChange={(value) => onUpdate((current) => ({ ...current, load: value }))} />
+          </>
+        ) : null}
+        {prescriptionType === "distance" ? (
+          <>
+            <MiniInput label="Distance" value={exercise.distance ?? ""} onChange={(value) => onUpdate((current) => ({ ...current, distance: value }))} />
+            <MiniInput label="Target pace" value={exercise.load} onChange={(value) => onUpdate((current) => ({ ...current, load: value }))} />
+            <MiniInput label="Intensity" value={exercise.rpe} onChange={(value) => onUpdate((current) => ({ ...current, rpe: value }))} />
+          </>
+        ) : null}
+        {prescriptionType === "intervals" ? (
+          <>
+            <MiniInput label="Rounds" value={String(exercise.sets)} onChange={(value) => onUpdate((current) => ({ ...current, sets: Number(value) || 0 }))} />
+            <MiniInput label="Work time" value={exercise.duration ?? ""} onChange={(value) => onUpdate((current) => ({ ...current, duration: value }))} />
+            <MiniInput label="Work distance" value={exercise.distance ?? ""} onChange={(value) => onUpdate((current) => ({ ...current, distance: value }))} />
+            <MiniInput label="Recovery" value={exercise.rest} onChange={(value) => onUpdate((current) => ({ ...current, rest: value }))} />
+            <MiniInput label="Intensity" value={exercise.rpe} onChange={(value) => onUpdate((current) => ({ ...current, rpe: value }))} />
+          </>
+        ) : null}
+      </div>
       <button type="button" onClick={onRemove} aria-label={`Remove ${exercise.name}`} className="grid size-9 place-items-center rounded-full text-stone-500 transition hover:bg-stone-100 hover:text-charcoal-950">
         <Trash2 className="size-4" />
       </button>
     </div>
   );
+}
+
+function workoutPrescriptionSummary(exercise: WorkoutExercise) {
+  switch (getWorkoutExercisePrescriptionType(exercise)) {
+    case "duration":
+      return [exercise.duration, exercise.rpe, exercise.load].filter(Boolean).join(" · ");
+    case "distance":
+      return [exercise.distance, exercise.load, exercise.rpe].filter(Boolean).join(" · ");
+    case "intervals":
+      return [`${exercise.sets} rounds`, exercise.duration || exercise.distance, exercise.rest && `Recovery ${exercise.rest}`].filter(Boolean).join(" · ");
+    default:
+      return [`${exercise.sets} × ${exercise.reps}`, exercise.rest && `Rest ${exercise.rest}`].filter(Boolean).join(" · ");
+  }
 }
 
 function ExerciseThumb({ exercise }: { exercise?: Exercise }) {

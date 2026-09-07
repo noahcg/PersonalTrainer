@@ -9,10 +9,44 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
+import { getExercisePrescriptionType, prescriptionTypeLabel } from "@/lib/exercise-prescriptions";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
-import type { Exercise } from "@/lib/types";
+import type { Exercise, ExercisePrescriptionType } from "@/lib/types";
 
-const filters = ["All", "Warm Up", "Cool Down", "Gym", "Free Weights", "Bodyweight", "Calisthenics", "Conditioning"];
+const categoryOptions = [
+  { value: "Strength", label: "Strength" },
+  { value: "Core", label: "Core" },
+  { value: "Warm Up", label: "Warm Up" },
+  { value: "Cool Down", label: "Cool Down" },
+  { value: "Free Weights", label: "Free Weights" },
+  { value: "Bodyweight", label: "Bodyweight" },
+  { value: "Calisthenics", label: "Calisthenics" },
+  { value: "TRX", label: "TRX" },
+  { value: "Cardio / Conditioning", label: "Conditioning" },
+] as const;
+const movementPatternOptions = [
+  "Squat",
+  "Hinge",
+  "Lunge",
+  "Push",
+  "Pull",
+  "Carry",
+  "Core",
+  "Mobility",
+  "Stretch",
+  "Other",
+] as const;
+const categoryFilters = [
+  { value: "", label: "All" },
+  { value: "Warm Up", label: "Warm Up" },
+  { value: "Cool Down", label: "Cool Down" },
+  { value: "Free Weights", label: "Free Weights" },
+  { value: "Bodyweight", label: "Bodyweight" },
+  { value: "Calisthenics", label: "Calisthenics" },
+  { value: "TRX", label: "TRX" },
+  { value: "Cardio / Conditioning", label: "Conditioning" },
+] as const;
+const patternFilters = [{ value: "", label: "All" }, ...movementPatternOptions.map((pattern) => ({ value: pattern, label: pattern }))];
 const storageKey = "nick-glushien-demo-exercises";
 const fallbackDemoUrl =
   "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80";
@@ -23,6 +57,7 @@ type DraftExercise = {
   muscleGroups: string;
   equipment: string;
   pattern: string;
+  prescriptionType: ExercisePrescriptionType;
   difficulty: Exercise["difficulty"];
   instructions: string;
   cues: string;
@@ -32,12 +67,15 @@ type DraftExercise = {
   tags: string;
 };
 
+type FilterType = "category" | "pattern";
+
 const emptyDraft: DraftExercise = {
   name: "",
   category: "Strength",
   muscleGroups: "",
   equipment: "",
   pattern: "Push",
+  prescriptionType: "strength",
   difficulty: "Beginner",
   instructions: "",
   cues: "",
@@ -52,6 +90,24 @@ function splitList(value: string) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function normalizeCategory(value: string) {
+  if (categoryOptions.some((option) => option.value === value)) return value;
+
+  if (value === "Gym (Machines & Weights)") return "Strength";
+  if (value === "Free Weights (Barbell & Dumbbell Focus)") return "Free Weights";
+  if (value === "Bodyweight (Beginner-Friendly)") return "Bodyweight";
+  if (value === "Calisthenics (Progression-Based Bodyweight)") return "Calisthenics";
+
+  return "Strength";
+}
+
+function normalizeMovementPattern(value: string) {
+  if (movementPatternOptions.includes(value as (typeof movementPatternOptions)[number])) return value;
+  if (["Rotation", "Anti-rotation", "Anti-extension"].includes(value)) return "Core";
+  if (value === "Activation") return "Mobility";
+  return "Other";
 }
 
 function isImageSource(value: string) {
@@ -128,7 +184,8 @@ export function ExerciseLibrary({
 }) {
   const [exercises, setExercises] = useState(initialExercises);
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [filterType, setFilterType] = useState<FilterType>("category");
+  const [activeFilter, setActiveFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DraftExercise>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -173,20 +230,21 @@ export function ExerciseLibrary({
 
       const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
       const matchesFilter =
-        activeFilter === "All" ||
-        (activeFilter === "Gym" && exercise.category === "Gym (Machines & Weights)") ||
-        (activeFilter === "Free Weights" && exercise.category === "Free Weights (Barbell & Dumbbell Focus)") ||
-        (activeFilter === "Bodyweight" && exercise.category === "Bodyweight (Beginner-Friendly)") ||
-        (activeFilter === "Calisthenics" && exercise.category === "Calisthenics (Progression-Based Bodyweight)") ||
-        (activeFilter === "Conditioning" && exercise.category === "Cardio / Conditioning") ||
-        (activeFilter === "Warm Up" && exercise.category === "Warm Up") ||
-        (activeFilter === "Cool Down" && exercise.category === "Cool Down") ||
-        searchable.includes(activeFilter.toLowerCase()) ||
-        exercise.difficulty.toLowerCase() === activeFilter.toLowerCase();
+        !activeFilter ||
+        (filterType === "category"
+          ? normalizeCategory(exercise.category) === activeFilter
+          : normalizeMovementPattern(exercise.pattern) === activeFilter);
 
       return matchesQuery && matchesFilter;
     });
-  }, [activeFilter, exercises, query]);
+  }, [activeFilter, exercises, filterType, query]);
+
+  const visibleFilters = filterType === "category" ? categoryFilters : patternFilters;
+
+  function changeFilterType(nextFilterType: FilterType) {
+    setFilterType(nextFilterType);
+    setActiveFilter("");
+  }
 
   function updateDraft<K extends keyof DraftExercise>(key: K, value: DraftExercise[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -196,10 +254,11 @@ export function ExerciseLibrary({
     return {
       id,
       name: draft.name.trim(),
-      category: draft.category.trim() || "Strength",
+      category: normalizeCategory(draft.category),
       muscleGroups: splitList(draft.muscleGroups),
       equipment: splitList(draft.equipment),
-      pattern: draft.pattern.trim() || "General",
+      pattern: normalizeMovementPattern(draft.pattern),
+      prescriptionType: draft.prescriptionType,
       difficulty: draft.difficulty,
       instructions: draft.instructions.trim() || "Add detailed instructions before assigning this exercise.",
       cues: splitList(draft.cues),
@@ -214,10 +273,11 @@ export function ExerciseLibrary({
   function populateDraft(exercise: Exercise) {
     setDraft({
       name: exercise.name,
-      category: exercise.category,
+      category: normalizeCategory(exercise.category),
       muscleGroups: exercise.muscleGroups.join(", "),
       equipment: exercise.equipment.join(", "),
-      pattern: exercise.pattern,
+      pattern: normalizeMovementPattern(exercise.pattern),
+      prescriptionType: getExercisePrescriptionType(exercise),
       difficulty: exercise.difficulty,
       instructions: exercise.instructions,
       cues: exercise.cues.join(", "),
@@ -319,6 +379,7 @@ export function ExerciseLibrary({
       mistakes_to_avoid: nextExercise.mistakes,
       substitutions: nextExercise.substitutions,
       demo_url: nextExercise.demoUrl,
+      prescription_type: nextExercise.prescriptionType,
       is_global: false,
     };
 
@@ -441,7 +502,7 @@ export function ExerciseLibrary({
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search exercises, muscle groups, equipment..."
+                placeholder="Search exercises, patterns, muscles, equipment..."
                 className="pl-11"
               />
             </div>
@@ -497,19 +558,44 @@ export function ExerciseLibrary({
                       </label>
                       <label className="grid gap-2 text-sm font-medium">
                         Category
-                        <Input
+                        <select
                           value={draft.category}
                           onChange={(event) => updateDraft("category", event.target.value)}
-                          placeholder="Strength"
-                        />
+                          className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
+                        >
+                          {categoryOptions.map((category) => (
+                            <option key={category.value} value={category.value}>
+                              {category.label}
+                            </option>
+                          ))}
+                        </select>
                       </label>
                       <label className="grid gap-2 text-sm font-medium">
-                        Movement pattern
-                        <Input
+                        Prescription style
+                        <select
+                          value={draft.prescriptionType}
+                          onChange={(event) => updateDraft("prescriptionType", event.target.value as ExercisePrescriptionType)}
+                          className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
+                        >
+                          <option value="strength">{prescriptionTypeLabel("strength")}</option>
+                          <option value="duration">{prescriptionTypeLabel("duration")}</option>
+                          <option value="distance">{prescriptionTypeLabel("distance")}</option>
+                          <option value="intervals">{prescriptionTypeLabel("intervals")}</option>
+                        </select>
+                      </label>
+                      <label className="grid gap-2 text-sm font-medium">
+                        Pattern
+                        <select
                           value={draft.pattern}
                           onChange={(event) => updateDraft("pattern", event.target.value)}
-                          placeholder="Push"
-                        />
+                          className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
+                        >
+                          {movementPatternOptions.map((pattern) => (
+                            <option key={pattern} value={pattern}>
+                              {pattern}
+                            </option>
+                          ))}
+                        </select>
                       </label>
                       <label className="grid gap-2 text-sm font-medium">
                         Difficulty
@@ -696,15 +782,31 @@ export function ExerciseLibrary({
           </Dialog.Root>
           </div>
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2 text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">
-              <Layers3 className="size-4" />
-              Filters
+          <div className="mt-4 grid gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2 text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">
+                <Layers3 className="size-4" />
+                Filters
+              </div>
+              <div className="flex items-center gap-2" aria-label="Filter type">
+                <button className="shrink-0 whitespace-nowrap" type="button" aria-pressed={filterType === "category"} onClick={() => changeFilterType("category")}>
+                  <Badge variant={filterType === "category" ? "dark" : "default"}>Category</Badge>
+                </button>
+                <button className="shrink-0 whitespace-nowrap" type="button" aria-pressed={filterType === "pattern"} onClick={() => changeFilterType("pattern")}>
+                  <Badge variant={filterType === "pattern" ? "dark" : "default"}>Pattern</Badge>
+                </button>
+              </div>
             </div>
             <div className="no-scrollbar -mx-2 flex gap-2 overflow-x-auto overscroll-x-contain px-2 py-2">
-              {filters.map((filter) => (
-                <button key={filter} type="button" onClick={() => setActiveFilter(filter)}>
-                  <Badge variant={filter === activeFilter ? "dark" : "default"}>{filter}</Badge>
+              {visibleFilters.map((filter) => (
+                <button
+                  key={filter.value || "all"}
+                  className="shrink-0 whitespace-nowrap"
+                  type="button"
+                  aria-pressed={filter.value === activeFilter}
+                  onClick={() => setActiveFilter(filter.value)}
+                >
+                  <Badge variant={filter.value === activeFilter ? "dark" : "default"}>{filter.label}</Badge>
                 </button>
               ))}
             </div>

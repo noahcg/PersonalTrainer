@@ -71,6 +71,7 @@ create table public.exercises (
   substitutions text[] not null default '{}',
   regressions text[] not null default '{}',
   progressions text[] not null default '{}',
+  prescription_type text not null default 'strength' check (prescription_type in ('strength', 'duration', 'distance', 'intervals')),
   demo_url text,
   is_global boolean not null default false,
   created_at timestamptz not null default now(),
@@ -134,6 +135,7 @@ create table public.workout_exercises (
   load_guidance text,
   distance text,
   duration text,
+  prescription_type text not null default 'strength' check (prescription_type in ('strength', 'duration', 'distance', 'intervals')),
   notes text,
   grouping_key text,
   grouping_type text check (grouping_type in ('superset', 'circuit') or grouping_type is null)

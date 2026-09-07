@@ -46,7 +46,10 @@ export function ExerciseCard({
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <h3 className="truncate text-sm font-semibold text-charcoal-950 sm:text-base">{exercise.name}</h3>
-            <span className="hidden shrink-0 rounded-sm bg-charcoal-950 px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-ivory-50 sm:inline">
+            <span
+              title={`Pattern: ${exercise.pattern}`}
+              className="hidden shrink-0 rounded-sm bg-charcoal-950 px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-ivory-50 sm:inline"
+            >
               {exercise.pattern}
             </span>
           </div>
