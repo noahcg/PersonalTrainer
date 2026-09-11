@@ -8,6 +8,18 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.30.0] - 2026-09-11
+
+- Standardized dropdown arrows across the app with comfortable right-edge spacing and text clearance.
+
+## [0.29.0] - 2026-09-11
+
+- Added the development-only `/dev/intake` preview route for reviewing the client intake form without an invite, login, or saved submission.
+
+## [0.28.0] - 2026-09-11
+
+- Added a required medical-clearance consent checkbox to the client intake form and verified it again on submission.
+
 ## [0.27.0] - 2026-09-04
 
 - Added a pill-based Exercise Library filter that lets trainers choose Category or Pattern before selecting one concise, non-wrapping filter value.

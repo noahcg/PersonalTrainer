@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { ChevronDown, MessageCircle, Send } from "lucide-react";
+import { MessageCircle, Send } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -224,7 +224,7 @@ export function TrainerMessagesManager({
                   id="mobile-client-thread"
                   value={selectedClientId ?? ""}
                   onChange={(event) => setSelectedClientId(event.target.value || null)}
-                  className="h-11 w-full appearance-none rounded-2xl border border-stone-200 bg-white/80 px-4 pr-10 text-sm font-semibold text-charcoal-950 shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
+                  className="h-11 w-full rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm font-semibold text-charcoal-950 shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
                   aria-label="Choose client conversation"
                 >
                   {threads.length ? null : <option value="">No clients</option>}
@@ -235,7 +235,6 @@ export function TrainerMessagesManager({
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-stone-500" />
               </div>
             </div>
             {selectedThread?.unread ? (
