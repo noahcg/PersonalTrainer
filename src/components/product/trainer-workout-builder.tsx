@@ -1,14 +1,17 @@
 "use client";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import * as Dialog from "@radix-ui/react-dialog";
 import Image from "next/image";
 import {
   ArrowLeft,
   Check,
-  ChevronRight,
   Dumbbell,
   Flame,
-  GripVertical,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Layers3,
   ListChecks,
   MoreHorizontal,
   PencilLine,
@@ -20,8 +23,9 @@ import {
   Trash2,
 } from "lucide-react";
 import type { ComponentType, Dispatch, SetStateAction } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { getExercisePrescriptionType, getWorkoutExercisePrescriptionType, prescriptionTypeLabel } from "@/lib/exercise-prescriptions";
@@ -30,6 +34,7 @@ import { cn } from "@/lib/utils";
 
 type WizardStepId = "warm-up" | "section-1" | "section-2" | "section-3" | "cooldown";
 type BuilderView = "list" | "builder";
+type ExerciseFilterType = "category" | "pattern" | "tag";
 
 type WizardStep = {
   id: WizardStepId;
@@ -89,6 +94,24 @@ const wizardSteps: WizardStep[] = [
     intent: "Bring the session down and finish cleanly.",
     icon: StretchHorizontal,
   },
+];
+
+const categoryFilters = [
+  { value: "", label: "All" },
+  { value: "Strength", label: "Strength" },
+  { value: "Core", label: "Core" },
+  { value: "Warm Up", label: "Warm Up" },
+  { value: "Cool Down", label: "Cool Down" },
+  { value: "Free Weights", label: "Free Weights" },
+  { value: "Bodyweight", label: "Bodyweight" },
+  { value: "Calisthenics", label: "Calisthenics" },
+  { value: "TRX", label: "TRX" },
+  { value: "Cardio / Conditioning", label: "Conditioning" },
+] as const;
+
+const movementPatternFilters = [
+  { value: "", label: "All" },
+  ...["Squat", "Hinge", "Lunge", "Push", "Pull", "Carry", "Core", "Mobility", "Stretch", "Other"].map((value) => ({ value, label: value })),
 ];
 
 function emptyExerciseForStep(stepId: WizardStepId): WorkoutBlock {
@@ -216,6 +239,20 @@ function compactCategory(category: string) {
   return category;
 }
 
+function normalizeCategory(category: string) {
+  if (category === "Gym (Machines & Weights)") return "Strength";
+  if (category === "Free Weights (Barbell & Dumbbell Focus)") return "Free Weights";
+  if (category === "Bodyweight (Beginner-Friendly)") return "Bodyweight";
+  if (category === "Calisthenics (Progression-Based Bodyweight)") return "Calisthenics";
+  return category;
+}
+
+function normalizeMovementPattern(pattern: string) {
+  if (["Rotation", "Anti-rotation", "Anti-extension"].includes(pattern)) return "Core";
+  if (pattern === "Activation") return "Mobility";
+  return pattern;
+}
+
 function workoutExerciseCount(workout: Workout) {
   return workout.blocks.reduce((sum, block) => sum + block.exercises.length, 0);
 }
@@ -240,24 +277,28 @@ export function TrainerWorkoutBuilder({
   const [draft, setDraft] = useState<DraftWorkout>(() => toDraft());
   const [activeStepId, setActiveStepId] = useState<WizardStepId>("warm-up");
   const [query, setQuery] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickedIds, setPickedIds] = useState<string[]>([]);
+  const pickerOpener = useRef<HTMLElement | null>(null);
+  const pickerSearch = useRef<HTMLDivElement | null>(null);
+  const [exerciseFilterType, setExerciseFilterType] = useState<ExerciseFilterType>("category");
+  const [activeExerciseFilter, setActiveExerciseFilter] = useState("");
   const [busy, setBusy] = useState(false);
   const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const activeStep = wizardSteps.find((step) => step.id === activeStepId) ?? wizardSteps[0];
-  const activeStepIndex = wizardSteps.findIndex((step) => step.id === activeStepId);
   const activeBlock = draft.blocks.find((block) => block.id === activeStepId) ?? emptyExerciseForStep(activeStepId);
   const activeStepLabel = activeBlock.label.trim() || activeStep.title;
-  const completedSteps = new Set(draft.blocks.filter((block) => block.exercises.length > 0).map((block) => block.id as WizardStepId));
-  const isWorkoutComplete = wizardSteps.every((step) => completedSteps.has(step.id)) && !!draft.name.trim();
+  const totalExerciseCount = draft.blocks.reduce((total, block) => total + block.exercises.length, 0);
+  const isWorkoutComplete = !!draft.name.trim() && totalExerciseCount > 0;
 
   const recommendedExercises = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return [...exercises]
       .filter((exercise) => {
-        if (!normalizedQuery) return true;
-        return [
+        const searchable = [
           exercise.name,
           exercise.category,
           exercise.pattern,
@@ -267,16 +308,47 @@ export function TrainerWorkoutBuilder({
           ...exercise.tags,
         ]
           .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery);
+          .toLowerCase();
+        const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
+        const matchesFilter =
+          !activeExerciseFilter ||
+          (exerciseFilterType === "category"
+            ? normalizeCategory(exercise.category) === activeExerciseFilter
+            : exerciseFilterType === "pattern"
+              ? normalizeMovementPattern(exercise.pattern) === activeExerciseFilter
+              : exercise.tags.some((tag) => tag.toLowerCase() === activeExerciseFilter.toLowerCase()));
+
+        return matchesQuery && matchesFilter;
       })
       .sort((a, b) => exerciseScoreForStep(b, activeStepId) - exerciseScoreForStep(a, activeStepId) || a.name.localeCompare(b.name));
-  }, [activeStepId, exercises, query]);
+  }, [activeExerciseFilter, activeStepId, exerciseFilterType, exercises, query]);
+
+  const exerciseTagFilters = useMemo(
+    () => [
+      { value: "", label: "All" },
+      ...Array.from(new Set(exercises.flatMap((exercise) => exercise.tags.map((tag) => tag.trim())).filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b))
+        .map((tag) => ({ value: tag, label: tag })),
+    ],
+    [exercises],
+  );
+  const visibleExerciseFilters =
+    exerciseFilterType === "category"
+      ? categoryFilters
+      : exerciseFilterType === "pattern"
+        ? movementPatternFilters
+        : exerciseTagFilters;
+
+  function changeExerciseFilterType(filterType: ExerciseFilterType) {
+    setExerciseFilterType(filterType);
+    setActiveExerciseFilter("");
+  }
 
   function startNewWorkout() {
     setDraft(toDraft());
     setActiveStepId("warm-up");
     setQuery("");
+    setActiveExerciseFilter("");
     setView("builder");
   }
 
@@ -284,6 +356,7 @@ export function TrainerWorkoutBuilder({
     setDraft(toDraft(workout));
     setActiveStepId("warm-up");
     setQuery("");
+    setActiveExerciseFilter("");
     setView("builder");
   }
 
@@ -294,45 +367,56 @@ export function TrainerWorkoutBuilder({
     }));
   }
 
-  function addExercise(exercise: Exercise) {
-    updateBlock(activeStepId, (block) => ({
-      ...block,
-      exercises: [...block.exercises, createExerciseItem(exercise, block.exercises.length + 1, activeStepId)],
-    }));
+  function openPicker(stepId: WizardStepId) {
+    pickerOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setActiveStepId(stepId);
+    setPickedIds([]);
+    setPickerOpen(true);
   }
 
-  function removeExercise(exerciseId: string) {
+  function togglePick(id: string) {
+    setPickedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
+  function addPickedExercises() {
     updateBlock(activeStepId, (block) => ({
+      ...block,
+      exercises: [...block.exercises, ...pickedIds.flatMap((id, index) => {
+        const exercise = exercises.find((item) => item.id === id);
+        return exercise ? [createExerciseItem(exercise, block.exercises.length + index + 1, activeStepId)] : [];
+      })],
+    }));
+    setPickerOpen(false);
+    setPickedIds([]);
+  }
+
+  function removeExercise(stepId: WizardStepId, exerciseId: string) {
+    updateBlock(stepId, (block) => ({
       ...block,
       exercises: block.exercises.filter((exercise) => exercise.id !== exerciseId),
     }));
   }
 
-  function updateExercise(exerciseId: string, updater: (exercise: WorkoutExercise) => WorkoutExercise) {
-    updateBlock(activeStepId, (block) => ({
+  function updateExercise(stepId: WizardStepId, exerciseId: string, updater: (exercise: WorkoutExercise) => WorkoutExercise) {
+    updateBlock(stepId, (block) => ({
       ...block,
       exercises: block.exercises.map((exercise) => (exercise.id === exerciseId ? updater(exercise) : exercise)),
     }));
   }
 
-  function canOpenStep(stepId: WizardStepId) {
-    const targetIndex = wizardSteps.findIndex((step) => step.id === stepId);
-    if (targetIndex <= activeStepIndex) return true;
-    return wizardSteps.slice(0, targetIndex).every((step) => completedSteps.has(step.id));
-  }
-
-  function goNext() {
-    if (!completedSteps.has(activeStepId)) return;
-    const nextStep = wizardSteps[activeStepIndex + 1];
-    if (nextStep) {
-      setActiveStepId(nextStep.id);
-      setQuery("");
-    }
+  function moveExercise(stepId: WizardStepId, index: number, direction: number) {
+    updateBlock(stepId, (block) => {
+      const items = [...block.exercises];
+      const target = index + direction;
+      if (target < 0 || target >= items.length) return block;
+      [items[index], items[target]] = [items[target], items[index]];
+      return { ...block, exercises: items };
+    });
   }
 
   async function saveWorkout() {
     if (!isWorkoutComplete) {
-      setMessage("Complete every stage and add a workout name before saving.");
+      setMessage("Add a workout name and at least one exercise before saving.");
       window.setTimeout(() => setMessage(null), 2600);
       return;
     }
@@ -429,6 +513,7 @@ export function TrainerWorkoutBuilder({
       {view === "list" ? (
         <WorkoutList
           workouts={workouts}
+          exercises={exercises}
           deletingWorkoutId={deletingWorkoutId}
           onNewWorkout={startNewWorkout}
           onEditWorkout={editWorkout}
@@ -453,136 +538,138 @@ export function TrainerWorkoutBuilder({
 
             <WorkoutDetailsHeader draft={draft} onDraftChange={setDraft} />
 
-            <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto md:grid md:grid-cols-5 md:overflow-visible">
-              {wizardSteps.map((step, index) => {
-                const isActive = step.id === activeStepId;
-                const isComplete = completedSteps.has(step.id);
-                const isAvailable = canOpenStep(step.id);
-                const Icon = step.icon;
-                const stepBlock = draft.blocks.find((block) => block.id === step.id);
-                const stepLabel = stepBlock?.label.trim() || step.shortTitle;
+            <p className="mt-4 text-sm text-stone-500">{totalExerciseCount} exercises · Build any section, then fine-tune the prescriptions below.</p>
+          </div>
 
-                return (
-                  <button
-                    key={step.id}
-                    type="button"
-                    disabled={!isAvailable}
-                    onClick={() => {
-                      setActiveStepId(step.id);
-                      setQuery("");
-                    }}
-                    className={cn(
-                      "flex min-w-[10.5rem] items-center gap-3 rounded-2xl border px-3 py-3 text-left transition md:min-w-0",
-                      isActive && "border-bronze-300 bg-bronze-50",
-                      !isActive && isComplete && "border-sage-200 bg-sage-50",
-                      !isActive && !isComplete && "border-stone-200 bg-white/72",
-                      !isAvailable && "opacity-45",
-                    )}
-                  >
-                    <span className={cn("grid size-8 shrink-0 place-items-center rounded-full", isComplete ? "bg-sage-700 text-white" : isActive ? "bg-charcoal-950 text-white" : "bg-stone-100 text-stone-500")}>
-                      {isComplete ? <Check className="size-4" /> : <Icon className="size-4" />}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-charcoal-950">{stepLabel}</span>
-                      <span className="text-xs text-stone-500">Step {index + 1}</span>
-                    </span>
+          {draft.blocks.map((block) => {
+            const stepId = block.id as WizardStepId;
+            const step = wizardSteps.find((item) => item.id === stepId)!;
+            const Icon = step.icon;
+            return (
+              <section key={block.id} aria-label={block.label} className="rounded-2xl border border-stone-200 bg-white/85 p-4 shadow-soft sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-bronze-50 text-bronze-600"><Icon className="size-5" /></span>
+                    <div className="min-w-0">
+                      {isStageStep(stepId) ? (
+                        <Input aria-label={`Name for ${step.title}`} value={block.label} className="max-w-xs font-semibold"
+                          onChange={(event) => updateBlock(stepId, (current) => ({ ...current, label: event.target.value }))}
+                          onBlur={() => updateBlock(stepId, (current) => ({ ...current, label: current.label.trim() || step.title }))} />
+                      ) : <h3 className="font-serif text-2xl font-semibold">{block.label}</h3>}
+                      <p className="mt-1 text-xs text-stone-500">{block.exercises.length ? `${block.exercises.length} exercises` : "Optional section"} · {block.intent}</p>
+                    </div>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => openPicker(stepId)}><Plus className="size-4" />Add exercises</Button>
+                </div>
+                {block.exercises.length ? (
+                  <div className="mt-4 space-y-3">
+                    {block.exercises.map((exercise, index) => (
+                      <SelectedExerciseRow key={exercise.id} index={index} exercise={exercise}
+                        source={exercises.find((item) => item.id === exercise.exerciseId)}
+                        onUpdate={(updater) => updateExercise(stepId, exercise.id, updater)}
+                        onRemove={() => removeExercise(stepId, exercise.id)}
+                        onMoveUp={index > 0 ? () => moveExercise(stepId, index, -1) : undefined}
+                        onMoveDown={index < block.exercises.length - 1 ? () => moveExercise(stepId, index, 1) : undefined} />
+                    ))}
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => openPicker(stepId)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500 transition hover:border-bronze-300 hover:bg-bronze-50">
+                    <Plus className="size-4" />Choose exercises for {block.label}
                   </button>
-                );
-              })}
+                )}
+              </section>
+            );
+          })}
+
+          <Dialog.Root open={pickerOpen} onOpenChange={setPickerOpen}>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 z-50 bg-charcoal-950/50 backdrop-blur-sm" />
+              <Dialog.Content onOpenAutoFocus={(event) => { event.preventDefault(); pickerSearch.current?.querySelector("input")?.focus(); }} onCloseAutoFocus={(event) => { event.preventDefault(); pickerOpener.current?.focus(); }} className="fixed inset-2 z-50 flex flex-col overflow-hidden rounded-2xl bg-ivory-50 shadow-xl sm:inset-6 lg:inset-x-[max(1.5rem,calc((100vw-1152px)/2))]">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="border-b border-stone-200/80 p-5 sm:p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-bronze-600">Exercise catalog</p>
+                  <Dialog.Title className="mt-2 pr-10 font-serif text-2xl font-semibold">Add exercises to {activeStepLabel}</Dialog.Title>
+                  <Dialog.Description className="mt-2 text-sm leading-6 text-stone-600">Select several exercises across searches and filters. They’ll be added in the order you select them.</Dialog.Description>
+                  <Dialog.Close asChild><Button variant="ghost" size="icon" aria-label="Close exercise picker" className="absolute right-3 top-3"><X className="size-5" /></Button></Dialog.Close>
+                </div>
+                <div ref={pickerSearch} className="relative w-full lg:max-w-md">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+                      <Input aria-label="Search exercise catalog" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, muscle, equipment, or tag..." className="pl-9" />
+                </div>
+              </div>
+              <div className="mt-5 grid gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2 text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">
+                    <Layers3 className="size-4" />
+                    Filter catalog
+                  </div>
+                  <div className="flex items-center gap-2" aria-label="Exercise filter type">
+                          {(["category", "pattern", "tag"] as const).map((filterType) => (
+                            <button
+                              key={filterType}
+                              className="shrink-0 whitespace-nowrap"
+                              type="button"
+                              aria-pressed={exerciseFilterType === filterType}
+                              onClick={() => changeExerciseFilterType(filterType)}
+                            >
+                              <Badge variant={exerciseFilterType === filterType ? "dark" : "default"}>
+                                {filterType === "tag" ? "Tags" : filterType === "pattern" ? "Pattern" : "Category"}
+                              </Badge>
+                            </button>
+                          ))}
+                  </div>
+                </div>
+                <div className="no-scrollbar -mx-2 flex gap-2 overflow-x-auto overscroll-x-contain px-2 py-2">
+                        {visibleExerciseFilters.map((filter) => (
+                          <button
+                            key={filter.value || "all"}
+                            className="shrink-0 whitespace-nowrap"
+                            type="button"
+                            aria-pressed={filter.value === activeExerciseFilter}
+                            onClick={() => setActiveExerciseFilter(filter.value)}
+                          >
+                            <Badge variant={filter.value === activeExerciseFilter ? "dark" : "default"}>{filter.label}</Badge>
+                          </button>
+                        ))}
+                </div>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-2 text-xs text-stone-500"><span>{recommendedExercises.length} exercise options</span>{(query || activeExerciseFilter) && <button type="button" className="font-semibold text-bronze-600" onClick={() => { setQuery(""); setActiveExerciseFilter(""); }}>Clear search & filter</button>}</div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5"><div className="grid gap-3 lg:grid-cols-2">
+              {recommendedExercises.map((exercise) => (
+                <ExerciseChoice key={exercise.id} exercise={exercise} selected={pickedIds.includes(exercise.id)} alreadyAdded={activeBlock.exercises.some((item) => item.exerciseId === exercise.id)} onToggle={() => togglePick(exercise.id)} />
+              ))}
+              {!recommendedExercises.length ? (
+                <div className="col-span-full rounded-2xl border border-dashed border-stone-200 bg-stone-50/80 p-8 text-center text-sm text-stone-500">
+                  No exercises match this view. Try another search or filter.
+                </div>
+              ) : null}
+            </div>
             </div>
           </div>
-
-          <div className="grid gap-5 xl:grid-cols-[minmax(240px,280px)_minmax(0,1fr)]">
-            <Card className="flex h-[620px] min-h-0 flex-col overflow-hidden rounded-[1.25rem] bg-white/84 shadow-soft">
-                  <div className="p-6 pb-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-bronze-600">Exercise selection</p>
-                        <h3 className="mt-2 font-serif text-2xl font-semibold">{activeStepLabel}</h3>
-                        <p className="mt-2 text-sm leading-6 text-stone-600">{activeStep.helper}</p>
-                      </div>
-                    </div>
-
-                    <div className="relative mt-4">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
-                      <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${activeStepLabel.toLowerCase()} exercises...`} className="pl-9" />
-                    </div>
-                    <div className="mt-3 text-xs text-stone-500">{recommendedExercises.length} exercise options</div>
-                  </div>
-
-                  <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-10">
-                    {recommendedExercises.map((exercise) => (
-                      <ExerciseChoice key={exercise.id} exercise={exercise} onAdd={() => addExercise(exercise)} />
-                    ))}
-                    {!recommendedExercises.length ? (
-                      <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50/80 p-4 text-sm text-stone-500">
-                        No exercises match this search.
-                      </div>
-                    ) : null}
-                  </div>
-            </Card>
-
-            <Card className="h-[620px] overflow-hidden rounded-[1.25rem] bg-white/84 p-6 shadow-soft">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-serif text-2xl font-semibold">{activeStepLabel}</h3>
-                      <p className="mt-2 text-sm text-stone-600">
-                        {activeBlock.exercises.length
-                          ? `${activeBlock.exercises.length} selected. Adjust the prescription inline.`
-                          : "Add at least one exercise before moving to the next step."}
-                      </p>
-                      {isStageStep(activeStepId) ? (
-                        <label className="mt-4 grid max-w-md gap-2 text-sm font-semibold text-charcoal-950">
-                          Stage name
-                          <Input
-                            value={activeBlock.label}
-                            onBlur={() =>
-                              updateBlock(activeStepId, (block) => ({
-                                ...block,
-                                label: block.label.trim() || activeStep.title,
-                              }))
-                            }
-                            onChange={(event) =>
-                              updateBlock(activeStepId, (block) => ({
-                                ...block,
-                                label: event.target.value,
-                              }))
-                            }
-                            placeholder={activeStep.title}
-                          />
-                        </label>
-                      ) : null}
-                    </div>
-                    <Button variant="secondary" onClick={goNext} disabled={!completedSteps.has(activeStepId) || activeStepIndex === wizardSteps.length - 1}>
-                      Next
-                      <ChevronRight className="size-4" />
-                    </Button>
-                  </div>
-
-                  <div className="mt-4 max-h-[500px] space-y-3 overflow-y-auto pr-1">
-                    {activeBlock.exercises.map((exercise, index) => (
-                      <SelectedExerciseRow
-                        key={exercise.id}
-                        index={index}
-                        exercise={exercise}
-                        source={exercises.find((item) => item.id === exercise.exerciseId)}
-                        onUpdate={(updater) => updateExercise(exercise.id, updater)}
-                        onRemove={() => removeExercise(exercise.id)}
-                      />
-                    ))}
-                    {!activeBlock.exercises.length ? (
-                      <div className="grid min-h-72 place-items-center rounded-2xl border border-dashed border-stone-300 bg-stone-50/60 p-8 text-center">
-                        <div>
-                          <Dumbbell className="mx-auto size-8 text-stone-400" />
-                          <p className="mt-3 font-semibold text-charcoal-950">No exercises selected yet.</p>
-                          <p className="mt-2 max-w-sm text-sm leading-6 text-stone-500">Choose from the recommended list on the left to complete this step.</p>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-            </Card>
-
+          <div className="shrink-0 border-t border-stone-200 bg-white p-4 sm:p-5">
+            {pickedIds.length > 0 && (
+              <div className="mb-3 flex max-h-24 flex-wrap gap-2 overflow-y-auto" aria-label="Selected exercises">
+                {pickedIds.map((id, index) => (
+                  <button key={id} type="button" onClick={() => togglePick(id)} aria-label={`Deselect ${exercises.find((item) => item.id === id)?.name}`} className="inline-flex items-center gap-2 rounded-full bg-bronze-50 px-3 py-1.5 text-xs text-bronze-800">
+                    {index + 1}. {exercises.find((item) => item.id === id)?.name}<X className="size-3" />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-stone-500" role="status">{pickedIds.length} selected for {activeStepLabel}</p>
+              <div className="flex gap-2">
+                <Dialog.Close asChild><Button variant="secondary">Cancel</Button></Dialog.Close>
+                <Button variant="warm" disabled={!pickedIds.length} onClick={addPickedExercises}>Add {pickedIds.length || ""} exercises</Button>
+              </div>
+            </div>
           </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         </div>
       )}
 
@@ -597,21 +684,46 @@ export function TrainerWorkoutBuilder({
 
 function WorkoutList({
   workouts,
+  exercises,
   deletingWorkoutId,
   onNewWorkout,
   onEditWorkout,
   onDeleteWorkout,
 }: {
   workouts: Workout[];
+  exercises: Exercise[];
   deletingWorkoutId: string | null;
   onNewWorkout: () => void;
   onEditWorkout: (workout: Workout) => void;
   onDeleteWorkout: (workout: Workout) => void;
 }) {
   const [query, setQuery] = useState("");
-  const filteredWorkouts = workouts.filter((workout) =>
-    [workout.name, workout.dayLabel, workout.coachNotes].join(" ").toLowerCase().includes(query.trim().toLowerCase()),
+  const [activeTag, setActiveTag] = useState("");
+  const exerciseById = useMemo(() => new Map(exercises.map((exercise) => [exercise.id, exercise])), [exercises]);
+  const tagFilters = useMemo(
+    () => [
+      { value: "", label: "All" },
+      ...Array.from(new Set(exercises.flatMap((exercise) => exercise.tags.map((tag) => tag.trim())).filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b))
+        .map((tag) => ({ value: tag, label: tag })),
+    ],
+    [exercises],
   );
+  const filteredWorkouts = workouts.filter((workout) => {
+    const matchesQuery = [workout.name, workout.dayLabel, workout.coachNotes]
+      .join(" ")
+      .toLowerCase()
+      .includes(query.trim().toLowerCase());
+    const matchesTag =
+      !activeTag ||
+      workout.blocks.some((block) =>
+        block.exercises.some((workoutExercise) =>
+          exerciseById.get(workoutExercise.exerciseId)?.tags.some((tag) => tag.toLowerCase() === activeTag.toLowerCase()),
+        ),
+      );
+
+    return matchesQuery && matchesTag;
+  });
 
   return (
     <Card className="overflow-hidden rounded-[1.25rem] bg-white/82 shadow-soft">
@@ -634,6 +746,26 @@ function WorkoutList({
           <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search workouts..." className="pl-9" />
         </div>
 
+        <div className="mt-4 grid gap-2">
+          <div className="flex items-center gap-2 text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">
+            <Layers3 className="size-4" />
+            Filter templates by exercise tag
+          </div>
+          <div className="no-scrollbar -mx-2 flex gap-2 overflow-x-auto overscroll-x-contain px-2 py-2">
+            {tagFilters.map((tag) => (
+              <button
+                key={tag.value || "all"}
+                className="shrink-0 whitespace-nowrap"
+                type="button"
+                aria-pressed={tag.value === activeTag}
+                onClick={() => setActiveTag(tag.value)}
+              >
+                <Badge variant={tag.value === activeTag ? "dark" : "default"}>{tag.label}</Badge>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="mt-5 overflow-hidden rounded-2xl border border-stone-200 bg-white/92">
           <div className="hidden grid-cols-[minmax(0,1fr)_8rem_8rem_8rem_3rem] gap-4 bg-stone-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400 md:grid">
             <span>Workout</span>
@@ -653,7 +785,7 @@ function WorkoutList({
                 </span>
                 <span className="mt-1 line-clamp-1 text-xs text-stone-500">{workout.coachNotes || "No notes yet."}</span>
               </span>
-              <span className="text-sm text-stone-600">5 steps</span>
+              <span className="text-sm text-stone-600">{workout.blocks.filter((block) => block.exercises.length > 0).length} sections</span>
               <span className="text-sm text-stone-600">{workoutExerciseCount(workout)}</span>
               <span className="text-sm text-stone-600">{workout.duration}</span>
               <WorkoutRowActions
@@ -668,7 +800,9 @@ function WorkoutList({
             <div className="grid min-h-60 place-items-center p-8 text-center">
               <div>
                 <p className="font-semibold text-charcoal-950">No workouts found.</p>
-                <p className="mt-2 text-sm text-stone-500">Create the first template workout to populate this list.</p>
+                <p className="mt-2 text-sm text-stone-500">
+                  {workouts.length ? "Try another search or exercise-tag filter." : "Create the first template workout to populate this list."}
+                </p>
                 <Button className="mt-4" variant="warm" onClick={onNewWorkout}>
                   <Plus className="size-4" />
                   New Workout
@@ -764,22 +898,22 @@ function WorkoutDetailsHeader({
   );
 }
 
-function ExerciseChoice({ exercise, onAdd }: { exercise: Exercise; onAdd: () => void }) {
+function ExerciseChoice({ exercise, selected, alreadyAdded, onToggle }: { exercise: Exercise; selected: boolean; alreadyAdded: boolean; onToggle: () => void }) {
   return (
-    <div className="grid grid-cols-[2.75rem_1fr_auto] items-center gap-3 rounded-xl border border-stone-200 bg-white/84 p-2 transition hover:border-bronze-200 hover:bg-bronze-50/35">
+    <button type="button" aria-pressed={selected} onClick={onToggle}
+      className={cn("flex items-start gap-3 rounded-xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-bronze-500", selected ? "border-bronze-400 bg-bronze-50" : "border-stone-200 bg-white hover:border-bronze-300")}>
       <ExerciseThumb exercise={exercise} />
-      <div className="min-w-0">
-        <div className="flex min-w-0 items-center gap-2">
-          <p className="truncate text-sm font-semibold text-charcoal-950">{exercise.name}</p>
-        </div>
-        <p className="mt-1 truncate text-xs text-stone-500">
-          {compactCategory(exercise.category)} <span className="px-1">•</span> {prescriptionTypeLabel(getExercisePrescriptionType(exercise))}
-        </p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-charcoal-950">{exercise.name}</p>
+        <p className="mt-1 text-xs text-stone-500">{compactCategory(exercise.category)} · {prescriptionTypeLabel(getExercisePrescriptionType(exercise))}</p>
+        <p className="mt-1 text-xs text-stone-500">{exercise.muscleGroups.join(", ")} · {exercise.equipment.join(", ") || "No equipment"}</p>
+        {exercise.tags.length > 0 && <p className="mt-2 text-xs text-bronze-600">{exercise.tags.join(" · ")}</p>}
+        {alreadyAdded && <p className="mt-2 text-xs font-medium text-sage-700">Already in this section</p>}
       </div>
-      <Button variant="secondary" size="icon" className="size-9" aria-label={`Add ${exercise.name}`} onClick={onAdd}>
-        <Plus className="size-4" />
-      </Button>
-    </div>
+      <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", selected ? "border-bronze-600 bg-bronze-600 text-white" : "border-stone-300")}>
+        {selected && <Check className="size-4" />}
+      </span>
+    </button>
   );
 }
 
@@ -789,23 +923,30 @@ function SelectedExerciseRow({
   source,
   onUpdate,
   onRemove,
+  onMoveUp,
+  onMoveDown,
 }: {
   index: number;
   exercise: WorkoutExercise;
   source?: Exercise;
   onUpdate: (updater: (exercise: WorkoutExercise) => WorkoutExercise) => void;
   onRemove: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   const prescriptionType = getWorkoutExercisePrescriptionType(exercise);
   const summary = workoutPrescriptionSummary(exercise);
 
   return (
-    <div className="grid gap-3 rounded-2xl border border-stone-200 bg-white/88 p-3 shadow-inner-soft transition hover:border-bronze-200 md:grid-cols-[1rem_3rem_1.75rem_minmax(10rem,1fr)_minmax(17rem,auto)_2.5rem] md:items-center">
-      <GripVertical className="hidden size-4 text-stone-400 md:block" />
+    <div className="grid gap-3 rounded-2xl border border-stone-200 bg-white/88 p-3 shadow-inner-soft transition hover:border-bronze-200 xl:grid-cols-[2rem_3rem_1.75rem_minmax(10rem,1fr)_minmax(17rem,auto)_2.5rem] xl:items-center">
+      <div className="flex gap-1 xl:flex-col">
+        <button type="button" aria-label={`Move ${exercise.name} up`} disabled={!onMoveUp} onClick={onMoveUp} className="rounded p-1 text-stone-500 hover:bg-stone-100 disabled:opacity-25"><ArrowUp className="size-4" /></button>
+        <button type="button" aria-label={`Move ${exercise.name} down`} disabled={!onMoveDown} onClick={onMoveDown} className="rounded p-1 text-stone-500 hover:bg-stone-100 disabled:opacity-25"><ArrowDown className="size-4" /></button>
+      </div>
       <ExerciseThumb exercise={source} />
       <span className="grid size-7 place-items-center rounded-full bg-stone-100 text-xs font-semibold text-stone-500">{index + 1}</span>
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-charcoal-950">{exercise.name}</p>
+        <p className="text-sm font-semibold text-charcoal-950">{exercise.name}</p>
         <p className="mt-1 text-xs text-stone-500 md:hidden">
           {summary}
         </p>
