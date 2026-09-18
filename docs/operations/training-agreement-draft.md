@@ -4,23 +4,25 @@ Prepared September 18, 2026. Not approved or ready for client signature.
 
 For Nick's short review form, use the [trainer input checklist](trainer-agreement-checklist.md).
 
-This is a proposed business agreement and implementation brief. Business policies below remain recommendations awaiting trainer approval; statutory protections are not optional policy choices. Confirmed by the owner: Nick operates individually in California, uses the name Nick Glushien Training, currently trains three friends, and will serve adults age 18 and older only. No separate legal entity has been formed. This draft does not establish enforceability; qualified California legal review should address applicability, required notices, and the final refund calculation before client use.
+This is a proposed business agreement and implementation brief. Business policies explicitly marked confirmed reflect user instructions; other policies remain recommendations awaiting trainer approval; statutory protections are not optional policy choices. Confirmed by the owner: Nick operates individually in California, uses the name Nick Glushien Training, currently trains three friends, and will serve adults age 18 and older only. No separate legal entity has been formed. This draft does not establish enforceability; qualified California legal review should address applicability, required notices, and the final refund calculation before client use.
 
 The client document will prominently display **Nick Glushien Training** and identify the contracting provider as **Nick Glushien, an individual operating as Nick Glushien Training**. This wording does not assert that a fictitious business name has been registered. Registration status has not been investigated.
 
 Confirmed delivery setting: Nick currently trains at clients' homes. The agreement will live in the app, where an authenticated client will review it and actively check a consent box before submitting acceptance. A drawn or uploaded signature is not part of the proposed primary flow.
 
-## Trainer review: recommended decisions
+Confirmed operational details supplied on Nick's behalf: sessions last 60 minutes; no price exceptions; full payment is required before training, with no installments. Nick creates/invites clients through the app, giving each an individual portal; clients cannot self-register. He currently discusses the offer in person at the client's home. Mailing address and phone below are user-provided, not independently verified. There is no separate business address.
+
+## Trainer review: confirmed decisions and remaining proposals
 
 | Topic | Recommended starting policy |
 | --- | --- |
-| Payment | Full payment before the first session; allow an explicitly documented installment schedule as an exception. |
+| Payment — confirmed | Full payment before the first session of the purchase. No installments. |
 | Renewal | Each purchase covers only the stated package or training period; no automatic renewal. |
 | Client cancellation | At least 24 hours' notice: reschedule without losing a session. Less notice or a no-show: count one session, with trainer discretion to waive. |
 | Trainer cancellation | Reschedule without charge or refund that unused session. |
 | Refunds | Refund unused sessions at the price actually paid per session, without repricing used sessions at a higher rate. |
 | Session expiration | State a definite contract term. Refund unused paid sessions at its end; any extension must be agreed in writing within applicable term limits. |
-| Late payment | No late fees or interest. Trainer may pause future training after notifying the client. |
+| Training eligibility — confirmed | No payment, no training. Do not use an overdue-payment or installment workflow. |
 | Shared training | Each client signs for a clearly stated individual amount; no implied responsibility for the other client's share. |
 | Signing | Trainer approves the completed offer; client reviews the same version in the app, checks an initially unchecked agreement box, and selects Agree and sign. Both parties' actions are recorded and both get a copy. |
 
@@ -38,9 +40,11 @@ These choices affect revenue and scheduling. In particular, no automatic renewal
 
 **Client eligibility:** Age 18 or older
 
-**Business address:** [ADDRESS]
+**Mailing address:** 4144 Florida St. San Diego, CA 92014
 
-**Contact email and phone:** [EMAIL AND PHONE]
+**Contact email:** [EMAIL]
+
+**Phone:** 617-935-4046
 
 **Client legal name:** [CLIENT NAME]
 
@@ -50,7 +54,7 @@ These choices affect revenue and scheduling. In particular, no automatic renewal
 
 **Date signed by client:** [ACTUAL SIGNING DATE — populated on signing]
 
-**Cancellation mailing address:** [MAILING ADDRESS]
+**Cancellation mailing address:** 4144 Florida St. San Diego, CA 92014
 
 **Cancellation email:** [EMAIL]
 
@@ -65,7 +69,7 @@ This agreement describes the training services the provider will supply and the 
 | Package or service | [PACKAGE NAME AND DESCRIPTION] |
 | Training format | In-person personal training at the client's home; [ONE-ON-ONE / PARTNER] |
 | Number of sessions | [NUMBER] |
-| Length of each session | [MINUTES] |
+| Length of each session | 60 minutes |
 | Training location | Client's home: [AGREED SERVICE ADDRESS] |
 | Intended start date | [DATE] |
 | Target training period and frequency | [DATES AND FREQUENCY] |
@@ -75,7 +79,7 @@ This agreement describes the training services the provider will supply and the 
 | Your total price, including any applicable taxes or fees | [AMOUNT AND CURRENCY] |
 | Amount already paid | [AMOUNT] |
 | Remaining amount due | [AMOUNT] |
-| Due date or installment schedule | [EXACT AMOUNTS AND DATES] |
+| Payment due | In full before the first session of this purchase; [DUE DATE] |
 | Accepted payment methods | [METHODS AND PAYMENT INSTRUCTIONS] |
 | Written special terms agreed by both parties | [TERMS / NONE] |
 
@@ -89,9 +93,9 @@ For partner training, the amount above is your individual responsibility. You do
 
 ### 3. Payment
 
-You agree to pay the remaining amount by the dates shown above. Unless an installment schedule is included, payment is due before your first session. Signing this agreement does not charge a payment method or confirm receipt of payment.
+Full payment for this purchase must be received before its first training session. Installments are not offered. Signing this agreement does not charge a payment method or confirm receipt of payment.
 
-If a payment is overdue, the trainer may pause future training after notifying you. No late fees or interest apply under this agreement. Any refund or outstanding balance after cancellation will be calculated under section 5; future installments will not be collected for refunded or canceled unused services.
+Training under this purchase will not begin until full payment has been received. Creating your portal or accepting this agreement does not authorize unpaid training. Cancellation and refund rights remain as described below.
 
 ### 4. Scheduling and missed sessions
 
@@ -109,7 +113,7 @@ Either party may end future training. Clients may give cancellation notice in pe
 
 Unused sessions are refundable. For an ordinary voluntary cancellation, the proposed calculation uses the total agreed session price divided by purchased sessions, deducting delivered sessions and otherwise valid missed-session charges from payments received. Apply any legally required calculation instead if it produces a larger refund or smaller remaining obligation. No missed-session charge may reduce a statutory refund unless legally permitted. Any separate non-session service must have its price and refund treatment expressly stated before signing.
 
-[Review item: finalize separate statutory refund calculations and installment treatment before client use. Do not implement the ordinary session formula as the only refund rule.]
+[Review item: finalize separate statutory refund calculations before client use. Do not implement the ordinary session formula as the only refund rule.]
 
 Used sessions will not be repriced at a higher rate because you end training early. Refunds will be made within 10 days after receipt of cancellation notice, or sooner when required. Death/disability refunds described below will be made immediately upon request. Payment processing does not extend applicable deadlines.
 
@@ -158,15 +162,17 @@ I confirm that I am at least 18 years old. I have reviewed the services, price, 
 ## Items to resolve before approval
 
 - California, individual provider, brand name, adults-only scope, and training at clients' homes are confirmed. Confirm equipment arrangements and service address for each client. Keep home addresses in private agreement records.
-- Obtain Nick's cancellation mailing address and monitored email, contact phone, and normal operating days. Do not require a public marketing-page home address merely to populate private agreements.
+- Mailing address, phone, and absence of a separate business address are supplied above. Obtain a monitored cancellation email and normal operating days. Use the supplied address in private agreements; this does not authorize adding it to public marketing pages.
 - Complete California notices and legal review of applicability and refund calculations. Review contract-price and term limits, including Civil Code §§ 1812.83–1812.84, before accepting arbitrary package values.
-- Tailor statutory relocation/facility wording to a mobile trainer with no client-facing gym. Review the actual sales/signing circumstances as well as the training location; home-based delivery alone does not establish where or how the agreement was solicited or signed.
-- Trainer approves or revises every proposed policy above, particularly refund, carryover, monthly renewal, and partner-session handling.
-- Confirm session duration and payment methods. Read actual assigned package values when creating agreements; repository defaults are not verified client offers.
-- Resolve the partner-package default: code stores $1,600 and 10 sessions, but billing copy says "$160 total per shared session package." Agreements must distinguish package total, session price, and individual client share.
+- Tailor statutory relocation/facility wording to a mobile trainer with no client-facing gym. The user confirms that Nick discusses the offer in person at the client's home and creates the client account himself. Include this in the legal review of sales/signing circumstances, including any applicable home-solicitation requirements; later in-app acceptance should not be assumed to remove them.
+- Full upfront payment and no installments are confirmed. Trainer reviews the remaining proposed policies, particularly refunds, extensions, renewal, and partner-session handling.
+- Session duration is confirmed as 60 minutes. Confirm accepted payment methods and instructions. The public pricing page source (`src/app/pricing/page.tsx`) supplies the standard offers: $1,100 for 10 one-on-one sessions; $840/month for 8 sessions at 2x/week; $1,200/month for 12 sessions at 3x/week; partner sessions $160 total, $80/person. These are prefilled in the trainer checklist. No price exceptions are currently authorized. Populate agreements with the applicable published price and verify the purchase quantity and totals.
+- Resolve the partner-package default during implementation: code stores $1,600 and 10 sessions, but billing copy says "$160 total per shared session package." The public page establishes a per-session rate, not a 10-session purchase requirement. Confirm purchase size and term; distinguish package total, session price, and individual client share.
 - Keep health intake and any liability waiver in separately reviewed documents. This draft concerns services and payment and is not a complete injury-risk waiver.
 
 ## In-app experience to implement after approval
+
+**Account entry:** Nick creates/invites the client using the existing trainer-controlled signup flow. No public client registration is introduced. Portal access remains available for reviewing/signing the agreement before payment.
 
 **Client location:** a permanent Agreements area in the client portal, with an Agreement awaiting your review card on the dashboard. Accepted and historical agreements stay accessible there. **Trainer location:** an Agreements section on the client's profile.
 
@@ -192,6 +198,8 @@ Store consent wording/version, electronic-record consent, agreement version and 
 9. Support uploaded historical agreements as externally signed records without inventing signing timestamps or authentication evidence.
 10. Verify authorization boundaries, immutable document versions, duplicate/stale signing requests, PDF completeness, amount calculations, and approved session-accounting behavior. Update relevant app terms, release version, changelog, and launch checklist when implemented; run version checks.
 11. Add adult-age confirmation, California notices, and private cancellation contact settings. Treat contract cancellation separately from appointment cancellation. Support external notices, accurate receipt dates, applicable deadlines, price-based cancellation rights, and separate statutory refund rules. Stop offers with missing required fields; do not invent addresses or silently default legal deadlines.
+
+12. Track full payment received separately from agreement acceptance. With offline payment collection, Nick records receipt and verifies the full purchase amount before training begins. Do not equate a signed agreement with payment, block access to the agreement because it is unpaid, or add installments/late-payment reminders. Read the current appointment/session workflow before deciding how to enforce the no-unpaid-training rule.
 
 ## Research note
 

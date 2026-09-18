@@ -1,29 +1,47 @@
 # Nick's agreement checklist
 
-**Nick: fill in the blanks, then check each policy you approve. If you want something different, write the item number and your change. Unchecked items stay undecided.**
+**Fill in any answers you already know on Nick's behalf. Nick only needs to resolve the remaining blanks and approve the proposed policies. For a change, write the item number and preferred policy. Unchecked policies stay undecided.**
 
 Already settled: **Nick Glushien Training**, operated by you individually in California; clients **18+**; training **at clients' homes**; clients agree **inside the app using a checkbox and “Agree and sign.”**
 
-## 1. Details we need from you
+## Pricing already on the public page
 
-- [ ] **Contact details for the agreement:**
-  - Mailing address where you can receive cancellation notices: ____________________
-  - Business address, if different: ____________________
-  - Email you check regularly: ____________________
-  - Phone: ____________________
-  - Normal business days: ____________________
-- [ ] **Payments:** Which methods do you accept, and what payment instructions should clients receive? ____________________
-- [ ] **Sessions:** How many minutes is a session? What equipment do you bring, and what must the client provide? ____________________
-- [ ] **Packages:** For each package you actually sell, provide its name, session count, total price including any extra charges, usual frequency, and how long it should last. Note any friend discounts or monthly arrangements. ____________________
-- [ ] **Partner training, if offered:** What is the total price, and how much does each person owe? If you do not offer this yet, write “later.” ____________________
-- [ ] **How clients sign up:** Where/how do you normally discuss the offer and get their agreement—in their home, by phone/text, online, or elsewhere? ____________________
+| Option | Published price | Included sessions |
+| --- | --- | --- |
+| Session Bundles | $1,100 total · $110/session | 10 one-on-one sessions; flexible scheduling |
+| Monthly Training — 2x/week | $840/month | 8 sessions/month |
+| Monthly Training — 3x/week | $1,200/month | 12 sessions/month |
+| Partner Training | $160 per shared session · $80/person | Two-person session |
+
+Prefilled from the [public pricing page source](../../src/app/pricing/page.tsx). No need to rewrite these prices; no price exceptions apply. The page does not specify a partner bundle size or a deadline for using the 10-session bundle.
+
+## Confirmed answers — supplied on Nick's behalf
+
+- **Mailing address:** 4144 Florida St. San Diego, CA 92014 (as provided).
+- **Separate business address:** None.
+- **Phone:** 617-935-4046.
+- **Session length:** 60 minutes.
+- **Price exceptions:** None.
+- **Payment rule:** Full payment before the first session of the purchase. No installments. No payment means no training.
+- **Signup:** Nick creates/invites each client through the web app; clients cannot register themselves. Each client receives an individual portal.
+- **Sales discussion:** Nick currently visits the client's home and discusses the offer in person.
+
+These answers are recorded; the unchecked policies below still need review.
+
+## 1. Missing details — either of you can fill these in
+
+- [ ] **Contact email:** Email you check regularly for client/cancellation messages: ____________________
+- [ ] **Business days:** Normal operating days: ____________________
+- [ ] **Payment methods:** Which methods do you accept, and what payment instructions should clients receive? Full upfront payment is already confirmed. ____________________
+- [ ] **Equipment:** What do you bring, and what must the client provide? ____________________
+- [ ] **Package timing:** What term should the 10-session bundle cover? Do monthly packages follow calendar months or run one month from the client's start date? ____________________
+- [ ] **Partner purchases:** Sold one session at a time, in a bundle of how many sessions, or planned for later? If bundled, what term should apply? The published rate is already filled in above. ____________________
 
 ## 2. Policies to approve or change
 
 These are proposed business choices. Required client protections remain part of the final agreement.
 
-- [ ] **1 — Payment timing:** Clients pay before the first session. You can approve installments, with exact amounts and dates written into that client's agreement.
-- [ ] **2 — Late payment:** You may pause future sessions after notifying the client. No late fees or interest.
+**Items 1–2 resolved:** Full upfront payment; no installments; no training until paid. No overdue-payment workflow is proposed. Remaining item numbers are kept for easy reference.
 - [ ] **3 — Client cancellations:** At least **24 hours' notice** means no lost session. Less notice or a no-show uses one session, without an extra fee. You may waive this for illness or emergencies.
 - [ ] **4 — Late arrivals:** The session may still end at the originally scheduled time.
 - [ ] **5 — Your cancellations:** The client chooses a replacement session or a refund for that session.
@@ -45,7 +63,7 @@ The app should fill in available details. You review these for accuracy:
 - [ ] Client's full name, email, and training address.
 - [ ] Package, sessions, session length, start/end dates, and schedule.
 - [ ] Total price, money already paid, remaining balance, and payment dates.
-- [ ] Any individual discount, installment arrangement, or other special promise.
+- [ ] Full payment received before training begins; any other service promises recorded accurately. No discounts or installments.
 
 For the three existing clients, include any payments, used sessions, and promises already made. Their new acceptance will use the actual signing date.
 
