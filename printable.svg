@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   version="1.1"
+   viewBox="0 0 489.33865 210.35938"
+   id="svg5"
+   sodipodi:docname="printable.svg"
+   width="489.33865"
+   height="210.35938"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs5" />
+  <sodipodi:namedview
+     id="namedview5"
+     pagecolor="#000000"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showguides="true"
+     inkscape:zoom="0.62"
+     inkscape:cx="429.03226"
+     inkscape:cy="136.29032"
+     inkscape:window-width="1512"
+     inkscape:window-height="832"
+     inkscape:window-x="0"
+     inkscape:window-y="33"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg5" />
+  <g
+     id="g7"
+     transform="matrix(0.96939804,0,0,0.96939804,-382.70742,-273.13814)">
+    <rect
+       style="fill:#ffffff;stroke:none"
+       id="rect7"
+       width="198.59155"
+       height="198.59155"
+       x="412.67606"
+       y="291.54929" />
+    <path
+       fill="#000000"
+       d="m 621.78873,281.76057 v 217 h -227 v -217 z m -98.16706,103.28135 q 0.96092,-2.17 0.91915,-5.44497 -0.2089,-14.28473 -0.15319,-40.07178 a 0.48742331,0.46595092 0 0 1 0.48742,-0.46595 h 70.03577 a 0.43171779,0.42601227 0 0 0 0.43171,-0.42601 v -11.22277 a 0.5709816,0.54582822 0 0 0 -0.57098,-0.54582 h -83.93429 a 0.52920245,0.50588957 0 0 0 -0.52921,0.50589 v 45.07742 a 6.5036196,6.2171166 0 0 0 2.32571,4.76601 l 9.97129,8.06761 a 0.65183527,0.61493359 9.5215003 0 0 1.01662,-0.23963 z m 73.587,66.7508 v -61.1727 a 1.0862577,1.0384049 0 0 0 -1.08626,-1.03841 H 549.8172 a 0.93306748,0.89196319 0 0 0 -0.93307,0.89196 v 9.87816 a 1.2115951,1.1715337 0 0 0 1.21159,1.17154 h 32.9916 a 1.0305521,0.98515337 0 0 1 1.03055,0.98515 v 35.5454 a 2.0193252,1.9303681 0 0 1 -1.94969,1.93037 q -17.99289,0.55914 -29.88601,0.21301 -3.76013,-0.11982 -6.00227,-2.18332 -50.17675,-46.44865 -82.4581,-77.50761 C 450.98167,348.15192 438.86572,337.64805 428.28167,328.1959 a 0.72417178,0.69226994 0 0 0 -1.22552,0.50589 v 123.0643 a 0.18104294,0.17306748 0 0 0 0.18105,0.17307 h 12.79834 a 0.1392638,0.13312883 0 0 0 0.13926,-0.13313 v -95.32025 a 0.22282209,0.21300613 0 0 1 0.34816,-0.18638 q 2.99417,1.97031 4.94387,3.75423 14.73411,13.47264 38.65963,36.65037 7.61773,7.37534 27.92239,25.69387 11.33608,10.21098 27.74135,26.26632 3.67657,3.59448 8.87111,3.48798 7.84055,-0.17307 48.2549,-0.0666 a 0.29245399,0.29288344 0 0 0 0.29246,-0.29288 z"
+       id="path3"
+       style="stroke-width:1.36162" />
+  </g>
+  <text
+     xml:space="preserve"
+     style="font-size:53.3333px;line-height:0;writing-mode:lr-tb;direction:ltr;fill:#ffffff;stroke:#000000"
+     x="229.34915"
+     y="75.122681"
+     id="text5"><tspan
+       sodipodi:role="line"
+       id="tspan5"
+       x="229.34915"
+       y="75.122681"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:42.6667px;line-height:47.63px;font-family:Avenir;-inkscape-font-specification:Avenir;letter-spacing:8px;fill:#ffffff;stroke:none"
+       dy="0">NICK</tspan><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:42.6667px;line-height:47.63px;font-family:Avenir;-inkscape-font-specification:Avenir;letter-spacing:8px;fill:#ffffff;stroke:none"
+       sodipodi:role="line"
+       id="tspan238"
+       x="229.34915"
+       y="122.75269">GLUSHIEN</tspan><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:26.6667px;line-height:44.93px;font-family:Avenir;-inkscape-font-specification:Avenir;letter-spacing:5.44px;fill:#ffffff;stroke:none"
+       sodipodi:role="line"
+       id="tspan239"
+       x="229.34915"
+       y="164.95721">TRAINING</tspan></text>
+</svg>

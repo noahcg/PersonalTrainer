@@ -77,29 +77,44 @@ export async function POST(request: Request, context: RouteContext<"/api/trainer
       return NextResponse.json({ error: "Inactive clients cannot receive workout assignments." }, { status: 400 });
     }
 
-    const today = new Date().toISOString().slice(0, 10);
-    const { error: deactivateError } = await admin
+    const { data: existingAssignment, error: existingAssignmentError } = await admin
       .from("workout_assignments")
-      .update({ status: "inactive", ends_on: today })
+      .select("id")
       .eq("client_id", client.id)
       .eq("workout_id", workout.id)
       .eq("status", "active");
 
-    if (deactivateError) return NextResponse.json({ error: deactivateError.message }, { status: 500 });
+    if (existingAssignmentError) return NextResponse.json({ error: existingAssignmentError.message }, { status: 500 });
 
+    const assignmentValues = {
+      scheduled_for: availableOn || new Date().toISOString().slice(0, 10),
+      due_on: completeBy || null,
+      assignment_notes: clean(notes) || null,
+      ends_on: null,
+      status: "active",
+    };
+
+    const activeAssignment = existingAssignment?.[0];
+    if (activeAssignment) {
+      const { error: updateError } = await admin
+        .from("workout_assignments")
+        .update(assignmentValues)
+        .eq("id", activeAssignment.id);
+
+      if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+      return NextResponse.json({ ok: true, assignmentId: activeAssignment.id, updated: true });
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
     const { data: inserted, error: insertError } = await admin
       .from("workout_assignments")
-      .insert({
+      .upsert({
         workout_id: workout.id,
         client_id: client.id,
         assigned_by_trainer_id: trainer.id,
         assigned_on: today,
-        scheduled_for: availableOn || today,
-        due_on: completeBy || null,
-        assignment_notes: clean(notes) || null,
-        ends_on: null,
-        status: "active",
-      })
+        ...assignmentValues,
+      }, { onConflict: "workout_id,client_id,assigned_on" })
       .select("id")
       .single<{ id: string }>();
 
