@@ -75,8 +75,8 @@ export async function POST(request: Request) {
     const blocks = normalizeBlocks(payload);
 
     if (!name) return NextResponse.json({ error: "Add a workout name before saving." }, { status: 400 });
-    if (blocks.length !== 5 || blocks.some((block) => !block.label || !block.exercises.length)) {
-      return NextResponse.json({ error: "Complete warm up, all three sections, and cooldown before saving." }, { status: 400 });
+    if (blocks.length !== 5 || blocks.some((block) => !block.label) || !blocks.some((block) => block.exercises.length > 0)) {
+      return NextResponse.json({ error: "Add at least one exercise and name each workout section before saving." }, { status: 400 });
     }
 
     const supabase = await createClient();

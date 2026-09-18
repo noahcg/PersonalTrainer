@@ -8,6 +8,13 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.32.0] - 2026-09-18
+
+- Rebuilt the Workout Builder around the complete workout, with all sections visible, inline prescriptions, and exercise reordering.
+- Added a large exercise picker with multi-selection across searches and filters, a selection tray, and batch insertion into the chosen section.
+- Allowed optional workout sections in both the builder and save validation.
+- Added Category, Pattern, and existing Tag filters alongside exercise search in the builder, plus exercise-tag filters for saved templates.
+
 ## [0.31.0] - 2026-09-18
 
 - Simplified the client Workouts tab into focused assign, edit, and searchable assignment-history workflows.
