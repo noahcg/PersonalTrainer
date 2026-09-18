@@ -36,7 +36,7 @@ values (
   '{"name":"Jon Lee","phone":"555-0103","relationship":"Spouse"}',
   '{"primary":"Build confident strength, improve posture, and train for a fall half marathon.","success":"Consistent training weeks and stronger long runs.","timeline":"Fall race season.","barriers":"Busy work blocks and occasional hip tightness."}',
   '{"experience":"Several years of recreational running and strength training.","currentActivity":"Runs three days per week and lifts twice per week.","equipmentAccess":"Full gym plus dumbbells at home.","preferredLocation":"Studio and home workouts.","likes":"Structured strength work and clear progressions.","dislikes":"High-pressure group classes.","fitnessLevel":"Intermediate"}',
-  '{"injuries":"Occasional right hip tightness.","currentPain":"No current acute pain.","surgeries":"","conditions":"","medications":"","parqFlags":[],"medicalClearance":"No clearance needed at this time."}',
+  '{"injuries":"Occasional right hip tightness.","currentPain":"No current acute pain.","surgeries":"","conditions":"","medications":"","parqFlags":[],"medicalClearance":"No clearance needed at this time.","medicalClearanceConfirmed":true}',
   '{"sleep":"7 hours on most nights.","stress":"Moderate work stress.","nutrition":"Generally consistent meals, wants simpler protein targets.","hydration":"Carries a bottle during the day.","schedule":"Mon/Wed/Fri mornings, Sunday mobility.","coachingStyle":"Strength-first, calm coaching, measurable progression.","communication":"Weekly priorities with concise check-ins."}',
   '{"height":"5 ft 7 in","weight":"","measurements":"","progressPhotos":"Open to monthly progress photos."}',
   '2026-01-12T12:00:00Z'

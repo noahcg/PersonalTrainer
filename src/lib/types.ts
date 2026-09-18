@@ -176,6 +176,7 @@ export type ClientIntake = {
     medications: string;
     parqFlags: string[];
     medicalClearance: string;
+    medicalClearanceConfirmed: boolean;
   };
   lifestyle: {
     sleep: string;

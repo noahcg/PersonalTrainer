@@ -70,6 +70,7 @@ function normalizeDraft(intake: ClientIntake): IntakeDraft {
         ? intake.readiness.parqFlags.filter((item): item is string => typeof item === "string")
         : [],
       medicalClearance: text(intake.readiness?.medicalClearance),
+      medicalClearanceConfirmed: intake.readiness?.medicalClearanceConfirmed === true,
     },
     lifestyle: {
       sleep: text(intake.lifestyle?.sleep),
@@ -93,9 +94,11 @@ function normalizeDraft(intake: ClientIntake): IntakeDraft {
 export function ClientIntakeForm({
   initialIntake,
   mode,
+  preview = false,
 }: {
   initialIntake: ClientIntake;
   mode: "demo" | "supabase";
+  preview?: boolean;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<IntakeDraft>(() => normalizeDraft(initialIntake));
@@ -110,6 +113,7 @@ export function ClientIntakeForm({
         { label: "Last workout details", value: draft.training.lastWorkoutWhat.trim() },
         { label: "Workout style", value: draft.training.likes.trim() },
         { label: "Goals", value: draft.goals.primary.trim() },
+        { label: "Medical clearance consent", value: draft.readiness.medicalClearanceConfirmed },
       ].filter((field) => !field.value),
     [draft],
   );
@@ -150,6 +154,11 @@ export function ClientIntakeForm({
   async function submit() {
     if (!canSubmit) {
       setMessage(`Please complete: ${missingFields.map((field) => field.label).join(", ")}.`);
+      return;
+    }
+
+    if (preview) {
+      setMessage("Preview mode: no intake was submitted.");
       return;
     }
 
@@ -258,6 +267,18 @@ export function ClientIntakeForm({
               placeholder="A sentence or two is enough."
             />
           </Field>
+
+          <label className="flex items-start gap-3 rounded-[1rem] border border-stone-200 bg-white/70 p-4 text-sm leading-6 text-stone-700">
+            <input
+              type="checkbox"
+              checked={draft.readiness.medicalClearanceConfirmed}
+              onChange={(event) => updateSection("readiness", "medicalClearanceConfirmed", event.target.checked)}
+              className="mt-1 size-4 shrink-0 accent-bronze-500"
+            />
+            <span>
+              I confirm that I have been medically cleared by my doctor to participate in personal training. <span className="text-bronze-600">*</span>
+            </span>
+          </label>
 
           {message ? <p className="rounded-[1rem] bg-stone-100 px-4 py-3 text-sm text-stone-700">{message}</p> : null}
 

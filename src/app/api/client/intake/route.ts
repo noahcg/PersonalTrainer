@@ -26,6 +26,10 @@ function cleanParqFlags(value: unknown) {
   return value.map((item) => clean(item)).filter(Boolean);
 }
 
+function cleanBoolean(value: unknown) {
+  return value === true;
+}
+
 export async function POST(request: Request) {
   try {
     if (!hasSupabaseAdminEnv()) {
@@ -78,7 +82,7 @@ export async function POST(request: Request) {
       fitnessLevel: cleanFitnessLevel(payload.training?.fitnessLevel),
     };
     const readiness = {
-      ...cleanObject<Omit<ClientIntake["readiness"], "parqFlags">>(payload.readiness, [
+      ...cleanObject<Omit<ClientIntake["readiness"], "parqFlags" | "medicalClearanceConfirmed">>(payload.readiness, [
         "injuries",
         "currentPain",
         "surgeries",
@@ -87,6 +91,7 @@ export async function POST(request: Request) {
         "medicalClearance",
       ]),
       parqFlags: cleanParqFlags(payload.readiness?.parqFlags),
+      medicalClearanceConfirmed: cleanBoolean(payload.readiness?.medicalClearanceConfirmed),
     };
     const lifestyle = cleanObject<ClientIntake["lifestyle"]>(payload.lifestyle, [
       "sleep",
@@ -99,9 +104,9 @@ export async function POST(request: Request) {
     ]);
     const metrics = cleanObject<ClientIntake["metrics"]>(payload.metrics, ["age", "height", "weight", "measurements", "progressPhotos"]);
 
-    if (!metrics.age || !training.lastWorkoutWhen || !training.lastWorkoutWhat || !training.likes || !goals.primary) {
+    if (!metrics.age || !training.lastWorkoutWhen || !training.lastWorkoutWhat || !training.likes || !goals.primary || !readiness.medicalClearanceConfirmed) {
       return NextResponse.json(
-        { error: "Please complete age, last workout, workout style, and goals." },
+        { error: "Please complete age, last workout, workout style, goals, and medical clearance consent." },
         { status: 400 },
       );
     }

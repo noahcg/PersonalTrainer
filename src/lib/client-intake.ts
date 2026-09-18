@@ -50,6 +50,7 @@ const defaultIntake: Omit<ClientIntake, "id" | "clientId" | "completedAt"> = {
     medications: "",
     parqFlags: [],
     medicalClearance: "",
+    medicalClearanceConfirmed: false,
   },
   lifestyle: {
     sleep: "",
@@ -132,6 +133,7 @@ function mapIntake(row: ClientIntakeRow): ClientIntake {
         row.readiness,
       ),
       parqFlags: Array.isArray(readiness?.parqFlags) ? readiness.parqFlags.filter((item): item is string => typeof item === "string") : [],
+      medicalClearanceConfirmed: readiness?.medicalClearanceConfirmed === true,
     },
     lifestyle: stringSection(defaultIntake.lifestyle, row.lifestyle),
     metrics: stringSection(defaultIntake.metrics, row.metrics),
