@@ -85,10 +85,14 @@ export function TrainerClientProfile({
   const [detailTab, setDetailTab] = useState<"context" | "workouts" | "coaching" | "sessions">("context");
   const [workouts, setWorkouts] = useState(initialWorkouts);
   const [workoutQuery, setWorkoutQuery] = useState("");
-  const [selectedWorkoutId, setSelectedWorkoutId] = useState(initialWorkouts[0]?.id ?? "");
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState("");
+  const [assignmentEditorOpen, setAssignmentEditorOpen] = useState(false);
   const [assignmentScheduledFor, setAssignmentScheduledFor] = useState(() => isoDateAfter(1));
   const [assignmentDueOn, setAssignmentDueOn] = useState(() => isoDateAfter(7));
   const [assignmentNotes, setAssignmentNotes] = useState("");
+  const [assignmentHistoryQuery, setAssignmentHistoryQuery] = useState("");
+  const [assignmentHistoryFilter, setAssignmentHistoryFilter] = useState<"active" | "completed" | "all">("active");
+  const [visibleAssignmentCount, setVisibleAssignmentCount] = useState(10);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draftClient, setDraftClient] = useState(initialClient);
   const [draftPackageTypeId, setDraftPackageTypeId] = useState("");
@@ -698,7 +702,45 @@ export function TrainerClientProfile({
       ),
     [workoutQuery, workouts],
   );
-  const selectedWorkout = workouts.find((workout) => workout.id === selectedWorkoutId) ?? workouts[0] ?? null;
+  const selectedWorkout = workouts.find((workout) => workout.id === selectedWorkoutId) ?? null;
+  const selectedWorkoutAssignment = selectedWorkout?.assignments?.find(
+    (assignment) => assignment.clientId === client.id && assignment.status !== "completed",
+  );
+
+  function selectWorkoutForAssignment(workoutId: string) {
+    const workout = workouts.find((item) => item.id === workoutId);
+    const assignment = workout?.assignments?.find((item) => item.clientId === client.id && item.status !== "completed");
+    setSelectedWorkoutId(workoutId);
+    setAssignmentScheduledFor(assignment?.scheduledFor || isoDateAfter(1));
+    setAssignmentDueOn(assignment?.dueOn || isoDateAfter(7));
+    setAssignmentNotes(assignment?.notes || "");
+    setAssignmentEditorOpen(true);
+  }
+
+  function startNewWorkoutAssignment() {
+    setSelectedWorkoutId("");
+    setAssignmentScheduledFor(isoDateAfter(1));
+    setAssignmentDueOn(isoDateAfter(7));
+    setAssignmentNotes("");
+    setWorkoutQuery("");
+    setAssignmentEditorOpen(true);
+  }
+
+  function closeAssignmentEditor() {
+    setAssignmentEditorOpen(false);
+    setSelectedWorkoutId("");
+  }
+
+  const filteredAssignmentHistory = useMemo(() => {
+    const query = assignmentHistoryQuery.trim().toLowerCase();
+    return clientWorkoutAssignments.filter(({ workout, assignment }) => {
+      if (assignmentHistoryFilter === "active" && assignment.status === "completed") return false;
+      if (assignmentHistoryFilter === "completed" && assignment.status !== "completed") return false;
+      return !query || [workout.name, assignment.notes, assignment.scheduledFor, assignment.dueOn].join(" ").toLowerCase().includes(query);
+    });
+  }, [assignmentHistoryFilter, assignmentHistoryQuery, clientWorkoutAssignments]);
+  const visibleAssignmentHistory = filteredAssignmentHistory.slice(0, visibleAssignmentCount);
+  const activeAssignmentCount = clientWorkoutAssignments.filter((item) => item.assignment.status !== "completed").length;
 
   async function assignClientWorkout() {
     if (!selectedWorkout) return;
@@ -755,8 +797,7 @@ export function TrainerClientProfile({
           };
         }),
       );
-      setAssignmentNotes("");
-      setMessage("Workout scheduled for client.");
+      setMessage(selectedWorkoutAssignment ? "Workout schedule updated." : "Workout scheduled for client.");
       window.setTimeout(() => setMessage(null), 2400);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to assign workout.");
@@ -967,72 +1008,82 @@ export function TrainerClientProfile({
 
             {detailTab === "workouts" ? (
               <div>
-                <div className="grid gap-5 border-b border-border p-5 lg:grid-cols-[1fr_22rem] sm:p-6">
-                  <div>
-                    <p className="text-sm font-semibold text-charcoal-950">Assign independent work</p>
-                    <p className="mt-1 text-sm leading-6 text-stone-500">
-                      Schedule the workouts this client should complete between 1:1 sessions.
-                    </p>
-                    <div className="relative mt-4 max-w-xl">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
-                      <Input value={workoutQuery} onChange={(event) => setWorkoutQuery(event.target.value)} placeholder="Search saved workouts..." className="pl-9" />
-                    </div>
-                    <div className="mt-4 grid max-h-80 gap-2 overflow-y-auto pr-1">
-                      {filteredWorkoutOptions.map((workout) => {
-                        const selected = selectedWorkout?.id === workout.id;
-                        return (
-                          <button
-                            key={workout.id}
-                            type="button"
-                            onClick={() => setSelectedWorkoutId(workout.id)}
-                            className={`rounded-[1.25rem] border px-4 py-3 text-left transition ${
-                              selected ? "border-bronze-300 bg-bronze-50" : "border-stone-200 bg-white/75 hover:bg-white"
-                            }`}
-                          >
-                            <p className="font-semibold text-charcoal-950">{workout.name}</p>
-                            <p className="mt-1 line-clamp-1 text-sm text-stone-500">{workout.coachNotes || workout.dayLabel}</p>
-                          </button>
-                        );
-                      })}
-                      {!filteredWorkoutOptions.length ? (
-                        <div className="rounded-[1.25rem] border border-dashed border-stone-200 bg-white/70 p-4 text-sm text-stone-500">
-                          No workouts match this search.
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="grid content-start gap-3">
-                    <Field label="Available on">
-                      <Input type="date" value={assignmentScheduledFor} onChange={(event) => setAssignmentScheduledFor(event.target.value)} />
-                    </Field>
-                    <Field label="Complete by">
-                      <Input type="date" value={assignmentDueOn} onChange={(event) => setAssignmentDueOn(event.target.value)} />
-                    </Field>
-                    <Field label="Assignment notes">
-                      <Textarea
-                        className="min-h-28"
-                        value={assignmentNotes}
-                        onChange={(event) => setAssignmentNotes(event.target.value)}
-                        placeholder="Complete this before our next 1:1 and log how it felt."
-                      />
-                    </Field>
-                    <Button variant="warm" onClick={() => void assignClientWorkout()} disabled={busy || !selectedWorkout || client.status === "archived"}>
-                      <Send className="size-4" />
-                      {client.status === "archived" ? "Client inactive" : busy ? "Scheduling..." : "Schedule workout"}
-                    </Button>
-                  </div>
-                </div>
                 <div className="p-5 sm:p-6">
-                  <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">Workout ledger</p>
-                      <p className="mt-1 text-sm text-stone-500">Due dates also appear on the trainer calendar until the workout is completed.</p>
+                      <p className="text-sm font-semibold text-charcoal-950">Workout assignments</p>
+                      <p className="mt-1 text-sm text-stone-500">Assign between-session work, then return here to make changes or review history.</p>
                     </div>
-                    <Badge variant="bronze">{clientWorkoutAssignments.filter((item) => item.assignment.status !== "completed").length} active</Badge>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="bronze">{activeAssignmentCount} active</Badge>
+                      <Button variant="warm" size="sm" onClick={startNewWorkoutAssignment} disabled={client.status === "archived"}>
+                        <Dumbbell className="size-4" />
+                        Assign workout
+                      </Button>
+                    </div>
                   </div>
-                  <div className="grid gap-3">
-                    {clientWorkoutAssignments.length ? (
-                      clientWorkoutAssignments.map(({ workout, assignment }) => (
+
+                  {assignmentEditorOpen ? (
+                    <div className="mt-6 rounded-[1.5rem] border border-bronze-200 bg-bronze-50/50 p-4 sm:p-5">
+                      <div className="flex flex-col gap-3 border-b border-bronze-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="font-semibold text-charcoal-950">{selectedWorkoutAssignment ? "Edit workout assignment" : "Assign a workout"}</p>
+                          <p className="mt-1 text-sm text-stone-600">
+                            {selectedWorkout ? `Set the schedule for ${selectedWorkout.name}.` : "Choose a saved workout, then set its schedule."}
+                          </p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={closeAssignmentEditor}>Cancel</Button>
+                      </div>
+                      <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_22rem]">
+                        <div>
+                          <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+                            <Input value={workoutQuery} onChange={(event) => setWorkoutQuery(event.target.value)} placeholder="Search saved workouts..." className="pl-9" />
+                          </div>
+                          <div className="mt-3 grid max-h-72 gap-2 overflow-y-auto pr-1">
+                            {filteredWorkoutOptions.map((workout) => {
+                              const selected = selectedWorkout?.id === workout.id;
+                              const assigned = workout.assignments?.some((assignment) => assignment.clientId === client.id && assignment.status !== "completed");
+                              return (
+                                <button key={workout.id} type="button" onClick={() => selectWorkoutForAssignment(workout.id)} className={`rounded-[1.25rem] border px-4 py-3 text-left transition ${selected ? "border-bronze-300 bg-white" : "border-stone-200 bg-white/75 hover:bg-white"}`}>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="font-semibold text-charcoal-950">{workout.name}</p>
+                                    {assigned ? <span className="text-xs font-medium text-bronze-700">Currently assigned</span> : null}
+                                  </div>
+                                  <p className="mt-1 line-clamp-1 text-sm text-stone-500">{workout.coachNotes || workout.dayLabel}</p>
+                                </button>
+                              );
+                            })}
+                            {!filteredWorkoutOptions.length ? <div className="rounded-[1.25rem] border border-dashed border-stone-200 bg-white/70 p-4 text-sm text-stone-500">No saved workouts match this search.</div> : null}
+                          </div>
+                        </div>
+                        <div className="grid content-start gap-3">
+                          {selectedWorkout ? <div className="rounded-2xl bg-white px-4 py-3 text-sm font-medium text-charcoal-950">{selectedWorkout.name}</div> : <div className="rounded-2xl border border-dashed border-bronze-200 px-4 py-3 text-sm text-stone-600">Select a workout to continue.</div>}
+                          <Field label="Available on"><Input type="date" value={assignmentScheduledFor} onChange={(event) => setAssignmentScheduledFor(event.target.value)} /></Field>
+                          <Field label="Complete by"><Input type="date" value={assignmentDueOn} onChange={(event) => setAssignmentDueOn(event.target.value)} /></Field>
+                          <Field label="Notes for client"><Textarea className="min-h-28" value={assignmentNotes} onChange={(event) => setAssignmentNotes(event.target.value)} placeholder="Complete this before our next 1:1 and log how it felt." /></Field>
+                          <Button variant="warm" onClick={() => void assignClientWorkout()} disabled={busy || !selectedWorkout || client.status === "archived"}>
+                            <Send className="size-4" />
+                            {client.status === "archived" ? "Client inactive" : busy ? "Saving..." : selectedWorkoutAssignment ? "Save changes" : "Assign workout"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-7 border-t border-border pt-6">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex flex-wrap gap-2" aria-label="Assignment history filter">
+                        {(["active", "completed", "all"] as const).map((filter) => <Button key={filter} variant={assignmentHistoryFilter === filter ? "secondary" : "ghost"} size="sm" onClick={() => { setAssignmentHistoryFilter(filter); setVisibleAssignmentCount(10); }}>{filter === "all" ? "All history" : `${filter[0].toUpperCase()}${filter.slice(1)}`}</Button>)}
+                      </div>
+                      <div className="relative w-full lg:max-w-xs">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+                        <Input value={assignmentHistoryQuery} onChange={(event) => { setAssignmentHistoryQuery(event.target.value); setVisibleAssignmentCount(10); }} placeholder="Search assignments..." className="h-9 pl-9" />
+                      </div>
+                    </div>
+                    <div className="mt-4 grid gap-3">
+                    {visibleAssignmentHistory.length ? (
+                      visibleAssignmentHistory.map(({ workout, assignment }) => (
                         <div key={`${workout.id}-${assignment.assignedOn}-${assignment.dueOn}`} className="rounded-[1.25rem] border border-stone-200 bg-white/78 p-4">
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div className="min-w-0">
@@ -1046,20 +1097,24 @@ export function TrainerClientProfile({
                               ) : null}
                               {assignment.notes ? <p className="mt-3 text-sm leading-6 text-stone-600">{assignment.notes}</p> : null}
                             </div>
-                            <Button asChild variant="secondary" size="sm">
-                              <Link href="/trainer/calendar">
-                                <CalendarClock className="size-4" />
-                                Calendar
-                              </Link>
-                            </Button>
+                            <div className="flex flex-wrap gap-2">
+                              {assignment.status !== "completed" ? (
+                                <Button variant="secondary" size="sm" onClick={() => selectWorkoutForAssignment(workout.id)}>
+                                  <PencilLine className="size-4" />
+                                  Edit
+                                </Button>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       ))
                     ) : (
                       <div className="rounded-[1.25rem] bg-stone-50 p-4 text-sm text-stone-500">
-                        No independent workouts assigned yet. Schedule one above when this client needs between-session work.
+                        No {assignmentHistoryFilter === "all" ? "workout assignments" : assignmentHistoryFilter} assignments match this view.
                       </div>
                     )}
+                    </div>
+                    {visibleAssignmentHistory.length < filteredAssignmentHistory.length ? <Button variant="secondary" className="mt-4 w-full" onClick={() => setVisibleAssignmentCount((count) => count + 10)}>Show 10 more assignments</Button> : null}
                   </div>
                 </div>
               </div>

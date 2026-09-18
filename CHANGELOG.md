@@ -8,6 +8,12 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.31.0] - 2026-09-18
+
+- Simplified the client Workouts tab into focused assign, edit, and searchable assignment-history workflows.
+- Added active, completed, and all-history filters with incremental loading for long workout lists.
+- Fixed direct workout scheduling so trainers can revise an active assignment, including one already deactivated today, without a duplicate-assignment error.
+
 ## [0.30.0] - 2026-09-11
 
 - Standardized dropdown arrows across the app with comfortable right-edge spacing and text clearance.
