@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import { ExerciseMedia } from "@/components/product/exercise-media";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { ArrowRight, Check, Eye, LoaderCircle, MessageSquare, Save, X } from "lucide-react";
+import { ArrowRight, Check, Eye, LoaderCircle, Maximize2, MessageSquare, Save, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -850,9 +851,16 @@ function ExerciseReferenceDialog({
   exercise?: Exercise;
 }) {
   const title = exercise?.name ?? prescription?.name ?? "Exercise reference";
+  const [mediaExpanded, setMediaExpanded] = useState(false);
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) setMediaExpanded(false);
+        onOpenChange(nextOpen);
+      }}
+    >
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-charcoal-950/40 backdrop-blur-sm" />
         <Dialog.Content asChild>
@@ -860,58 +868,58 @@ function ExerciseReferenceDialog({
             initial={{ opacity: 0, y: 28, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
-            className="fixed inset-x-2 bottom-2 z-50 max-h-[94vh] overflow-y-auto rounded-[1.4rem] border border-white/70 bg-ivory-50 shadow-soft outline-none sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-w-4xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[2rem]"
+            className="fixed inset-x-2 bottom-2 z-50 max-h-[94vh] overflow-y-auto rounded-[1.4rem] border border-white/70 bg-ivory-50 shadow-soft outline-none sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:w-[calc(100vw-2rem)] sm:max-w-3xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[2rem]"
           >
-            <div className="grid sm:grid-cols-[0.95fr_1.05fr]">
-              <div className="relative min-h-60 overflow-hidden rounded-t-[1.4rem] bg-charcoal-950 sm:min-h-72 sm:rounded-l-[2rem] sm:rounded-tr-none">
-                {exercise?.demoUrl ? (
-                  <Image
-                    src={exercise.demoUrl}
-                    alt={`${title} demonstration`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 100vw, 430px"
-                    priority
-                  />
-                ) : (
-                  <div className="grid h-full place-items-center p-8 text-center text-ivory-50/70">
-                    Demo media has not been added yet.
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/65 via-transparent to-charcoal-950/20" />
-                <div className="absolute bottom-5 left-5 right-5">
-                  <Badge variant="bronze">{exercise?.pattern ?? "Movement"}</Badge>
-                  <p className="mt-3 font-serif text-3xl font-semibold leading-tight text-ivory-50 sm:text-4xl">{title}</p>
-                  {exercise ? (
-                    <p className="mt-2 text-sm text-ivory-50/70">
-                      {exercise.category} · {exercise.difficulty} · {exercise.equipment.join(", ")}
-                    </p>
-                  ) : null}
+            <div>
+              <header className="flex items-start justify-between gap-4 border-b border-stone-200/80 px-5 py-5 sm:px-7 sm:py-6">
+                <div className="min-w-0">
+                  <Dialog.Title className="text-xl font-semibold text-charcoal-950">Form review</Dialog.Title>
+                  <Dialog.Description className="mt-1 max-w-xl text-sm leading-6 text-stone-600">
+                    A quick reminder before you log the set. Follow your trainer’s prescription first.
+                  </Dialog.Description>
                 </div>
-              </div>
+                <Dialog.Close asChild>
+                  <Button variant="ghost" size="icon" aria-label="Close exercise reference" className="-mr-2 -mt-1 shrink-0">
+                    <X className="size-5" />
+                  </Button>
+                </Dialog.Close>
+              </header>
 
               <div className="p-5 sm:p-7">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <Dialog.Title className="text-xl font-semibold text-charcoal-950">Form review</Dialog.Title>
-                    <Dialog.Description className="mt-1 text-sm leading-6 text-stone-600">
-                      A quick reminder before you log the set. Follow your trainer’s prescription first.
-                    </Dialog.Description>
+                <div className="grid grid-cols-[minmax(0,1fr)_6rem] items-start gap-3 min-[430px]:grid-cols-[minmax(0,1fr)_8rem] min-[430px]:gap-4 md:grid-cols-[minmax(0,1fr)_10rem] lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-7">
+                  <div className="min-w-0">
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-bronze-600">{exercise?.category ?? "Movement"}</p>
+                    <h2 className="mt-2 break-words font-serif text-2xl font-semibold leading-tight text-charcoal-950 sm:text-3xl">{title}</h2>
+                    {exercise ? <p className="mt-2 text-sm text-stone-500">{exercise.difficulty} · {exercise.equipment.join(", ") || "Bodyweight"}</p> : null}
+                    {prescription ? (
+                      <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {referenceMetrics(prescription).map(([label, value]) => (
+                          <MiniMetric key={label} label={label} value={value} />
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                  <Dialog.Close asChild>
-                    <Button variant="ghost" size="icon" aria-label="Close exercise reference">
-                      <X className="size-5" />
-                    </Button>
-                  </Dialog.Close>
-                </div>
 
-                {prescription ? (
-                  <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {referenceMetrics(prescription).map(([label, value]) => (
-                      <MiniMetric key={label} label={label} value={value} />
-                    ))}
-                  </div>
-                ) : null}
+                  {exercise?.demoUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setMediaExpanded(true)}
+                      className="group relative min-w-0 w-full overflow-hidden rounded-[0.9rem] border border-charcoal-950/15 bg-charcoal-950 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-bronze-500"
+                      aria-label="Open full movement image"
+                    >
+                      <ExerciseMedia
+                        src={exercise.demoUrl}
+                        alt={`${title} demonstration thumbnail`}
+                        className="h-auto w-full"
+                        priority
+                      />
+                      <span className="absolute inset-0 bg-gradient-to-t from-charcoal-950/65 via-transparent to-transparent" aria-hidden="true" />
+                      <span className="absolute bottom-2 right-2 grid size-7 place-items-center rounded-full border border-white/20 bg-charcoal-950/80 text-ivory-50 backdrop-blur-sm">
+                        <Maximize2 className="size-3.5" />
+                      </span>
+                    </button>
+                  ) : null}
+                </div>
 
                 <section className="mt-6 rounded-[1.5rem] bg-stone-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-bronze-600">How to perform it</p>
@@ -934,6 +942,22 @@ function ExerciseReferenceDialog({
                   </p>
                 </div>
               </div>
+
+              {mediaExpanded && exercise?.demoUrl ? (
+                <div className="fixed inset-0 z-[60] grid place-items-center bg-charcoal-950/95 p-4 sm:p-8" role="dialog" aria-label={`${title} expanded image`}>
+                  <button
+                    type="button"
+                    onClick={() => setMediaExpanded(false)}
+                    className="absolute right-4 top-4 z-10 grid size-11 place-items-center rounded-full border border-white/20 bg-white/10 text-ivory-50 backdrop-blur-sm transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-500 sm:right-7 sm:top-7"
+                    aria-label="Close expanded image"
+                  >
+                    <X className="size-5" />
+                  </button>
+                  <div className="relative max-h-full max-w-5xl">
+                    <ExerciseMedia src={exercise.demoUrl} alt={`${title} demonstration`} className="max-h-[88vh] w-auto max-w-[calc(100vw-2rem)] object-contain sm:max-w-[calc(100vw-4rem)]" priority />
+                  </div>
+                </div>
+              ) : null}
             </div>
           </motion.div>
         </Dialog.Content>

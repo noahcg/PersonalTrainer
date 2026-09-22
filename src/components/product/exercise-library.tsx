@@ -679,7 +679,7 @@ export function ExerciseLibrary({
                             <div
                               role="img"
                               aria-label="Exercise demo preview"
-                              className="h-full bg-cover bg-center"
+                              className="h-full bg-contain bg-center bg-no-repeat"
                               style={{ backgroundImage: `url(${JSON.stringify(draft.demoUrl)})` }}
                             />
                           ) : (

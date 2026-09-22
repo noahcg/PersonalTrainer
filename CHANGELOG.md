@@ -8,6 +8,24 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.33.13] - 2026-09-22
+
+- Redesigned exercise references around a full-width visual guide, an editorial exercise summary, a dedicated at-a-glance panel, and a clearer coaching playbook.
+- Reworked the client form-review dialog to use the same visual-guide-first composition.
+- Replaced solid letterboxing around uncropped exercise images with an aspect-ratio-aware frame and a blurred image backdrop.
+- Removed the forced media aspect ratio so uploaded exercise images now render at their natural proportions without crop, stretch, or letterboxing.
+- Reworked the client exercise dialog for mobile-first use with a compact image preview, upper-right close control, and expandable full-screen media view.
+- Removed the redundant secondary expand icon and changed the compact preview to preserve the complete image without cropping.
+- Updated the mobile preview to use the full available width with a compact icon-only expand control.
+- Replaced the default client image preview with a compact movement-guide action that opens the full image only on demand.
+- Moved the client image into a small uncropped thumbnail in the dialog header, with tap-to-expand behavior.
+- Moved the thumbnail below the dialog header into the body’s open space and let its native image ratio determine the thumbnail height.
+- Floated the thumbnail to the right of the exercise identity and metrics so the body content begins alongside it rather than below it.
+- Placed prescription metrics directly under the exercise identity so they fill the available space beside the thumbnail.
+- Tuned the client dialog breakpoints so the desktop-sized thumbnail does not activate at 640px and squeeze the exercise content.
+- Tightened the narrow-dialog thumbnail column and made the title and prescription metrics responsive to prevent overlap at phone widths.
+- Fixed the 640px dialog shell width so the centered modal uses the available viewport instead of collapsing to half-width.
+
 ## [0.32.0] - 2026-09-18
 
 - Rebuilt the Workout Builder around the complete workout, with all sections visible, inline prescriptions, and exercise reordering.
