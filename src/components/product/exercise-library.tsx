@@ -110,19 +110,6 @@ function normalizeMovementPattern(value: string) {
   return "Other";
 }
 
-function isImageSource(value: string) {
-  const normalized = value.trim().toLowerCase();
-  return (
-    normalized.startsWith("data:image/") ||
-    normalized.includes(".jpg") ||
-    normalized.includes(".jpeg") ||
-    normalized.includes(".png") ||
-    normalized.includes(".webp") ||
-    normalized.includes(".gif") ||
-    normalized.includes("/storage/v1/object/public/")
-  );
-}
-
 function deleteErrorMessage(error: unknown) {
   if (typeof error === "object" && error && "code" in error && error.code === "23503") {
     return "This exercise is used in a workout. Remove it from saved workouts before deleting it from the library.";
@@ -673,70 +660,51 @@ export function ExerciseLibrary({
                     </div>
 
                     <div className="grid gap-3 rounded-[1.35rem] border border-stone-200 bg-white/70 p-4">
-                      <div className="grid gap-4 md:grid-cols-[12rem_minmax(0,1fr)] md:items-start">
-                        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-stone-200 bg-stone-100">
-                          {draft.demoUrl && isImageSource(draft.demoUrl) ? (
-                            <div
-                              role="img"
-                              aria-label="Exercise demo preview"
-                              className="h-full bg-contain bg-center bg-no-repeat"
-                              style={{ backgroundImage: `url(${JSON.stringify(draft.demoUrl)})` }}
-                            />
-                          ) : (
-                            <div className="grid h-full place-items-center text-center text-sm text-stone-500">
-                              <div>
-                                <ImagePlus className="mx-auto size-7 text-stone-400" />
-                                <p className="mt-2 px-3">No image selected</p>
-                              </div>
-                            </div>
-                          )}
+                      <div className="grid gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-charcoal-950">Demo media</p>
+                          <p className="mt-1 text-xs leading-5 text-stone-500">
+                            Upload a trainer-shot image, or keep using an external URL.
+                          </p>
                         </div>
-                        <div className="grid gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-charcoal-950">Demo media</p>
-                            <p className="mt-1 text-xs leading-5 text-stone-500">
-                              Upload a trainer-shot image, or keep using an external URL.
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <Button asChild type="button" variant="secondary" size="sm">
-                              <label className="cursor-pointer focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-bronze-500 focus-within:ring-4 focus-within:ring-bronze-100">
-                                <ImagePlus className="size-4" />
-                                Upload image
-                                <input
-                                  className="sr-only"
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(event) => void updateDemoFile(event.target.files?.[0] ?? null)}
-                                />
-                              </label>
-                            </Button>
-                            {draft.demoUrl ? (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  updateDraft("demoUrl", "");
-                                  setPendingDemoFile(null);
-                                }}
-                              >
-                                Remove
-                              </Button>
-                            ) : null}
-                          </div>
-                          <label className="grid gap-2 text-sm font-medium">
-                            Image or video URL
-                            <Input
-                              value={draft.demoUrl}
-                              onChange={(event) => {
-                                updateDraft("demoUrl", event.target.value);
+                        <div className="flex flex-wrap gap-2">
+                          <Button asChild type="button" variant="secondary" size="sm">
+                            <label className="cursor-pointer focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-bronze-500 focus-within:ring-4 focus-within:ring-bronze-100">
+                              <ImagePlus className="size-4" />
+                              Upload image
+                              <input
+                                className="sr-only"
+                                type="file"
+                                accept="image/*"
+                                onChange={(event) => void updateDemoFile(event.target.files?.[0] ?? null)}
+                              />
+                            </label>
+                          </Button>
+                          {draft.demoUrl ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                updateDraft("demoUrl", "");
                                 setPendingDemoFile(null);
                               }}
-                              placeholder="https://..."
-                            />
-                          </label>
+                            >
+                              Remove
+                            </Button>
+                          ) : null}
                         </div>
+                        <label className="grid gap-2 text-sm font-medium">
+                          Image or video URL
+                          <Input
+                            value={draft.demoUrl}
+                            onChange={(event) => {
+                              updateDraft("demoUrl", event.target.value);
+                              setPendingDemoFile(null);
+                            }}
+                            placeholder="https://..."
+                          />
+                        </label>
                       </div>
                     </div>
 

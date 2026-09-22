@@ -52,14 +52,6 @@ export default async function TrainerExerciseDetailPage({
                 <div className="absolute left-5 top-5 z-30 rounded-full border border-white/15 bg-charcoal-950/70 px-3 py-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-ivory-50/80 backdrop-blur-sm sm:left-7 sm:top-7">
                   Visual guide · follow the sequence
                 </div>
-                <div className="absolute bottom-5 left-5 right-5 z-30 flex items-end justify-between gap-4 sm:bottom-7 sm:left-7 sm:right-7">
-                  <p className="max-w-xs text-sm leading-6 text-ivory-50/75 sm:max-w-sm">
-                    Use the full frame to compare the starting position with the finished rotation.
-                  </p>
-                  <span className="hidden shrink-0 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-ivory-50/80 backdrop-blur-sm sm:inline-flex">
-                    2-position reference
-                  </span>
-                </div>
             </div>
 
             <div className="grid lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">

@@ -8,6 +8,10 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.33.15] - 2026-09-22
+
+- Removed the exercise visual-guide caption and “2-position reference” badge from the Trainer exercise view.
+
 ## [0.33.13] - 2026-09-22
 
 - Redesigned exercise references around a full-width visual guide, an editorial exercise summary, a dedicated at-a-glance panel, and a clearer coaching playbook.
@@ -25,6 +29,10 @@ This project uses pre-1.0 semver until intentional launch:
 - Tuned the client dialog breakpoints so the desktop-sized thumbnail does not activate at 640px and squeeze the exercise content.
 - Tightened the narrow-dialog thumbnail column and made the title and prescription metrics responsive to prevent overlap at phone widths.
 - Fixed the 640px dialog shell width so the centered modal uses the available viewport instead of collapsing to half-width.
+
+## [0.33.14] - 2026-09-22
+
+- Removed the demo-media preview from the Trainer exercise dialog while retaining media upload and URL controls.
 
 ## [0.32.0] - 2026-09-18
 
