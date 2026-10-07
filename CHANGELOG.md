@@ -8,6 +8,12 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.34.0] - 2026-10-07
+
+- Added a stretch and mobility prescription with a seconds-based hold duration in the workout builder.
+- Show clients the prescribed hold without asking them to enter reps, load, or elapsed time; completion still counts toward the workout.
+- Added a database migration for the new prescription type and existing stretch and mobility exercises.
+
 ## [0.33.15] - 2026-09-22
 
 - Removed the exercise visual-guide caption and “2-position reference” badge from the Trainer exercise view.

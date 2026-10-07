@@ -568,6 +568,7 @@ export function ExerciseLibrary({
                           <option value="duration">{prescriptionTypeLabel("duration")}</option>
                           <option value="distance">{prescriptionTypeLabel("distance")}</option>
                           <option value="intervals">{prescriptionTypeLabel("intervals")}</option>
+                          <option value="stretch">{prescriptionTypeLabel("stretch")}</option>
                         </select>
                       </label>
                       <label className="grid gap-2 text-sm font-medium">

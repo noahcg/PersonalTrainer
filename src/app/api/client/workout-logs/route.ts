@@ -82,9 +82,6 @@ export async function POST(request: Request) {
     if (sets.some((set) => Number.isNaN(set.reps) || Number.isNaN(set.weight) || Number.isNaN(set.duration_seconds) || Number.isNaN(set.distance))) {
       return NextResponse.json({ error: "Set reps, weight, duration, and distance must be valid numbers." }, { status: 400 });
     }
-    if (status === "completed" && (!sets.length || sets.some((set) => !set.completed || (set.reps === null && set.duration_seconds === null && set.distance === null)))) {
-      return NextResponse.json({ error: "Log each exercise before completing the workout." }, { status: 400 });
-    }
 
     const supabase = await createClient();
     const {
@@ -143,6 +140,22 @@ export async function POST(request: Request) {
 
     if (!assignmentId && !directAssignmentId) {
       return NextResponse.json({ error: "This workout is not assigned to your account." }, { status: 403 });
+    }
+
+    if (status === "completed") {
+      const { data: blocks, error: blocksError } = await admin.from("workout_blocks").select("id").eq("workout_id", workoutId);
+      if (blocksError) return NextResponse.json({ error: blocksError.message }, { status: 500 });
+      const blockIds = (blocks ?? []).map((block) => block.id as string);
+      const { data: exercises, error: exercisesError } = blockIds.length
+        ? await admin.from("workout_exercises").select("id, prescription_type").in("workout_block_id", blockIds)
+        : { data: [], error: null };
+      if (exercisesError) return NextResponse.json({ error: exercisesError.message }, { status: 500 });
+      const types = new Map((exercises ?? []).map((exercise) => [exercise.id as string, exercise.prescription_type as string]));
+      if (!types.size || sets.some((set) => !types.has(set.workout_exercise_id)) ||
+        [...types].some(([id, type]) => !sets.some((set) => set.workout_exercise_id === id && set.completed &&
+          (type === "stretch" || set.reps !== null || set.duration_seconds !== null || set.distance !== null)))) {
+        return NextResponse.json({ error: "Log each exercise before completing the workout." }, { status: 400 });
+      }
     }
 
     const now = new Date().toISOString();

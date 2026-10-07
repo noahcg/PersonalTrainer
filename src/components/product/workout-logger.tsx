@@ -62,6 +62,7 @@ function logUnitLabel(exercise: WorkoutExercise, unitNumber: number) {
       return `Round ${unitNumber}`;
     case "duration":
     case "distance":
+    case "stretch":
       return "Session";
     default:
       return `Set ${unitNumber}`;
@@ -70,6 +71,8 @@ function logUnitLabel(exercise: WorkoutExercise, unitNumber: number) {
 
 function exerciseStatusLabel(exercise: WorkoutExercise) {
   switch (getWorkoutExercisePrescriptionType(exercise)) {
+    case "stretch":
+      return `Hold ${exercise.duration || "30 sec"}`;
     case "duration":
       return exercise.duration || "Timed cardio";
     case "distance":
@@ -308,6 +311,8 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
 
   function validateExercise(exercise: WorkoutExercise, nextSetState = setState) {
     const prescriptionType = getWorkoutExercisePrescriptionType(exercise);
+
+    if (prescriptionType === "stretch") return null;
 
     if (prescriptionType === "intervals" && !exercise.duration && !exercise.distance) {
       return `${exercise.name} needs a work time or distance from your trainer before it can be logged.`;
@@ -602,7 +607,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                         </div>
                       </button>
                     ) : null}
-                    <div className="mt-4 grid gap-2.5 sm:grid-cols-5 sm:gap-3">
+                    {getWorkoutExercisePrescriptionType(exercise) !== "stretch" ? <div className="mt-4 grid gap-2.5 sm:grid-cols-5 sm:gap-3">
                       {Array.from({ length: logUnitCount(exercise) }).map((_, setIndex) => {
                         const setNumber = setIndex + 1;
                         const currentEntry = setEntry(setState[entryKey(exercise.id, setNumber)]);
@@ -617,7 +622,7 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                           </div>
                         );
                       })}
-                    </div>
+                    </div> : null}
                     <WorkoutPrescriptionDetails exercise={exercise} />
                   </div>
                 );
@@ -804,7 +809,9 @@ function WorkoutLogInputs({
 function WorkoutPrescriptionDetails({ exercise }: { exercise: WorkoutExercise }) {
   const prescriptionType = getWorkoutExercisePrescriptionType(exercise);
   const details =
-    prescriptionType === "duration"
+    prescriptionType === "stretch"
+      ? [["Hold", exercise.duration || "30 sec"]]
+      : prescriptionType === "duration"
       ? [
           ["Duration", exercise.duration],
           ["Intensity", exercise.rpe],
@@ -968,6 +975,8 @@ function ExerciseReferenceDialog({
 
 function referenceMetrics(prescription: WorkoutExercise): Array<[string, string]> {
   switch (getWorkoutExercisePrescriptionType(prescription)) {
+    case "stretch":
+      return [["Hold", prescription.duration || "30 sec"]];
     case "duration":
       return [
         ["Duration", prescription.duration ?? ""],

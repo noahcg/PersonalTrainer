@@ -196,7 +196,7 @@ export type ClientIntake = {
   };
 };
 
-export type ExercisePrescriptionType = "strength" | "duration" | "distance" | "intervals";
+export type ExercisePrescriptionType = "strength" | "duration" | "distance" | "intervals" | "stretch";
 
 export type Exercise = {
   id: string;
