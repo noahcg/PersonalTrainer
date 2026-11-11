@@ -1,3 +1,4 @@
+import { agreementsEnabled, agreementClient, pendingAgreement } from "@/lib/agreement/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth-server";
@@ -23,6 +24,10 @@ export default async function ClientLayout({
     const portalAccess = await getClientPortalAccess(auth.profile);
     if (portalAccess === "data_only" && !isDataOnlyClientRoute(pathname)) {
       redirect("/client/home");
+    }
+    if (agreementsEnabled() && portalAccess === "full" && pathname !== "/client/intake" && pathname !== "/client/agreements") {
+      const client = await agreementClient();
+      if (client && await pendingAgreement(client.client.id)) redirect("/client/agreements");
     }
   }
 

@@ -8,6 +8,56 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.37.4] - 2026-11-11
+
+- Aligned the pricing card sections for a more balanced desktop layout.
+
+## [0.37.3] - 2026-11-11
+
+- Removed the four repeated support bullets from each pricing card.
+
+## [0.37.2] - 2026-11-11
+
+- Centered the featured monthly coaching plan and aligned the presentation of all pricing cards.
+
+## [0.37.1] - 2026-11-11
+
+- Featured the $550 monthly coaching plan and updated its included sessions, written workouts, and online coaching description.
+
+## [0.37.0] - 2026-11-11
+
+- Added a disabled-by-default workflow for trainer-approved PDF agreement offers, accessible review, and versioned client acknowledgment records.
+- Added a database migration for private agreement snapshots and atomic acceptance; legal review and activation remain pending.
+
+## [0.36.0] - 2026-11-11
+
+- Added a development-only agreement review preview with scroll-to-end, typed name, and explicit acknowledgment. It does not present a contract or save acceptance.
+
+## [0.35.4] - 2026-11-11
+
+- Updated pricing card benefits to highlight personalized plans, workout logging, exercise guidance, and training history.
+
+## [0.35.3] - 2026-11-11
+
+- Added check-ins, session reminders, and training resources to each pricing card.
+
+## [0.35.2] - 2026-11-11
+
+- Highlighted workout guidance, progress tracking, and direct trainer messaging on the pricing page.
+
+## [0.35.1] - 2026-11-11
+
+- Refreshed the public pricing cards with package details and benefits, and removed payment-method copy from the page.
+
+## [0.35.0] - 2026-11-11
+
+- Updated public pricing and default offerings; individual plans include the confirmed 8 and 4 monthly sessions.
+- Added a migration to retire known superseded package defaults without changing existing purchases, and reject inactive package selections in signup routes.
+- Added trainer-only cancellation notice records and one discretionary grace record per client per package; recording a notice does not change session balances; clarified that both partners keep a session when one receives grace.
+- Corrected partner pricing to $640 per person ($1,280 combined) for four shared sessions.
+- Added a standard availability reference to the trainer calendar; it does not restrict bookings.
+- Documented draft agreement policies and outstanding scheduling, payment, and approval decisions; blocked new partner-session conversions to individual training.
+
 ## [0.34.0] - 2026-10-07
 
 - Added a stretch and mobility prescription with a seconds-based hold duration in the workout builder.
