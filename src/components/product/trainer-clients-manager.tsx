@@ -57,7 +57,7 @@ const emptyPartnerSignup: PartnerSignupDraft = {
   clientAEmail: "",
   clientBName: "",
   clientBEmail: "",
-  totalSessions: "10",
+  totalSessions: "",
   sharedLocation: "",
   sharedSchedule: "",
   policyNotes:

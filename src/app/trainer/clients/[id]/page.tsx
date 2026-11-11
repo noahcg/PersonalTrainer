@@ -1,3 +1,4 @@
+import { agreementsEnabled } from "@/lib/agreement/server";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { TrainerClientProfile } from "@/components/product/trainer-client-profile";
@@ -26,6 +27,7 @@ export default async function ClientProfilePage({ params }: { params: Promise<{ 
         packageTypes={packageTypes}
         initialWorkouts={workouts}
         mode={mode}
+        agreementsEnabled={agreementsEnabled()}
       />
     </AppShell>
   );

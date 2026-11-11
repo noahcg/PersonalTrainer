@@ -2,6 +2,7 @@ import { isSupabaseConfigured } from "@/lib/auth-server";
 import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
 import type { PackageType, TrainingPackageKind } from "@/lib/types";
+import { offeringCatalog } from "@/lib/offering-catalog";
 
 type PackageTypeRow = {
   id: string;
@@ -18,51 +19,22 @@ type PackageTypeRow = {
   active: boolean | null;
 };
 
-const defaultPackageTypes: PackageType[] = [
-  {
-    id: "default-session-bundles",
-    kind: "one_on_one",
-    name: "Session Bundles",
-    sessionCount: 10,
-    priceCents: 110000,
-    currency: "USD",
-    billingTerms: "$1,100 for 10 prepaid one-on-one sessions. $110 per session.",
-    policyNotes: "Prepaid one-on-one training with flexible scheduling and a clear bank of sessions.",
-    internalNotes: "Public pricing page package. Good fit for clients who want flexibility without a fixed monthly cadence.",
-    defaultLocation: "",
-    defaultSchedule: "",
-    active: true,
-  },
-  {
-    id: "default-monthly-training",
-    kind: "one_on_one",
-    name: "Monthly Training",
-    sessionCount: 8,
-    priceCents: 84000,
-    currency: "USD",
-    billingTerms: "$840 per month for 2x/week training, 8 sessions per month. 3x/week option is $1,200 for 12 sessions per month.",
-    policyNotes: "Consistent weekly training rhythm with a reserved schedule, progressive session planning, and ongoing adjustments.",
-    internalNotes: "Public pricing page package. Default package uses the 2x/week option; adjust sessions/price on the client package if using 3x/week.",
-    defaultLocation: "",
-    defaultSchedule: "2x / week",
-    active: true,
-  },
-  {
-    id: "default-partner-training",
-    kind: "partner_training",
-    name: "Partner Training",
-    sessionCount: 10,
-    priceCents: 160000,
-    currency: "USD",
-    billingTerms: "$160 total per shared session package.",
-    policyNotes:
-      "Shared appointments are reserved for two named clients. If one partner cannot attend inside the cancellation window, the shared appointment may still count toward the package.",
-    internalNotes: "",
-    defaultLocation: "",
-    defaultSchedule: "",
-    active: true,
-  },
-];
+const defaultPackageTypes: PackageType[] = offeringCatalog.map((offer) => ({
+  id: `default-${offer.id}`,
+  kind: offer.kind,
+  name: offer.name,
+  sessionCount: offer.sessionCount,
+  priceCents: offer.priceCents,
+  currency: "USD",
+  billingTerms: offer.kind === "partner_training"
+    ? `$${offer.priceCents / 100} per month combined ($${offer.priceCents / 200} per person). Payment upfront by cash, check, or Zelle. No automatic renewal.`
+    : `$${offer.priceCents / 100} per month. Payment upfront by cash, check, or Zelle. No automatic renewal.`,
+  policyNotes: "",
+  internalNotes: offer.active ? "" : "Draft: confirm session entitlement before activation.",
+  defaultLocation: "",
+  defaultSchedule: "",
+  active: offer.active,
+}));
 
 function defaultPackageTypeRows(trainerId: string) {
   return defaultPackageTypes.map((packageType) => ({

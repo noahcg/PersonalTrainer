@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase-server";
 import type { ClientPortalAccess, ClientStatus, Profile } from "@/lib/types";
 
-export const dataOnlyClientRoutes = ["/client/home", "/client/progress", "/client/profile", "/client/intake"];
+export const dataOnlyClientRoutes = ["/client/home", "/client/progress", "/client/profile", "/client/intake", "/client/agreements"];
 
 export function isDataOnlyClientRoute(pathname: string) {
   return dataOnlyClientRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));

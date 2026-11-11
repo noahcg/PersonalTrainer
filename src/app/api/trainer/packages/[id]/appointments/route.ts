@@ -14,7 +14,7 @@ type AppointmentPayload = {
   }>;
 };
 
-const debitPolicies: PackageDebitPolicy[] = ["charged", "not_charged", "converted_to_one_on_one"];
+const debitPolicies: PackageDebitPolicy[] = ["charged", "not_charged"];
 const attendanceStatuses: PackageAttendanceStatus[] = ["attending", "absent", "late_cancelled", "excused"];
 
 function clean(value: unknown) {
@@ -56,6 +56,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     }
 
     const payload = (await request.json()) as AppointmentPayload;
+    if (payload.debitPolicy === "converted_to_one_on_one") {
+      return NextResponse.json({ error: "A partner session cannot be converted to individual training during the package." }, { status: 400 });
+    }
     const debitPolicy = debitPolicies.includes(payload.debitPolicy as PackageDebitPolicy)
       ? (payload.debitPolicy as PackageDebitPolicy)
       : "charged";

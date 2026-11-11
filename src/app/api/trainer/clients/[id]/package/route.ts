@@ -90,7 +90,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     });
 
     if (hasOpenSharedPackage) {
-      return NextResponse.json({ error: "This client is still in an open shared package. Complete or convert that package first." }, { status: 409 });
+      return NextResponse.json({ error: "This client is still in an open shared package. The shared package must end first." }, { status: 409 });
     }
 
     const { data: packageRow, error: packageError } = await admin

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { agreementsEnabled } from "@/lib/agreement/server";
 import { ArrowRight, CalendarCheck, CheckCircle2, NotebookPen, TrendingUp, UserRound } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { AppShell } from "@/components/layout/app-shell";
@@ -162,6 +163,7 @@ export default async function ClientHomePage() {
         subtitle="You can still access your profile, progress, and recorded history. Active training services are paused."
         clientPortalAccess={clientPortalAccess}
       >
+        {agreementsEnabled() ? <p className="mb-4"><Link className="text-sm underline" href="/client/agreements">View training agreements</Link></p> : null}
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <section className="space-y-5">
             <Card className="overflow-hidden border-charcoal-950 bg-charcoal-950 text-ivory-50">
@@ -293,6 +295,7 @@ export default async function ClientHomePage() {
         subtitle="Your coaching workspace starts empty and fills in only with the plan, workouts, messages, and resources assigned to you."
         clientPortalAccess={clientPortalAccess}
       >
+        {agreementsEnabled() ? <p className="mb-4"><Link className="text-sm underline" href="/client/agreements">View training agreements</Link></p> : null}
         <SessionReminderBanner initialBulletins={bulletins} mode={mode} role="client" />
         <AppointmentReminderBanner appointments={appointments} />
         <Card className="max-w-4xl p-8">
@@ -325,6 +328,7 @@ export default async function ClientHomePage() {
       subtitle={`${brand.tagline} Everything is organized so you can train with calm structure, log performance, and feel supported.`}
       clientPortalAccess={clientPortalAccess}
     >
+      {agreementsEnabled() ? <p className="mb-4"><Link className="text-sm underline" href="/client/agreements">View training agreements</Link></p> : null}
       <SessionReminderBanner initialBulletins={bulletins} mode={mode} role="client" />
       <AppointmentReminderBanner appointments={appointments} />
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">

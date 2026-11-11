@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, Ban, CalendarClock, CheckCircle2, Copy, Dumbbell, ExternalLink, Mail, NotebookPen, Package, PencilLine, Save, Search, Send, StickyNote, Trash2, X } from "lucide-react";
 import { forwardRef, type HTMLAttributes, useEffect, useMemo, useRef, useState } from "react";
 import { clientAccessDetail } from "@/lib/client-access";
+import { TrainerAgreementManager } from "@/components/product/trainer-agreement-manager";
+import { ClientNoticeManager } from "@/components/product/client-notice-manager";
 import { InviteComposeDialog } from "@/components/product/invite-compose-dialog";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +68,7 @@ export function TrainerClientProfile({
   packageTypes,
   initialWorkouts,
   mode,
+  agreementsEnabled,
 }: {
   initialClient: Client;
   intake: ClientIntake | null;
@@ -75,6 +78,7 @@ export function TrainerClientProfile({
   packageTypes: PackageType[];
   initialWorkouts: Workout[];
   mode: "demo" | "supabase";
+  agreementsEnabled: boolean;
 }) {
   const [client, setClient] = useState(initialClient);
   const [coachingNotes, setCoachingNotes] = useState<CoachingEntry[]>(initialCoachingNotes);
@@ -809,6 +813,8 @@ export function TrainerClientProfile({
   return (
     <>
       <div className="space-y-5">
+        {agreementsEnabled ? <TrainerAgreementManager clientId={client.id} /> : null}
+        <ClientNoticeManager clientId={client.id} mode={mode} />
         <Card className="overflow-hidden p-0">
           <div className="border-b border-border bg-white/35 p-4 sm:p-5">
             <Button asChild variant="ghost" size="sm" className="-ml-2 mb-4 w-fit">
@@ -1284,7 +1290,7 @@ export function TrainerClientProfile({
 
                   {partnerPackage ? (
                     <div className="mt-4 rounded-[1.25rem] border border-bronze-200 bg-white/80 p-4 text-sm leading-6 text-stone-700">
-                      Complete or convert the shared package before assigning an individual package type.
+                      The shared package must end before assigning an individual package type.
                     </div>
                   ) : (
                     <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_12rem]">

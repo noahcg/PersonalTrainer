@@ -66,6 +66,7 @@ export async function POST(request: Request) {
           .select("id, name, session_count, price_cents, currency, billing_terms, policy_notes, internal_notes, default_location, default_schedule")
           .eq("id", clean(payload.packageTypeId))
           .eq("trainer_id", trainerId)
+          .eq("active", true)
           .eq("kind", "partner_training")
           .maybeSingle<{
             id: string;
@@ -80,6 +81,9 @@ export async function POST(request: Request) {
             default_schedule: string | null;
           }>()
       : { data: null };
+    if (clean(payload.packageTypeId) && !packageType) {
+      return NextResponse.json({ error: "Active package type not found." }, { status: 400 });
+    }
     const resolvedTotalSessions = totalSessions ?? packageType?.session_count ?? null;
 
     async function upsertClient(client: { name: string; email: string }) {

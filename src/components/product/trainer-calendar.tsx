@@ -20,6 +20,7 @@ import {
 } from "@/lib/date-format";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import { cn } from "@/lib/utils";
+import { standardAvailability } from "@/lib/trainer-availability";
 import type { CalendarEvent, TrainerAppointment } from "@/lib/types";
 
 type Mode = "demo" | "supabase";
@@ -583,6 +584,16 @@ export function TrainerCalendar({
               New item
             </Button>
           </div>
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-stone-200 bg-white/75 p-4">
+          <h3 className="text-sm font-semibold text-charcoal-950">Standard availability</h3>
+          <dl className="mt-2 space-y-1 text-sm leading-6 text-stone-600">
+            {standardAvailability.map((item) => (
+              <div key={item.days}><dt className="inline font-medium">{item.days}: </dt><dd className="inline">{item.hours}</dd></div>
+            ))}
+          </dl>
+          <p className="mt-2 text-xs leading-5 text-stone-500">Times are in Nick’s local time zone. Reference only; the calendar does not enforce these hours or change existing appointments.</p>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-stone-600">
