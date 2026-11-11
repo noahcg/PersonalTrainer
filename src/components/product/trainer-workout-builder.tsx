@@ -187,6 +187,10 @@ function createExerciseItem(exercise: Exercise, suffix: number, stepId: WizardSt
     return { ...base, sets: 0, reps: "", rest: "", rpe: "RPE 5", load: "", duration: "30 min", distance: "" };
   }
 
+  if (prescriptionType === "stretch") {
+    return { ...base, sets: 0, reps: "", rest: "", rpe: "", load: "", duration: "30 sec", distance: "" };
+  }
+
   if (prescriptionType === "distance") {
     return { ...base, sets: 0, reps: "", rest: "", rpe: "RPE 5", load: "", duration: "", distance: "2 mi" };
   }
@@ -966,6 +970,9 @@ function SelectedExerciseRow({
             <MiniInput label="Pace / resistance" value={exercise.load} onChange={(value) => onUpdate((current) => ({ ...current, load: value }))} />
           </>
         ) : null}
+        {prescriptionType === "stretch" ? (
+          <MiniInput label="Hold (sec)" value={exercise.duration ?? ""} onChange={(value) => onUpdate((current) => ({ ...current, duration: value }))} />
+        ) : null}
         {prescriptionType === "distance" ? (
           <>
             <MiniInput label="Distance" value={exercise.distance ?? ""} onChange={(value) => onUpdate((current) => ({ ...current, distance: value }))} />
@@ -992,6 +999,8 @@ function SelectedExerciseRow({
 
 function workoutPrescriptionSummary(exercise: WorkoutExercise) {
   switch (getWorkoutExercisePrescriptionType(exercise)) {
+    case "stretch":
+      return `Hold ${exercise.duration || "30 sec"}`;
     case "duration":
       return [exercise.duration, exercise.rpe, exercise.load].filter(Boolean).join(" · ");
     case "distance":
