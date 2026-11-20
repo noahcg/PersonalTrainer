@@ -6,6 +6,7 @@ import { TrainerWorkoutBuilderNav } from "@/components/product/trainer-workout-b
 import { ExerciseMedia } from "@/components/product/exercise-media";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { classificationLabels } from "@/lib/exercise-classification";
 import { getTrainerExerciseById } from "@/lib/exercises";
 
 export default async function TrainerExerciseDetailPage({
@@ -19,6 +20,8 @@ export default async function TrainerExerciseDetailPage({
   if (!exercise) {
     notFound();
   }
+
+  const labels = classificationLabels(exercise);
 
   return (
     <AppShell
@@ -60,7 +63,7 @@ export default async function TrainerExerciseDetailPage({
                   <Badge variant={exercise.editable ? "sage" : "default"}>
                     {exercise.editable ? "Trainer exercise" : "Global reference"}
                   </Badge>
-                  <Badge variant="bronze">{exercise.category}</Badge>
+                  <Badge variant="bronze">{labels.type}</Badge>
                 </div>
                 <h2 className="mt-5 max-w-3xl font-serif text-4xl font-semibold leading-[0.98] tracking-[-0.035em] sm:text-6xl">
                   {exercise.name}
@@ -73,8 +76,9 @@ export default async function TrainerExerciseDetailPage({
               <aside className="border-t border-white/10 bg-white/[0.04] p-6 sm:p-9 lg:border-l lg:border-t-0">
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-bronze-200/80">At a glance</p>
                 <div className="mt-5 divide-y divide-white/10">
-                  <MiniPanel icon={Dumbbell} label="Equipment" value={exercise.equipment.join(", ") || "Bodyweight"} />
-                  <MiniPanel icon={Sparkles} label="Primary focus" value={exercise.muscleGroups.join(", ") || "Not specified"} />
+                  <MiniPanel icon={Sparkles} label="Movement / focus" value={labels.focus} />
+                  <MiniPanel icon={Dumbbell} label="Equipment" value={labels.equipment.join(", ") || "Needs review"} />
+                  <MiniPanel icon={Sparkles} label="Primary focus" value={labels.muscles.join(", ") || "Not specified"} />
                   <div className="flex items-center justify-between gap-4 py-4">
                     <span className="text-sm text-ivory-50/55">Difficulty</span>
                     <span className="text-sm font-semibold text-ivory-50">{exercise.difficulty}</span>

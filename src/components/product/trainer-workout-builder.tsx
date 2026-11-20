@@ -11,8 +11,8 @@ import {
   ArrowUp,
   ArrowDown,
   X,
-  Layers3,
   ListChecks,
+  Layers3,
   MoreHorizontal,
   PencilLine,
   Plus,
@@ -31,10 +31,12 @@ import { Input, Textarea } from "@/components/ui/input";
 import { getExercisePrescriptionType, getWorkoutExercisePrescriptionType, prescriptionTypeLabel } from "@/lib/exercise-prescriptions";
 import type { Exercise, Workout, WorkoutBlock, WorkoutExercise } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useDemoExercises } from "@/components/product/use-demo-exercises";
+import { ExerciseFilters } from "@/components/product/exercise-filters";
+import { classificationLabels, emptyFacets, exerciseSearchText, matchesExercise, type ExerciseFacets } from "@/lib/exercise-classification";
 
 type WizardStepId = "warm-up" | "section-1" | "section-2" | "section-3" | "cooldown";
 type BuilderView = "list" | "builder";
-type ExerciseFilterType = "category" | "pattern" | "tag";
 
 type WizardStep = {
   id: WizardStepId;
@@ -94,24 +96,6 @@ const wizardSteps: WizardStep[] = [
     intent: "Bring the session down and finish cleanly.",
     icon: StretchHorizontal,
   },
-];
-
-const categoryFilters = [
-  { value: "", label: "All" },
-  { value: "Strength", label: "Strength" },
-  { value: "Core", label: "Core" },
-  { value: "Warm Up", label: "Warm Up" },
-  { value: "Cool Down", label: "Cool Down" },
-  { value: "Free Weights", label: "Free Weights" },
-  { value: "Bodyweight", label: "Bodyweight" },
-  { value: "Calisthenics", label: "Calisthenics" },
-  { value: "TRX", label: "TRX" },
-  { value: "Cardio / Conditioning", label: "Conditioning" },
-] as const;
-
-const movementPatternFilters = [
-  { value: "", label: "All" },
-  ...["Squat", "Hinge", "Lunge", "Push", "Pull", "Carry", "Core", "Mobility", "Stretch", "Other"].map((value) => ({ value, label: value })),
 ];
 
 function emptyExerciseForStep(stepId: WizardStepId): WorkoutBlock {
@@ -203,17 +187,7 @@ function createExerciseItem(exercise: Exercise, suffix: number, stepId: WizardSt
 }
 
 function exerciseScoreForStep(exercise: Exercise, stepId: WizardStepId) {
-  const text = [
-    exercise.name,
-    exercise.category,
-    exercise.pattern,
-    exercise.difficulty,
-    ...exercise.muscleGroups,
-    ...exercise.equipment,
-    ...exercise.tags,
-  ]
-    .join(" ")
-    .toLowerCase();
+  const text = exerciseSearchText(exercise);
 
   if (stepId === "warm-up") {
     return Number(text.includes("warm")) * 6 + Number(text.includes("mobility")) * 5 + Number(text.includes("core")) * 3 + Number(exercise.difficulty === "Beginner") * 2;
@@ -234,29 +208,6 @@ function exerciseScoreForStep(exercise: Exercise, stepId: WizardStepId) {
   return Number(text.includes("core")) * 4 + Number(text.includes("conditioning")) * 4 + Number(text.includes("accessory")) * 3 + Number(text.includes("stability")) * 2;
 }
 
-function compactCategory(category: string) {
-  if (category === "Free Weights (Barbell & Dumbbell Focus)") return "Free Weights";
-  if (category === "Bodyweight (Beginner-Friendly)") return "Bodyweight";
-  if (category === "Gym (Machines & Weights)") return "Gym";
-  if (category === "Calisthenics (Progression-Based Bodyweight)") return "Calisthenics";
-  if (category === "Cardio / Conditioning") return "Conditioning";
-  return category;
-}
-
-function normalizeCategory(category: string) {
-  if (category === "Gym (Machines & Weights)") return "Strength";
-  if (category === "Free Weights (Barbell & Dumbbell Focus)") return "Free Weights";
-  if (category === "Bodyweight (Beginner-Friendly)") return "Bodyweight";
-  if (category === "Calisthenics (Progression-Based Bodyweight)") return "Calisthenics";
-  return category;
-}
-
-function normalizeMovementPattern(pattern: string) {
-  if (["Rotation", "Anti-rotation", "Anti-extension"].includes(pattern)) return "Core";
-  if (pattern === "Activation") return "Mobility";
-  return pattern;
-}
-
 function workoutExerciseCount(workout: Workout) {
   return workout.blocks.reduce((sum, block) => sum + block.exercises.length, 0);
 }
@@ -269,13 +220,14 @@ function errorMessage(error: unknown) {
 
 export function TrainerWorkoutBuilder({
   initialWorkouts,
-  exercises,
+  exercises: initialExercises,
   mode,
 }: {
   initialWorkouts: Workout[];
   exercises: Exercise[];
   mode: "demo" | "supabase";
 }) {
+  const [exercises] = useDemoExercises(initialExercises, mode);
   const [workouts, setWorkouts] = useState(initialWorkouts);
   const [view, setView] = useState<BuilderView>("list");
   const [draft, setDraft] = useState<DraftWorkout>(() => toDraft());
@@ -285,8 +237,8 @@ export function TrainerWorkoutBuilder({
   const [pickedIds, setPickedIds] = useState<string[]>([]);
   const pickerOpener = useRef<HTMLElement | null>(null);
   const pickerSearch = useRef<HTMLDivElement | null>(null);
-  const [exerciseFilterType, setExerciseFilterType] = useState<ExerciseFilterType>("category");
-  const [activeExerciseFilter, setActiveExerciseFilter] = useState("");
+  const [exerciseFacets, setExerciseFacets] = useState<ExerciseFacets>(emptyFacets);
+  const [exerciseLimit, setExerciseLimit] = useState(60);
   const [busy, setBusy] = useState(false);
   const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -297,62 +249,16 @@ export function TrainerWorkoutBuilder({
   const totalExerciseCount = draft.blocks.reduce((total, block) => total + block.exercises.length, 0);
   const isWorkoutComplete = !!draft.name.trim() && totalExerciseCount > 0;
 
-  const recommendedExercises = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  const recommendedExercises = useMemo(() => exercises.filter((exercise) => matchesExercise(exercise, query, exerciseFacets))
+    .sort((a, b) => exerciseScoreForStep(b, activeStepId) - exerciseScoreForStep(a, activeStepId) || a.name.localeCompare(b.name)),
+    [activeStepId, exercises, query, exerciseFacets]);
 
-    return [...exercises]
-      .filter((exercise) => {
-        const searchable = [
-          exercise.name,
-          exercise.category,
-          exercise.pattern,
-          exercise.difficulty,
-          ...exercise.muscleGroups,
-          ...exercise.equipment,
-          ...exercise.tags,
-        ]
-          .join(" ")
-          .toLowerCase();
-        const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
-        const matchesFilter =
-          !activeExerciseFilter ||
-          (exerciseFilterType === "category"
-            ? normalizeCategory(exercise.category) === activeExerciseFilter
-            : exerciseFilterType === "pattern"
-              ? normalizeMovementPattern(exercise.pattern) === activeExerciseFilter
-              : exercise.tags.some((tag) => tag.toLowerCase() === activeExerciseFilter.toLowerCase()));
-
-        return matchesQuery && matchesFilter;
-      })
-      .sort((a, b) => exerciseScoreForStep(b, activeStepId) - exerciseScoreForStep(a, activeStepId) || a.name.localeCompare(b.name));
-  }, [activeExerciseFilter, activeStepId, exerciseFilterType, exercises, query]);
-
-  const exerciseTagFilters = useMemo(
-    () => [
-      { value: "", label: "All" },
-      ...Array.from(new Set(exercises.flatMap((exercise) => exercise.tags.map((tag) => tag.trim())).filter(Boolean)))
-        .sort((a, b) => a.localeCompare(b))
-        .map((tag) => ({ value: tag, label: tag })),
-    ],
-    [exercises],
-  );
-  const visibleExerciseFilters =
-    exerciseFilterType === "category"
-      ? categoryFilters
-      : exerciseFilterType === "pattern"
-        ? movementPatternFilters
-        : exerciseTagFilters;
-
-  function changeExerciseFilterType(filterType: ExerciseFilterType) {
-    setExerciseFilterType(filterType);
-    setActiveExerciseFilter("");
-  }
 
   function startNewWorkout() {
     setDraft(toDraft());
     setActiveStepId("warm-up");
     setQuery("");
-    setActiveExerciseFilter("");
+    setExerciseFacets(emptyFacets);
     setView("builder");
   }
 
@@ -360,7 +266,7 @@ export function TrainerWorkoutBuilder({
     setDraft(toDraft(workout));
     setActiveStepId("warm-up");
     setQuery("");
-    setActiveExerciseFilter("");
+    setExerciseFacets(emptyFacets);
     setView("builder");
   }
 
@@ -371,8 +277,8 @@ export function TrainerWorkoutBuilder({
     }));
   }
 
-  function openPicker(stepId: WizardStepId) {
-    pickerOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  function openPicker(stepId: WizardStepId, trigger: HTMLElement) {
+    pickerOpener.current = trigger;
     setActiveStepId(stepId);
     setPickedIds([]);
     setPickerOpen(true);
@@ -563,7 +469,7 @@ export function TrainerWorkoutBuilder({
                       <p className="mt-1 text-xs text-stone-500">{block.exercises.length ? `${block.exercises.length} exercises` : "Optional section"} · {block.intent}</p>
                     </div>
                   </div>
-                  <Button variant="secondary" size="sm" onClick={() => openPicker(stepId)}><Plus className="size-4" />Add exercises</Button>
+                  <Button variant="secondary" size="sm" onClick={(event) => openPicker(stepId, event.currentTarget)}><Plus className="size-4" />Add exercises</Button>
                 </div>
                 {block.exercises.length ? (
                   <div className="mt-4 space-y-3">
@@ -577,7 +483,7 @@ export function TrainerWorkoutBuilder({
                     ))}
                   </div>
                 ) : (
-                  <button type="button" onClick={() => openPicker(stepId)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500 transition hover:border-bronze-300 hover:bg-bronze-50">
+                  <button type="button" onClick={(event) => openPicker(stepId, event.currentTarget)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500 transition hover:border-bronze-300 hover:bg-bronze-50">
                     <Plus className="size-4" />Choose exercises for {block.label}
                   </button>
                 )}
@@ -588,7 +494,7 @@ export function TrainerWorkoutBuilder({
           <Dialog.Root open={pickerOpen} onOpenChange={setPickerOpen}>
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 z-50 bg-charcoal-950/50 backdrop-blur-sm" />
-              <Dialog.Content onOpenAutoFocus={(event) => { event.preventDefault(); pickerSearch.current?.querySelector("input")?.focus(); }} onCloseAutoFocus={(event) => { event.preventDefault(); pickerOpener.current?.focus(); }} className="fixed inset-2 z-50 flex flex-col overflow-hidden rounded-2xl bg-ivory-50 shadow-xl sm:inset-6 lg:inset-x-[max(1.5rem,calc((100vw-1152px)/2))]">
+              <Dialog.Content onEscapeKeyDown={(event) => { if (event.target instanceof HTMLElement && event.target.matches('[role="combobox"][aria-expanded="true"]')) event.preventDefault(); }} onOpenAutoFocus={(event) => { event.preventDefault(); pickerSearch.current?.querySelector("input")?.focus(); }} onCloseAutoFocus={(event) => { event.preventDefault(); pickerOpener.current?.focus(); }} className="fixed inset-2 z-50 flex flex-col overflow-hidden rounded-2xl bg-ivory-50 shadow-xl sm:inset-6 lg:inset-x-[max(1.5rem,calc((100vw-1152px)/2))]">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="border-b border-stone-200/80 p-5 sm:p-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -600,57 +506,26 @@ export function TrainerWorkoutBuilder({
                 </div>
                 <div ref={pickerSearch} className="relative w-full lg:max-w-md">
                       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
-                      <Input aria-label="Search exercise catalog" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, muscle, equipment, or tag..." className="pl-9" />
+                      <Input aria-label="Search exercise catalog" value={query} onChange={(event) => { setQuery(event.target.value); setExerciseLimit(60); }} placeholder="Search name, muscle, equipment, or tag..." className="pl-9" />
                 </div>
               </div>
-              <div className="mt-5 grid gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex shrink-0 items-center gap-2 text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">
-                    <Layers3 className="size-4" />
-                    Filter catalog
-                  </div>
-                  <div className="flex items-center gap-2" aria-label="Exercise filter type">
-                          {(["category", "pattern", "tag"] as const).map((filterType) => (
-                            <button
-                              key={filterType}
-                              className="shrink-0 whitespace-nowrap"
-                              type="button"
-                              aria-pressed={exerciseFilterType === filterType}
-                              onClick={() => changeExerciseFilterType(filterType)}
-                            >
-                              <Badge variant={exerciseFilterType === filterType ? "dark" : "default"}>
-                                {filterType === "tag" ? "Tags" : filterType === "pattern" ? "Pattern" : "Category"}
-                              </Badge>
-                            </button>
-                          ))}
-                  </div>
-                </div>
-                <div className="no-scrollbar -mx-2 flex gap-2 overflow-x-auto overscroll-x-contain px-2 py-2">
-                        {visibleExerciseFilters.map((filter) => (
-                          <button
-                            key={filter.value || "all"}
-                            className="shrink-0 whitespace-nowrap"
-                            type="button"
-                            aria-pressed={filter.value === activeExerciseFilter}
-                            onClick={() => setActiveExerciseFilter(filter.value)}
-                          >
-                            <Badge variant={filter.value === activeExerciseFilter ? "dark" : "default"}>{filter.label}</Badge>
-                          </button>
-                        ))}
-                </div>
-              </div>
-              <div className="mt-2 flex items-center justify-between gap-2 text-xs text-stone-500"><span>{recommendedExercises.length} exercise options</span>{(query || activeExerciseFilter) && <button type="button" className="font-semibold text-bronze-600" onClick={() => { setQuery(""); setActiveExerciseFilter(""); }}>Clear search & filter</button>}</div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5"><div className="grid gap-3 lg:grid-cols-2">
-              {recommendedExercises.map((exercise) => (
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+              <details className="mb-4 rounded-2xl border border-stone-200 bg-white/70 p-4">
+                <summary className="cursor-pointer text-sm font-semibold">Filter exercises · {recommendedExercises.length} results</summary>
+                <ExerciseFilters value={exerciseFacets} onChange={(next) => { setExerciseFacets(next); setExerciseLimit(60); }} onClear={() => setQuery("")} count={recommendedExercises.length} />
+              </details>
+              <div className="grid gap-3 lg:grid-cols-2">
+              {recommendedExercises.slice(0, exerciseLimit).map((exercise) => (
                 <ExerciseChoice key={exercise.id} exercise={exercise} selected={pickedIds.includes(exercise.id)} alreadyAdded={activeBlock.exercises.some((item) => item.exerciseId === exercise.id)} onToggle={() => togglePick(exercise.id)} />
               ))}
               {!recommendedExercises.length ? (
                 <div className="col-span-full rounded-2xl border border-dashed border-stone-200 bg-stone-50/80 p-8 text-center text-sm text-stone-500">
-                  No exercises match this view. Try another search or filter.
+                  No exercises match these filters. Clear filters or try another search.
                 </div>
               ) : null}
             </div>
+              {recommendedExercises.length > exerciseLimit && <Button variant="secondary" className="mt-4" onClick={() => setExerciseLimit((limit) => limit + 60)}>Show more exercises</Button>}
             </div>
           </div>
           <div className="shrink-0 border-t border-stone-200 bg-white p-4 sm:p-5">
@@ -909,9 +784,8 @@ function ExerciseChoice({ exercise, selected, alreadyAdded, onToggle }: { exerci
       <ExerciseThumb exercise={exercise} />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-charcoal-950">{exercise.name}</p>
-        <p className="mt-1 text-xs text-stone-500">{compactCategory(exercise.category)} · {prescriptionTypeLabel(getExercisePrescriptionType(exercise))}</p>
-        <p className="mt-1 text-xs text-stone-500">{exercise.muscleGroups.join(", ")} · {exercise.equipment.join(", ") || "No equipment"}</p>
-        {exercise.tags.length > 0 && <p className="mt-2 text-xs text-bronze-600">{exercise.tags.join(" · ")}</p>}
+        <p className="mt-1 text-xs text-stone-500">{classificationLabels(exercise).type} · {classificationLabels(exercise).focus} · {prescriptionTypeLabel(getExercisePrescriptionType(exercise))}</p>
+        <p className="mt-1 text-xs text-stone-500">{classificationLabels(exercise).muscles.join(", ")} · {classificationLabels(exercise).equipment.join(", ") || "Equipment needs review"}</p>
         {alreadyAdded && <p className="mt-2 text-xs font-medium text-sage-700">Already in this section</p>}
       </div>
       <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", selected ? "border-bronze-600 bg-bronze-600 text-white" : "border-stone-300")}>

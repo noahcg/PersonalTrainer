@@ -2,16 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { PencilLine } from "lucide-react";
 import type { Exercise } from "@/lib/types";
+import { classificationLabels, getClassification } from "@/lib/exercise-classification";
 import { cn } from "@/lib/utils";
-
-function compactCategory(category: string) {
-  if (category === "Free Weights (Barbell & Dumbbell Focus)") return "Free Weights";
-  if (category === "Bodyweight (Beginner-Friendly)") return "Bodyweight";
-  if (category === "Gym (Machines & Weights)") return "Gym";
-  if (category === "Calisthenics (Progression-Based Bodyweight)") return "Calisthenics";
-  if (category === "Cardio / Conditioning") return "Conditioning";
-  return category;
-}
 
 export function ExerciseCard({
   exercise,
@@ -22,10 +14,11 @@ export function ExerciseCard({
   exercise: Exercise;
   href: string;
   canEdit?: boolean;
-  onEdit?: () => void;
+  onEdit?: (trigger: HTMLButtonElement) => void;
 }) {
-  const muscles = exercise.muscleGroups.slice(0, 2).join(", ");
-  const equipment = exercise.equipment.slice(0, 2).join(", ");
+  const labels = classificationLabels(exercise);
+  const muscles = labels.muscles.slice(0, 2).join(", ");
+  const equipment = labels.equipment.slice(0, 2).join(", ");
 
   return (
     <article className="group relative h-24 border-b border-stone-200/80 bg-transparent transition hover:bg-white/70">
@@ -34,31 +27,26 @@ export function ExerciseCard({
         className="grid h-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)_3rem] items-center gap-3 px-2 py-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-bronze-500 sm:grid-cols-[5rem_minmax(0,1.45fr)_minmax(7rem,0.8fr)_3rem] lg:grid-cols-[5rem_minmax(0,1.4fr)_minmax(8rem,0.75fr)_minmax(8rem,0.8fr)_minmax(7rem,0.65fr)_3rem]"
       >
         <div className="relative size-20 overflow-hidden bg-stone-100">
-          <Image
+          {exercise.demoUrl ? <Image
             src={exercise.demoUrl}
             alt={exercise.name}
             fill
             sizes="80px"
             className="object-cover transition duration-500 group-hover:scale-105"
-          />
+          /> : <div className="grid h-full place-items-center text-xs text-stone-500">No media</div>}
         </div>
 
         <div className="min-w-0">
-          <div className="flex min-w-0 items-center gap-2">
-            <h3 className="truncate text-sm font-semibold text-charcoal-950 sm:text-base">{exercise.name}</h3>
-            <span
-              title={`Pattern: ${exercise.pattern}`}
-              className="hidden shrink-0 rounded-sm bg-charcoal-950 px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-ivory-50 sm:inline"
-            >
-              {exercise.pattern}
-            </span>
-          </div>
-          <p className="mt-1 line-clamp-2 text-xs leading-5 text-stone-500">{exercise.instructions}</p>
+          <h3 title={exercise.name} className="line-clamp-2 text-sm font-semibold leading-5 text-charcoal-950 sm:text-base">{exercise.name}</h3>
+          <p className="mt-1 truncate text-xs leading-5 text-stone-600" title={labels.focus}>
+            {labels.focus === "Focus not set" ? labels.type : labels.focus}
+            <span className="sm:hidden"> · {equipment || "Equipment needs review"}</span>
+          </p>
         </div>
 
         <div className="hidden min-w-0 text-sm sm:block">
-          <p className="truncate font-medium text-charcoal-950">{compactCategory(exercise.category)}</p>
-          <p className="mt-1 text-xs text-stone-500">{exercise.difficulty}</p>
+          <p className="truncate font-medium text-charcoal-950">{labels.type}</p>
+          <p className="mt-1 text-xs text-stone-500">{exercise.difficulty}{getClassification(exercise).review.length > 0 ? " · Review needed" : ""}</p>
         </div>
 
         <div className="hidden min-w-0 text-sm lg:block">
@@ -67,7 +55,7 @@ export function ExerciseCard({
         </div>
 
         <div className="hidden min-w-0 text-sm lg:block">
-          <p className="truncate text-stone-700">{equipment || "No equipment"}</p>
+          <p className="truncate text-stone-700">{equipment || "Needs review"}</p>
           <p className="mt-1 text-xs text-stone-500">{canEdit ? "Custom" : "Reference"}</p>
         </div>
 
@@ -79,7 +67,7 @@ export function ExerciseCard({
           type="button"
           aria-label={`Edit ${exercise.name}`}
           title="Edit exercise"
-          onClick={onEdit}
+          onClick={(event) => onEdit?.(event.currentTarget)}
           className={cn(
             "grid size-9 place-items-center border border-stone-200 bg-white/85 text-charcoal-950 shadow-sm transition",
             "hover:-translate-y-0.5 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-bronze-500",

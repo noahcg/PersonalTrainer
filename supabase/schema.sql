@@ -57,6 +57,8 @@ create table public.clients (
 );
 
 create table public.exercises (
+  -- Apply exercise-classification-migration.sql after this schema to install validation.
+  classification jsonb,
   id uuid primary key default gen_random_uuid(),
   trainer_id uuid references public.trainers(id) on delete cascade,
   name text not null,

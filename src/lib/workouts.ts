@@ -2,7 +2,8 @@ import { clients as demoClients, workouts as demoWorkouts } from "@/lib/demo-dat
 import { isSupabaseConfigured } from "@/lib/auth-server";
 import { createAdminClient, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
-import { getExercisePrescriptionType, parseExercisePrescriptionType } from "@/lib/exercise-prescriptions";
+import { parseExercisePrescriptionType } from "@/lib/exercise-prescriptions";
+import { fromExerciseRow, getExerciseRowsByIds, type ExerciseRow } from "@/lib/exercises";
 import type { Exercise, Plan, Workout, WorkoutAssignment, WorkoutBlock, WorkoutCheckIn, WorkoutExercise } from "@/lib/types";
 
 type WorkoutRow = {
@@ -232,7 +233,7 @@ export async function getTrainerWorkouts() {
   if (!trainerId) return { mode: "supabase" as const, workouts: [] as Workout[] };
   const db = hasSupabaseAdminEnv() ? createAdminClient() : supabase;
 
-  const [{ data: workoutRows }, { data: blockRows }, { data: itemRows }, { data: exerciseRows }] = await Promise.all([
+  const [{ data: workoutRows }, { data: blockRows }, { data: itemRows }] = await Promise.all([
     db
       .from("workouts")
       .select("id, training_plan_id, name, phase_label, warmup, cooldown, coach_notes")
@@ -242,8 +243,8 @@ export async function getTrainerWorkouts() {
     db
       .from("workout_exercises")
       .select("id, workout_block_id, exercise_id, sets, reps, tempo, rest_time, rpe_target, load_guidance, distance, duration, prescription_type, notes, position"),
-    db.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, prescription_type, is_global"),
   ]);
+  const exerciseRows = await getExerciseRowsByIds(db, (itemRows ?? []).map((item) => item.exercise_id as string));
 
   const workoutIds = (workoutRows ?? []).map((row: { id: string }) => row.id);
   const [{ data: assignmentRows }, { data: logRows }] = workoutIds.length
@@ -265,31 +266,7 @@ export async function getTrainerWorkouts() {
   const exercisesById = new Map(
     (exerciseRows ?? []).map((row: Record<string, unknown>) => [
       row.id as string,
-      {
-        id: row.id as string,
-        name: row.name as string,
-        category: (row.category as string) ?? "",
-        muscleGroups: (row.muscle_groups as string[]) ?? [],
-        equipment: (row.equipment as string[]) ?? [],
-        pattern: (row.movement_pattern as string) ?? "General",
-        difficulty:
-          row.difficulty === "advanced"
-            ? "Advanced"
-            : row.difficulty === "intermediate"
-              ? "Intermediate"
-              : "Beginner",
-        instructions: (row.instructions as string) ?? "",
-        cues: (row.coaching_cues as string[]) ?? [],
-        mistakes: (row.mistakes_to_avoid as string[]) ?? [],
-        substitutions: (row.substitutions as string[]) ?? [],
-        demoUrl: (row.demo_url as string) ?? "",
-        tags: [],
-        prescriptionType: getExercisePrescriptionType({
-          category: (row.category as string) ?? "",
-          prescriptionType: parseExercisePrescriptionType(row.prescription_type),
-        }),
-        editable: !(row.is_global as boolean),
-      } satisfies Exercise,
+      fromExerciseRow(row as ExerciseRow),
     ]),
   );
 
@@ -353,15 +330,15 @@ export async function getClientWorkouts() {
         .order("created_at", { ascending: false })
     : Promise.resolve({ data: [] as WorkoutRow[] });
 
-  const [{ data: planWorkoutRows }, { data: directWorkoutRows }, { data: blockRows }, { data: itemRows }, { data: exerciseRows }] = await Promise.all([
+  const [{ data: planWorkoutRows }, { data: directWorkoutRows }, { data: blockRows }, { data: itemRows }] = await Promise.all([
     planWorkoutQuery,
     directWorkoutQuery,
     db.from("workout_blocks").select("id, workout_id, label, intent, position"),
     db
       .from("workout_exercises")
       .select("id, workout_block_id, exercise_id, sets, reps, tempo, rest_time, rpe_target, load_guidance, distance, duration, prescription_type, notes, position"),
-    db.from("exercises").select("id, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, prescription_type, is_global"),
   ]);
+  const exerciseRows = await getExerciseRowsByIds(db, (itemRows ?? []).map((item) => item.exercise_id as string));
 
   const workoutRowsById = new Map<string, WorkoutRow>();
   for (const row of [...((directWorkoutRows ?? []) as WorkoutRow[]), ...((planWorkoutRows ?? []) as WorkoutRow[])]) {
@@ -372,30 +349,7 @@ export async function getClientWorkouts() {
   const exercisesById = new Map(
     (exerciseRows ?? []).map((row: Record<string, unknown>) => [
       row.id as string,
-      {
-        id: row.id as string,
-        name: row.name as string,
-        category: (row.category as string) ?? "",
-        muscleGroups: (row.muscle_groups as string[]) ?? [],
-        equipment: (row.equipment as string[]) ?? [],
-        pattern: (row.movement_pattern as string) ?? "General",
-        difficulty:
-          row.difficulty === "advanced"
-            ? "Advanced"
-            : row.difficulty === "intermediate"
-              ? "Intermediate"
-              : "Beginner",
-        instructions: (row.instructions as string) ?? "",
-        cues: (row.coaching_cues as string[]) ?? [],
-        mistakes: (row.mistakes_to_avoid as string[]) ?? [],
-        substitutions: (row.substitutions as string[]) ?? [],
-        demoUrl: (row.demo_url as string) ?? "",
-        tags: [],
-        prescriptionType: getExercisePrescriptionType({
-          category: (row.category as string) ?? "",
-          prescriptionType: parseExercisePrescriptionType(row.prescription_type),
-        }),
-      } satisfies Exercise,
+      fromExerciseRow(row as ExerciseRow),
     ]),
   );
 

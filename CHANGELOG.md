@@ -8,6 +8,30 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.38.0] - 2026-11-20
+
+- Separated exercise type, movement/focus, equipment, target areas, and common use into controlled, searchable classifications.
+- Unified library and workout-picker filters, including TRX/suspension aliases, combined facets, active filter chips, and clear-all actions.
+- Grouped exercise editing into details, programming, and coaching reference, with keyboard-friendly selections, validation, and unsaved-change protection.
+- Added an additive classification migration and dry-run-first, idempotent backfill; retained legacy classifications, tags, exercise IDs, workout references, and existing coaching and prescription data.
+
+## [0.37.8] - 2026-11-20
+
+- Corrected the homepage certification from NASM to AFAA.
+
+## [0.37.7] - 2026-11-20
+
+- Highlighted the current page in public desktop and mobile navigation with a soft background, a darker hover state, and an accessible current-page indicator.
+
+## [0.37.6] - 2026-11-20
+
+- Added Home as the first link in public desktop and mobile navigation, with the mobile menu retained through narrow tablet widths.
+
+## [0.37.5] - 2026-11-16
+
+- Refreshed the lower homepage with Nick’s training approach and focused the trainer and pricing pages on distinct biography and package details, including Nick’s career history.
+- Rebalanced the trainer page into two continuous columns, bringing the biography alongside the portrait and removing excess empty space.
+
 ## [0.37.4] - 2026-11-11
 
 - Aligned the pricing card sections for a more balanced desktop layout.

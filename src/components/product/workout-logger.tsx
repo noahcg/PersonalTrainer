@@ -1,5 +1,7 @@
 "use client";
 
+import { classificationLabels } from "@/lib/exercise-classification";
+
 import Image from "next/image";
 import { ExerciseMedia } from "@/components/product/exercise-media";
 import Link from "next/link";
@@ -599,8 +601,8 @@ export function WorkoutLogger({ workout }: { workout: Workout }) {
                         </div>
                         <div className="flex-1 p-4">
                           <div className="flex flex-wrap gap-2">
-                            <Badge variant="bronze">{reference.pattern}</Badge>
-                            <Badge>{reference.equipment.join(", ")}</Badge>
+                            <Badge variant="bronze">{classificationLabels(reference).focus}</Badge>
+                            <Badge>{classificationLabels(reference).equipment.join(", ") || "Equipment needs review"}</Badge>
                           </div>
                           <p className="mt-3 text-sm font-semibold text-charcoal-950">Need a reminder?</p>
                           <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{reference.instructions}</p>
@@ -897,7 +899,7 @@ function ExerciseReferenceDialog({
                   <div className="min-w-0">
                     <p className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-bronze-600">{exercise?.category ?? "Movement"}</p>
                     <h2 className="mt-2 break-words font-serif text-2xl font-semibold leading-tight text-charcoal-950 sm:text-3xl">{title}</h2>
-                    {exercise ? <p className="mt-2 text-sm text-stone-500">{exercise.difficulty} · {exercise.equipment.join(", ") || "Bodyweight"}</p> : null}
+                    {exercise ? <p className="mt-2 text-sm text-stone-500">{exercise.difficulty} · {classificationLabels(exercise).equipment.join(", ") || "Equipment needs review"}</p> : null}
                     {prescription ? (
                       <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {referenceMetrics(prescription).map(([label, value]) => (
