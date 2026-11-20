@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { BadgeDollarSign, LogIn, UserRound } from "lucide-react";
+import { BadgeDollarSign, Home, LogIn, UserRound } from "lucide-react";
 import { NGLogoLockup } from "@/components/brand/ng-logo";
+import { PublicNavLink } from "@/components/marketing/public-nav-link";
 import { brand } from "@/lib/brand";
 import { appVersion } from "@/lib/version";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ export function PublicSiteShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen px-4 py-4 pb-24 sm:px-6 sm:pb-4">
+    <div className="min-h-screen px-4 py-4 pb-24 sm:px-6 md:pb-4">
       <a href="#main-content" className="skip-link">
         Skip to main
       </a>
@@ -23,19 +24,22 @@ export function PublicSiteShell({
             </Link>
             <nav
               aria-label="Public navigation"
-              className="hidden items-center justify-end gap-3 sm:flex"
+              className="hidden items-center justify-end gap-3 md:flex"
             >
-              <Link
+              <Button asChild variant="ghost" className="h-10 px-4">
+                <PublicNavLink href="/">Home</PublicNavLink>
+              </Button>
+              <PublicNavLink
                 className="inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-charcoal-950"
                 href="/about"
               >
                 Meet the Trainer
-              </Link>
+              </PublicNavLink>
               <Button asChild variant="ghost" className="h-10 px-4">
-                <Link href="/pricing">Pricing</Link>
+                <PublicNavLink href="/pricing">Pricing</PublicNavLink>
               </Button>
               <Button asChild variant="warm" className="h-10 px-4">
-                <Link href="/login">Login</Link>
+                <PublicNavLink href="/login">Login</PublicNavLink>
               </Button>
             </nav>
           </div>
@@ -58,25 +62,26 @@ export function PublicSiteShell({
       </div>
       <nav
         aria-label="Public mobile navigation"
-        className="fixed inset-x-4 bottom-3 z-50 grid grid-cols-3 gap-1 rounded-full border border-white/70 bg-ivory-50/94 p-2 shadow-soft backdrop-blur-xl sm:hidden"
+        className="fixed inset-x-4 bottom-3 z-50 grid grid-cols-4 gap-1 rounded-full border border-white/70 bg-ivory-50/94 p-2 shadow-soft backdrop-blur-xl md:hidden"
       >
         {[
+          { href: "/", label: "Home", icon: Home },
           { href: "/about", label: "Trainer", icon: UserRound },
           { href: "/pricing", label: "Pricing", icon: BadgeDollarSign },
           { href: "/login", label: "Login", icon: LogIn, featured: true },
         ].map(({ href, label, icon: Icon, featured }) => (
-          <Link
+          <PublicNavLink
             key={href}
             href={href}
             className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-full px-3 text-center text-[11px] font-medium transition ${
               featured
-                ? "bg-bronze-500 text-white shadow-warm"
+                ? "bg-bronze-500 text-white shadow-warm hover:bg-bronze-600"
                 : "text-stone-600 hover:bg-stone-100 hover:text-charcoal-950"
             }`}
           >
             <Icon className="size-4" />
             {label}
-          </Link>
+          </PublicNavLink>
         ))}
       </nav>
     </div>

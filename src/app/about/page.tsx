@@ -1,60 +1,51 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Dumbbell, HeartPulse, MessageCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { PublicSiteShell } from "@/components/marketing/public-site-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-const principles = [
-  {
-    icon: Dumbbell,
-    title: "Strength with structure",
-    description: "Training is built around clear progressions, sound movement, and sessions that stay easy to follow.",
-  },
-  {
-    icon: HeartPulse,
-    title: "Coaching that fits real life",
-    description: "Programming accounts for work schedules, recovery, stress, and the realities that affect consistency.",
-  },
-  {
-    icon: MessageCircle,
-    title: "Useful communication",
-    description: "Clients get straightforward feedback, fast answers, and clear priorities instead of generic motivation.",
-  },
-];
-
 export default function AboutPage() {
   return (
     <PublicSiteShell>
-      <section className="py-12 lg:py-16">
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.68fr)] md:items-start">
-          <div>
+      <section className="py-10 lg:py-12">
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.68fr)] md:items-start md:gap-8 lg:gap-12">
+          <div className="contents md:block">
+            <div className="order-1">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">About the trainer</p>
             <h1 className="mt-5 max-w-3xl font-serif text-4xl font-semibold leading-tight text-charcoal-950 sm:text-5xl">
-              Calm, precise personal training built around real progress.
+              Meet Nick Glushien.
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-stone-600">
-              With over 10 years of experience in the fitness industry, I specialize in helping adults 50+ build
-              strength, improve mobility, and feel confident in their everyday lives.
+              I&apos;m Nick, a personal trainer based in San Diego. My career has taken me from working at an athletic club in Boston to running my own training business.
             </p>
-            <p className="mt-5 max-w-3xl text-base leading-8 text-stone-600">
-              My journey began in Boston at Beacon Hill Athletic Clubs, where I worked my way from the front desk to
-              becoming a certified personal trainer, assistant manager, and group fitness instructor. In 2015, I moved
-              to San Diego and continued helping clients achieve lasting results through personalized training programs
-              designed around their individual goals and needs.
-            </p>
-            <p className="mt-5 max-w-3xl text-base leading-8 text-stone-600">
-              As a husband, father of two, and dedicated coach, I understand how important it is to stay strong,
-              healthy, and active at every stage of life. My approach is personal, supportive, and focused on what works
-              best for you &mdash; not a one-size-fits-all workout.
-            </p>
-            <p className="mt-5 max-w-3xl text-base leading-8 text-stone-600">
-              Whether your goal is weight loss, strength, balance, mobility, or simply feeling better day to day,
-              I&apos;m here to help you succeed.
-            </p>
+            <div className="mt-8">
+              <Button asChild variant="warm" size="lg">
+                <Link href="/pricing">View pricing <ArrowRight className="size-5" /></Link>
+              </Button>
+            </div>
+            </div>
+          <Card className="order-3 p-5 sm:p-6 lg:p-8 md:mt-8">
+            <h2 id="career-heading" className="font-serif text-3xl font-semibold text-charcoal-950">My path into training.</h2>
+            <div className="mt-5 grid gap-4">
+              {[
+                { title: "Starting at the front desk", body: "I got my start at the front desk of Beacon Hill Athletic Clubs in Boston." },
+                { title: "Working throughout the club", body: "At Beacon Hill, I became a certified personal trainer and also worked as an assistant manager and group fitness instructor." },
+                { title: "Continuing in San Diego", body: "In 2015, I moved to San Diego and continued working with clients as a personal trainer." },
+              ].map((item, index) => (
+                <div key={item.title} className="grid gap-3 border-b border-stone-200/80 pb-4 last:border-b-0 last:pb-0 sm:grid-cols-[2.5rem_1fr]">
+                  <span className="text-[0.66rem] uppercase tracking-[0.24em] text-stone-400">0{index + 1}</span>
+                  <div>
+                    <h3 className="text-lg font-semibold text-charcoal-950">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-stone-600">{item.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
           </div>
-          <div className="grid min-w-0 gap-5 md:w-full md:max-w-[420px] md:justify-self-end">
-            <div className="relative h-[360px] w-full overflow-hidden rounded-[1.75rem] border border-white/70 bg-charcoal-950 shadow-soft sm:h-[440px] sm:rounded-[2rem] md:aspect-[4/5] md:h-auto md:min-h-0">
+          <div className="contents md:block md:w-full md:max-w-[420px] md:justify-self-end">
+            <div className="order-2 relative h-[360px] w-full overflow-hidden rounded-[1.75rem] border border-white/70 bg-charcoal-950 shadow-soft sm:h-[440px] sm:rounded-[2rem] md:aspect-[4/5] md:h-auto md:min-h-0">
               <Image
                 src="/images/NickGlushien.PNG"
                 alt="Nick Glushien"
@@ -66,77 +57,17 @@ export default function AboutPage() {
               <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/68 via-charcoal-950/5 to-transparent" />
               <div className="absolute bottom-5 left-5 right-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">Nick Glushien</p>
-                <p className="mt-2 max-w-sm text-sm leading-6 text-ivory-50/72">Personal training built around clear movement, practical strength, and steady accountability.</p>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="pb-12">
-        <div className="grid gap-5 lg:grid-cols-3">
-          {principles.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Card key={item.title} className="p-5 sm:p-6">
-                <div className="grid size-11 place-items-center rounded-full bg-bronze-50">
-                  <Icon className="size-5 text-bronze-600" />
-                </div>
-                <h2 className="mt-5 text-xl font-semibold text-charcoal-950">{item.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-stone-600">{item.description}</p>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="pb-12 lg:pb-16">
-        <div className="relative overflow-hidden rounded-[1.75rem] border border-bronze-300 bg-charcoal-950 p-5 text-ivory-50 shadow-soft sm:p-6 lg:p-8">
-          <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-bronze-400 via-bronze-200 to-sage-200" />
-          <div className="grid gap-8 lg:grid-cols-[0.72fr_1fr] lg:items-start">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-200">How coaching works</p>
-              <h2 className="mt-4 font-serif text-4xl font-semibold leading-tight">A process that starts where you are.</h2>
-              <p className="mt-4 max-w-xl text-sm leading-7 text-ivory-50/70">
-                Training begins with the client&apos;s real life: home setup, schedule, movement comfort, and what they
-                want to feel more confident doing day to day.
-              </p>
-              <div className="mt-6">
-                <Button asChild variant="warm" size="lg">
-                  <Link href="/pricing">
-                    View pricing <ArrowRight className="size-5" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-            <div className="grid gap-4">
-              {[
-                {
-                  title: "Understand the starting point",
-                  body: "Talk through goals, schedule, health history, mobility concerns, available space, and what feels realistic right now.",
-                },
-                {
-                  title: "Build the right first plan",
-                  body: "Create sessions that match the client&apos;s current ability, equipment, confidence, and preferred training environment.",
-                },
-                {
-                  title: "Adjust with real feedback",
-                  body: "Progress the plan over time based on comfort, recovery, consistency, and the practical wins that matter outside the session.",
-                },
-              ].map((item, index) => (
-                <div key={item.title} className="rounded-[1.35rem] border border-white/12 bg-white/8 p-4 sm:p-5">
-                  <div className="flex items-start gap-4">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-full border border-bronze-200/50 text-sm font-semibold text-bronze-200">
-                      0{index + 1}
-                    </span>
-                    <div>
-                      <h3 className="text-lg font-semibold text-ivory-50">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-ivory-50/68">{item.body}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <Card className="order-4 p-5 sm:p-6 md:mt-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">A little about me</p>
+            <h2 className="mt-4 font-serif text-3xl font-semibold text-charcoal-950">
+              Family and fitness.
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-stone-600">
+              I&apos;m a husband and father of two, and I know how much it matters to be able to stay active through different stages of life. That perspective is part of what I bring to my work as a trainer.
+            </p>
+          </Card>
           </div>
         </div>
       </section>

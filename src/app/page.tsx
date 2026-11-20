@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarCheck, HeartPulse, MessageCircle } from "lucide-react";
+import { ArrowRight, House, HeartPulse, UserRoundCheck } from "lucide-react";
 import { brand } from "@/lib/brand";
 import { PublicSiteShell } from "@/components/marketing/public-site-shell";
 import { Button } from "@/components/ui/button";
@@ -8,21 +8,21 @@ import { Card } from "@/components/ui/card";
 export default function Home() {
   const pillars = [
     {
-      label: "Structured programming",
-      detail: "Training is planned with progression, not improvised week to week.",
-      icon: CalendarCheck,
+      label: "Training Comes to You",
+      detail: "I bring the equipment and work with the space you've got. You don't need a home gym to get started.",
+      icon: House,
       tone: "text-bronze-600",
     },
     {
-      label: "Clear support",
-      detail: "Clients always know what to do next and why it matters.",
-      icon: MessageCircle,
+      label: "Your Workout, Not Somebody Else's",
+      detail: "Every session is built around your goals, your abilities, and where you're at that day.",
+      icon: HeartPulse,
       tone: "text-sage-700",
     },
     {
-      label: "Progress you can see",
-      detail: "Simple check-ins and notes keep the next priority obvious.",
-      icon: HeartPulse,
+      label: "Experience That Matters",
+      detail: "I've been AFAA-certified since 2012 and have spent years helping adults over 50 build strength, mobility, and confidence.",
+      icon: UserRoundCheck,
       tone: "text-bronze-600",
     },
   ];
@@ -114,33 +114,33 @@ export default function Home() {
           <Card className="p-5 sm:p-6 lg:p-8">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">How it works</p>
-              <h2 className="mt-4 font-serif text-3xl font-semibold text-charcoal-950">Start simple. Build steadily.</h2>
+              <h2 className="mt-4 font-serif text-3xl font-semibold text-charcoal-950">First we talk. Then we get to work.</h2>
               <p className="mt-4 text-sm leading-6 text-stone-600">
-                Sessions begin with your goals, your space, and what your body is ready for. From there, the plan progresses without making training feel complicated.
+                You don&apos;t have to have everything figured out. We&apos;ll talk about your goals, anything you want me to know about, and what you&apos;d like to accomplish. From there, I&apos;ll put together a plan that fits you, and we&apos;ll build on it together.
               </p>
               <div className="mt-6">
                 <Button asChild variant="secondary">
-                  <Link href="/about">How coaching works</Link>
+                  <Link href="/about">Meet Nick</Link>
                 </Button>
               </div>
             </div>
           </Card>
 
           <Card className="p-5 sm:p-6 lg:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">What to expect</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-bronze-600">WHO I WORK WITH</p>
             <div className="mt-5 grid gap-4">
               {[
                 {
-                  title: "A plan with a clear reason",
-                  body: "Each session has a purpose, with progressions that make sense week to week.",
+                  title: "Getting Back Into Exercise",
+                  body: "Haven't worked out in a while? We'll start with what's manageable and build your confidence as we go.",
                 },
                 {
-                  title: "Adjustments when life changes",
-                  body: "Training can adapt around energy, travel, soreness, schedule shifts, and available equipment.",
+                  title: "Staying Strong After 50",
+                  body: "Strength, balance, and mobility matter. We'll work on helping you keep doing the things you enjoy.",
                 },
                 {
-                  title: "Support that stays useful",
-                  body: "Questions, check-ins, and notes stay focused on what helps you keep moving.",
+                  title: "Ready for the Next Challenge",
+                  body: "Already active and looking for more? We'll make your workouts count and work toward your next goal.",
                 },
               ].map((item, index) => (
                 <div key={item.title} className="grid gap-3 border-b border-stone-200/80 pb-4 last:border-b-0 last:pb-0 sm:grid-cols-[2.5rem_1fr]">

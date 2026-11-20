@@ -6,10 +6,10 @@ const presentation = {
   "once-weekly": {
     eyebrow: "Monthly coaching",
     title: "Monthly Personal Training & Coaching",
-    description: "Build strength, move with more confidence, and know exactly what to do between training sessions. I’ll build your plan around your goals, your schedule, and the equipment you have access to.",
+    description: "A weekly session plus written workouts and online support between visits.",
     frequency: "1x / week",
     features: (sessions: number) => [
-      { title: `${sessions} private, in-person training sessions.`, detail: "I come to you, bring the equipment we need, and coach you through each session." },
+      { title: `${sessions} private, in-person training sessions.`, detail: "" },
       { title: "2 custom written workouts.", detail: "You’ll have clear instructions for two workouts you can do on your own between our sessions." },
       { title: "Online coaching throughout the month.", detail: "I’ll help you stay on track, answer training questions, and adjust your workouts as needed." },
     ],
@@ -18,11 +18,10 @@ const presentation = {
   "twice-weekly": {
     eyebrow: "Build momentum",
     title: "Twice a Week",
-    description: "Train together more often and build a consistent rhythm with one-on-one coaching focused on your goals.",
+    description: "Two private sessions each week for more time training together.",
     frequency: "2x / week",
     features: (sessions: number) => [
-      { title: `${sessions} private, in-person training sessions.`, detail: "I come to you and coach you through focused, one-on-one sessions." },
-      { title: "Training shaped around you.", detail: "We’ll work with your goals, experience, and the equipment available to you." },
+      { title: `${sessions} private, in-person training sessions.`, detail: "" },
       { title: "More hands-on coaching.", detail: "With two sessions a week, we have more time together to build your strength and confidence." },
     ],
     fit: "A good fit if you want more frequent in-person coaching and a steady weekly routine.",
@@ -30,12 +29,11 @@ const presentation = {
   "partner-monthly": {
     eyebrow: "Shared session",
     title: "Partner Training",
-    description: "Train alongside a partner with coaching that helps you both build strength and stay consistent together.",
+    description: "Share your sessions with a friend, partner, or family member.",
     frequency: "Shared training",
     features: (sessions: number) => [
       { title: `${sessions} shared, in-person training sessions.`, detail: "You and your partner train together with me there to guide each session." },
       { title: "Coaching for both of you.", detail: "You’ll each receive equal attention as we work through the session together." },
-      { title: "Training at home.", detail: "I’ll come to you so you can train together in a familiar space." },
     ],
     fit: "A good fit for friends, couples, or training partners who want to work toward their goals together.",
   },
