@@ -8,6 +8,13 @@ This project uses pre-1.0 semver until intentional launch:
 - Minor: user-visible features, workflow changes, schema changes, integrations, and release-prep milestones.
 - Major: reserved for the intentional `1.0.0` launch.
 
+## [0.38.0] - 2026-11-20
+
+- Separated exercise type, movement/focus, equipment, target areas, and common use into controlled, searchable classifications.
+- Unified library and workout-picker filters, including TRX/suspension aliases, combined facets, active filter chips, and clear-all actions.
+- Grouped exercise editing into details, programming, and coaching reference, with keyboard-friendly selections, validation, and unsaved-change protection.
+- Added an additive classification migration and dry-run-first, idempotent backfill; retained legacy classifications, tags, exercise IDs, workout references, and existing coaching and prescription data.
+
 ## [0.37.8] - 2026-11-20
 
 - Corrected the homepage certification from NASM to AFAA.

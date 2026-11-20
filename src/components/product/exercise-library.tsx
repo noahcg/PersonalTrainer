@@ -2,113 +2,19 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "motion/react";
-import { ImagePlus, Layers3, Plus, Search, Trash2, X } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ImagePlus, Plus, Search, Trash2, X } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ExerciseCard } from "@/components/product/exercise-card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input, Textarea } from "@/components/ui/input";
-import { getExercisePrescriptionType, prescriptionTypeLabel } from "@/lib/exercise-prescriptions";
+import { Input } from "@/components/ui/input";
+import { ExerciseEditorFields, emptyDraft, exerciseToDraft, type DraftExercise } from "@/components/product/exercise-editor-fields";
+import { ExerciseFilters } from "@/components/product/exercise-filters";
+import { classificationLabels, emptyFacets, matchesExercise, type ExerciseFacets } from "@/lib/exercise-classification";
+import { coachingLines, exerciseFieldErrors, exerciseInputSchema } from "@/lib/exercise-input";
+import { useDemoExercises, demoExerciseStorageKey as storageKey } from "@/components/product/use-demo-exercises";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
-import type { Exercise, ExercisePrescriptionType } from "@/lib/types";
-
-const categoryOptions = [
-  { value: "Strength", label: "Strength" },
-  { value: "Core", label: "Core" },
-  { value: "Warm Up", label: "Warm Up" },
-  { value: "Cool Down", label: "Cool Down" },
-  { value: "Free Weights", label: "Free Weights" },
-  { value: "Bodyweight", label: "Bodyweight" },
-  { value: "Calisthenics", label: "Calisthenics" },
-  { value: "TRX", label: "TRX" },
-  { value: "Cardio / Conditioning", label: "Conditioning" },
-] as const;
-const movementPatternOptions = [
-  "Squat",
-  "Hinge",
-  "Lunge",
-  "Push",
-  "Pull",
-  "Carry",
-  "Core",
-  "Mobility",
-  "Stretch",
-  "Other",
-] as const;
-const categoryFilters = [
-  { value: "", label: "All" },
-  { value: "Warm Up", label: "Warm Up" },
-  { value: "Cool Down", label: "Cool Down" },
-  { value: "Free Weights", label: "Free Weights" },
-  { value: "Bodyweight", label: "Bodyweight" },
-  { value: "Calisthenics", label: "Calisthenics" },
-  { value: "TRX", label: "TRX" },
-  { value: "Cardio / Conditioning", label: "Conditioning" },
-] as const;
-const patternFilters = [{ value: "", label: "All" }, ...movementPatternOptions.map((pattern) => ({ value: pattern, label: pattern }))];
-const storageKey = "nick-glushien-demo-exercises";
-const fallbackDemoUrl =
-  "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80";
-
-type DraftExercise = {
-  name: string;
-  category: string;
-  muscleGroups: string;
-  equipment: string;
-  pattern: string;
-  prescriptionType: ExercisePrescriptionType;
-  difficulty: Exercise["difficulty"];
-  instructions: string;
-  cues: string;
-  mistakes: string;
-  substitutions: string;
-  demoUrl: string;
-  tags: string;
-};
-
-type FilterType = "category" | "pattern";
-
-const emptyDraft: DraftExercise = {
-  name: "",
-  category: "Strength",
-  muscleGroups: "",
-  equipment: "",
-  pattern: "Push",
-  prescriptionType: "strength",
-  difficulty: "Beginner",
-  instructions: "",
-  cues: "",
-  mistakes: "",
-  substitutions: "",
-  demoUrl: "",
-  tags: "",
-};
-
-function splitList(value: string) {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function normalizeCategory(value: string) {
-  if (categoryOptions.some((option) => option.value === value)) return value;
-
-  if (value === "Gym (Machines & Weights)") return "Strength";
-  if (value === "Free Weights (Barbell & Dumbbell Focus)") return "Free Weights";
-  if (value === "Bodyweight (Beginner-Friendly)") return "Bodyweight";
-  if (value === "Calisthenics (Progression-Based Bodyweight)") return "Calisthenics";
-
-  return "Strength";
-}
-
-function normalizeMovementPattern(value: string) {
-  if (movementPatternOptions.includes(value as (typeof movementPatternOptions)[number])) return value;
-  if (["Rotation", "Anti-rotation", "Anti-extension"].includes(value)) return "Core";
-  if (value === "Activation") return "Mobility";
-  return "Other";
-}
+import type { Exercise } from "@/lib/types";
 
 function deleteErrorMessage(error: unknown) {
   if (typeof error === "object" && error && "code" in error && error.code === "23503") {
@@ -165,16 +71,21 @@ async function uploadExerciseImage(file: File) {
 export function ExerciseLibrary({
   initialExercises,
   mode,
+  loadError,
 }: {
   initialExercises: Exercise[];
   mode: "demo" | "supabase";
+  loadError?: string;
 }) {
-  const [exercises, setExercises] = useState(initialExercises);
+  const [exercises, setExercises] = useDemoExercises(initialExercises, mode);
   const [query, setQuery] = useState("");
-  const [filterType, setFilterType] = useState<FilterType>("category");
-  const [activeFilter, setActiveFilter] = useState("");
+  const [facets, setFacets] = useState<ExerciseFacets>(emptyFacets);
+  const [visibleCount, setVisibleCount] = useState(60);
+  const dialogOpener = useRef<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DraftExercise>(emptyDraft);
+  const [baselineDraft, setBaselineDraft] = useState(emptyDraft);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingCanDelete, setEditingCanDelete] = useState(false);
   const [pendingDemoFile, setPendingDemoFile] = useState<File | null>(null);
@@ -182,101 +93,43 @@ export function ExerciseLibrary({
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const dirty = JSON.stringify(draft) !== JSON.stringify(baselineDraft);
   useEffect(() => {
-    if (mode !== "demo") return;
+    if (!open || !dirty) return;
+    const protect = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", protect);
+    return () => window.removeEventListener("beforeunload", protect);
+  }, [dirty, open]);
 
-    const timeout = window.setTimeout(() => {
-      const stored = window.localStorage.getItem(storageKey);
-      if (!stored) return;
-
-      try {
-        setExercises(JSON.parse(stored) as Exercise[]);
-      } catch {
-        window.localStorage.removeItem(storageKey);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timeout);
-  }, [mode]);
-
-  const visibleExercises = useMemo(() => {
-    const normalizedQuery = query.toLowerCase().trim();
-
-    return exercises.filter((exercise) => {
-      const searchable = [
-        exercise.name,
-        exercise.category,
-        exercise.pattern,
-        exercise.difficulty,
-        ...exercise.muscleGroups,
-        ...exercise.equipment,
-        ...exercise.tags,
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
-      const matchesFilter =
-        !activeFilter ||
-        (filterType === "category"
-          ? normalizeCategory(exercise.category) === activeFilter
-          : normalizeMovementPattern(exercise.pattern) === activeFilter);
-
-      return matchesQuery && matchesFilter;
-    });
-  }, [activeFilter, exercises, filterType, query]);
-
-  const visibleFilters = filterType === "category" ? categoryFilters : patternFilters;
-
-  function changeFilterType(nextFilterType: FilterType) {
-    setFilterType(nextFilterType);
-    setActiveFilter("");
-  }
+  const visibleExercises = useMemo(() => exercises.filter((exercise) => matchesExercise(exercise, query, facets)), [exercises, query, facets]);
+  function updateFacets(next: ExerciseFacets) { setFacets(next); setVisibleCount(60); }
+  const original = editingId ? exercises.find((exercise) => exercise.id === editingId) : undefined;
 
   function updateDraft<K extends keyof DraftExercise>(key: K, value: DraftExercise[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
-  function toExerciseFromDraft(id: string) {
+  function toExerciseFromDraft(id: string): Exercise {
+    const labels = classificationLabels({ ...emptyDraft, ...original, name: draft.name, classification: draft.classification, category: "", pattern: "", equipment: [], muscleGroups: [], tags: [] });
     return {
-      id,
-      name: draft.name.trim(),
-      category: normalizeCategory(draft.category),
-      muscleGroups: splitList(draft.muscleGroups),
-      equipment: splitList(draft.equipment),
-      pattern: normalizeMovementPattern(draft.pattern),
-      prescriptionType: draft.prescriptionType,
-      difficulty: draft.difficulty,
-      instructions: draft.instructions.trim() || "Add detailed instructions before assigning this exercise.",
-      cues: splitList(draft.cues),
-      mistakes: splitList(draft.mistakes),
-      substitutions: splitList(draft.substitutions),
-      demoUrl: draft.demoUrl.trim() || fallbackDemoUrl,
-      tags: splitList(draft.tags),
-      editable: true,
-    } satisfies Exercise;
+      ...original, id, name: draft.name.trim(), classification: draft.classification,
+      category: original?.category ?? labels.type, pattern: original?.pattern ?? labels.focus,
+      muscleGroups: original?.muscleGroups ?? labels.muscles, equipment: original?.equipment ?? labels.equipment,
+      prescriptionType: draft.prescriptionType, difficulty: draft.difficulty, instructions: draft.instructions,
+      cues: coachingLines(draft.cues, original?.cues), mistakes: coachingLines(draft.mistakes, original?.mistakes),
+      substitutions: coachingLines(draft.substitutions, original?.substitutions),
+      regressions: coachingLines(draft.regressions, original?.regressions), progressions: coachingLines(draft.progressions, original?.progressions),
+      demoUrl: draft.demoUrl, tags: original?.tags ?? [], editable: original?.editable ?? true,
+    };
   }
 
   function populateDraft(exercise: Exercise) {
-    setDraft({
-      name: exercise.name,
-      category: normalizeCategory(exercise.category),
-      muscleGroups: exercise.muscleGroups.join(", "),
-      equipment: exercise.equipment.join(", "),
-      pattern: normalizeMovementPattern(exercise.pattern),
-      prescriptionType: getExercisePrescriptionType(exercise),
-      difficulty: exercise.difficulty,
-      instructions: exercise.instructions,
-      cues: exercise.cues.join(", "),
-      mistakes: exercise.mistakes.join(", "),
-      substitutions: exercise.substitutions.join(", "),
-      demoUrl: exercise.demoUrl,
-      tags: exercise.tags.join(", "),
-    });
-    setPendingDemoFile(null);
+    const next = exerciseToDraft(exercise);
+    setDraft(next); setBaselineDraft(next); setErrors({}); setMessage(null); setPendingDemoFile(null);
   }
 
-  function beginEditingExercise(exercise: Exercise) {
+  function beginEditingExercise(exercise: Exercise, trigger: HTMLElement) {
+    dialogOpener.current = trigger;
     populateDraft(exercise);
     setEditingId(exercise.id);
     setEditingCanDelete(exercise.editable ?? mode === "demo");
@@ -285,12 +138,16 @@ export function ExerciseLibrary({
 
   function resetDialogState() {
     setDraft(emptyDraft);
+    setBaselineDraft(emptyDraft);
+    setErrors({});
     setEditingId(null);
     setEditingCanDelete(false);
     setPendingDemoFile(null);
   }
 
   function handleDialogOpenChange(nextOpen: boolean) {
+    if (saving || deleting) return;
+    if (!nextOpen && dirty && !window.confirm("Discard unsaved exercise changes?")) return;
     setOpen(nextOpen);
     if (!nextOpen) {
       resetDialogState();
@@ -336,59 +193,12 @@ export function ExerciseLibrary({
   }
 
   async function persistExercise(nextExercise: Exercise, currentEditingId: string | null) {
-    const { supabase, trainerId } = await resolveTrainerId();
-
-    if (currentEditingId) {
-      const response = await fetch(`/api/trainer/exercises/${currentEditingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nextExercise),
-      });
-      const payload = (await response.json()) as { error?: string; id?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Unable to update exercise.");
-      }
-
-      return payload.id ?? currentEditingId;
-    }
-
-    const payload = {
-      trainer_id: trainerId,
-      name: nextExercise.name,
-      category: nextExercise.category,
-      muscle_groups: nextExercise.muscleGroups,
-      equipment: nextExercise.equipment,
-      movement_pattern: nextExercise.pattern,
-      difficulty: nextExercise.difficulty.toLowerCase() as "beginner" | "intermediate" | "advanced",
-      instructions: nextExercise.instructions,
-      coaching_cues: nextExercise.cues,
-      mistakes_to_avoid: nextExercise.mistakes,
-      substitutions: nextExercise.substitutions,
-      demo_url: nextExercise.demoUrl,
-      prescription_type: nextExercise.prescriptionType,
-      is_global: false,
-    };
-
-    const { data: inserted, error } = await supabase
-      .from("exercises")
-      .insert(payload)
-      .select("id")
-      .single<{ id: string }>();
-
-    if (error || !inserted?.id) throw error ?? new Error("Exercise was not created.");
-
-    if (nextExercise.tags.length) {
-      const { error: tagsError } = await supabase.from("exercise_tags").insert(
-        nextExercise.tags.map((tag) => ({
-          exercise_id: inserted.id,
-          tag,
-        })),
-      );
-      if (tagsError) throw tagsError;
-    }
-
-    return inserted.id;
+    const response = await fetch(currentEditingId ? `/api/trainer/exercises/${currentEditingId}` : "/api/trainer/exercises", {
+      method: currentEditingId ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(nextExercise),
+    });
+    const payload = await response.json();
+    if (!response.ok) { setErrors(payload.fields ?? {}); throw new Error(payload.error ?? "Unable to save exercise."); }
+    return payload as { id: string; classification: Exercise["classification"] };
   }
 
   async function deleteExercise() {
@@ -419,10 +229,10 @@ export function ExerciseLibrary({
       }
 
       const nextExercises = exercises.filter((item) => item.id !== editingId);
-      setExercises(nextExercises);
       if (mode === "demo") {
         window.localStorage.setItem(storageKey, JSON.stringify(nextExercises));
       }
+      setExercises(nextExercises);
 
       resetDialogState();
       setOpen(false);
@@ -438,7 +248,13 @@ export function ExerciseLibrary({
   async function createExercise(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!draft.name.trim()) return;
+    const candidate = toExerciseFromDraft(editingId ?? `custom-${crypto.randomUUID()}`);
+    const parsed = exerciseInputSchema.safeParse(candidate);
+    const nextErrors = parsed.success ? {} : exerciseFieldErrors(parsed.error);
+    if (!editingId && !draft.classification.exerciseType) nextErrors["classification.exerciseType"] = "Choose an exercise type.";
+    if (!editingId && !draft.classification.equipment.length) nextErrors["classification.equipment"] = "Choose equipment or No equipment.";
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) { setMessage("Check the highlighted fields."); window.setTimeout(() => document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(), 0); return; }
 
     setSaving(true);
     setMessage(null);
@@ -446,14 +262,15 @@ export function ExerciseLibrary({
     try {
       const uploadedDemoUrl = mode === "supabase" && pendingDemoFile ? await uploadExerciseImage(pendingDemoFile) : draft.demoUrl;
       const nextExercise = {
-        ...toExerciseFromDraft(editingId ?? `custom-${Date.now()}`),
-        demoUrl: uploadedDemoUrl.trim() || fallbackDemoUrl,
+        ...candidate,
+        demoUrl: uploadedDemoUrl,
       };
-      const resolvedId = mode === "supabase" ? await persistExercise(nextExercise, editingId) : nextExercise.id;
+      const saved = mode === "supabase" ? await persistExercise(nextExercise, editingId) : { id: nextExercise.id, classification: nextExercise.classification };
       const existingExercise = editingId ? exercises.find((exercise) => exercise.id === editingId) : null;
       const resolvedExercise = {
         ...nextExercise,
-        id: resolvedId,
+        id: saved.id,
+        classification: saved.classification,
         editable: existingExercise?.editable ?? nextExercise.editable,
       };
 
@@ -461,10 +278,10 @@ export function ExerciseLibrary({
         ? exercises.map((exercise) => (exercise.id === editingId ? resolvedExercise : exercise))
         : [resolvedExercise, ...exercises];
 
-      setExercises(nextExercises);
       if (mode === "demo") {
         window.localStorage.setItem(storageKey, JSON.stringify(nextExercises));
       }
+      setExercises(nextExercises);
       setDraft(emptyDraft);
       setEditingId(null);
       setEditingCanDelete(false);
@@ -479,16 +296,19 @@ export function ExerciseLibrary({
     }
   }
 
+  if (loadError) return <Card role="alert" className="p-6"><p>{loadError}</p><Button className="mt-3" variant="secondary" onClick={() => window.location.reload()}>Try again</Button></Card>;
+
   return (
     <>
-      <Card className="mb-5 overflow-hidden p-0">
-        <div className="bg-stone-50/45 p-5 sm:p-6">
+      <Card className="relative z-10 mb-5 p-0">
+        <div className="rounded-[inherit] bg-stone-50/45 p-5 sm:p-6">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
             <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
               <Input
+                aria-label="Search exercises"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => { setQuery(event.target.value); setVisibleCount(60); }}
                 placeholder="Search exercises, patterns, muscles, equipment..."
                 className="pl-11"
               />
@@ -497,7 +317,8 @@ export function ExerciseLibrary({
             <Dialog.Trigger asChild>
               <Button
                 variant="warm"
-                onClick={() => {
+                onClick={(event) => {
+                  dialogOpener.current = event.currentTarget;
                   resetDialogState();
                 }}
               >
@@ -507,7 +328,7 @@ export function ExerciseLibrary({
             </Dialog.Trigger>
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 z-50 bg-charcoal-950/35 backdrop-blur-sm" />
-              <Dialog.Content asChild>
+              <Dialog.Content onEscapeKeyDown={(event) => { if (event.target instanceof HTMLElement && event.target.matches('[role="combobox"][aria-expanded="true"]')) event.preventDefault(); }} asChild onCloseAutoFocus={(event) => { if (dialogOpener.current) { event.preventDefault(); dialogOpener.current.focus(); } }}>
                 <motion.div
                   initial={{ opacity: 0, y: 24, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -532,133 +353,10 @@ export function ExerciseLibrary({
                     </Dialog.Close>
                   </div>
 
-                  <form onSubmit={createExercise} className="mt-6 grid gap-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <label className="grid gap-2 text-sm font-medium">
-                        Name
-                        <Input
-                          required
-                          value={draft.name}
-                          onChange={(event) => updateDraft("name", event.target.value)}
-                          placeholder="Half-kneeling cable press"
-                        />
-                      </label>
-                      <label className="grid gap-2 text-sm font-medium">
-                        Category
-                        <select
-                          value={draft.category}
-                          onChange={(event) => updateDraft("category", event.target.value)}
-                          className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
-                        >
-                          {categoryOptions.map((category) => (
-                            <option key={category.value} value={category.value}>
-                              {category.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="grid gap-2 text-sm font-medium">
-                        Prescription style
-                        <select
-                          value={draft.prescriptionType}
-                          onChange={(event) => updateDraft("prescriptionType", event.target.value as ExercisePrescriptionType)}
-                          className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
-                        >
-                          <option value="strength">{prescriptionTypeLabel("strength")}</option>
-                          <option value="duration">{prescriptionTypeLabel("duration")}</option>
-                          <option value="distance">{prescriptionTypeLabel("distance")}</option>
-                          <option value="intervals">{prescriptionTypeLabel("intervals")}</option>
-                          <option value="stretch">{prescriptionTypeLabel("stretch")}</option>
-                        </select>
-                      </label>
-                      <label className="grid gap-2 text-sm font-medium">
-                        Pattern
-                        <select
-                          value={draft.pattern}
-                          onChange={(event) => updateDraft("pattern", event.target.value)}
-                          className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
-                        >
-                          {movementPatternOptions.map((pattern) => (
-                            <option key={pattern} value={pattern}>
-                              {pattern}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="grid gap-2 text-sm font-medium">
-                        Difficulty
-                        <select
-                          value={draft.difficulty}
-                          onChange={(event) => updateDraft("difficulty", event.target.value as Exercise["difficulty"])}
-                          className="h-11 rounded-2xl border border-stone-200 bg-white/80 px-4 text-sm shadow-inner-soft transition focus-visible:border-bronze-300 focus-visible:ring-4 focus-visible:ring-bronze-100"
-                        >
-                          <option>Beginner</option>
-                          <option>Intermediate</option>
-                          <option>Advanced</option>
-                        </select>
-                      </label>
-                      <label className="grid gap-2 text-sm font-medium">
-                        Muscle groups
-                        <Input
-                          value={draft.muscleGroups}
-                          onChange={(event) => updateDraft("muscleGroups", event.target.value)}
-                          placeholder="Chest, Core, Shoulders"
-                        />
-                      </label>
-                      <label className="grid gap-2 text-sm font-medium">
-                        Equipment
-                        <Input
-                          value={draft.equipment}
-                          onChange={(event) => updateDraft("equipment", event.target.value)}
-                          placeholder="Cable, Bench"
-                        />
-                      </label>
-                    </div>
-
-                    <label className="grid gap-2 text-sm font-medium">
-                      Instructions
-                      <Textarea
-                        required
-                        value={draft.instructions}
-                        onChange={(event) => updateDraft("instructions", event.target.value)}
-                        placeholder="Set up tall, brace, press slightly upward, and return with control."
-                      />
-                    </label>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <label className="grid gap-2 text-sm font-medium">
-                        Coaching cues
-                        <Textarea
-                          value={draft.cues}
-                          onChange={(event) => updateDraft("cues", event.target.value)}
-                          placeholder="Ribs down, Reach long, Slow return"
-                        />
-                      </label>
-                      <label className="grid gap-2 text-sm font-medium">
-                        Mistakes to avoid
-                        <Textarea
-                          value={draft.mistakes}
-                          onChange={(event) => updateDraft("mistakes", event.target.value)}
-                          placeholder="Arching low back, Shrugging, Rushing"
-                        />
-                      </label>
-                      <label className="grid gap-2 text-sm font-medium">
-                        Substitutions
-                        <Textarea
-                          value={draft.substitutions}
-                          onChange={(event) => updateDraft("substitutions", event.target.value)}
-                          placeholder="Band press, Incline push-up"
-                        />
-                      </label>
-                      <label className="grid gap-2 text-sm font-medium">
-                        Tags
-                        <Textarea
-                          value={draft.tags}
-                          onChange={(event) => updateDraft("tags", event.target.value)}
-                          placeholder="upper body, anti-rotation, cable"
-                        />
-                      </label>
-                    </div>
+                  <form onSubmit={createExercise} noValidate aria-busy={saving} className="mt-6 grid gap-5">
+                    <fieldset disabled={saving || deleting} className="contents">
+                    <ExerciseEditorFields draft={draft} onChange={setDraft} errors={errors} original={original} />
+                    {message && <p role="alert" className="rounded-2xl bg-stone-100 p-3 text-sm text-charcoal-950">{message}</p>}
 
                     <div className="grid gap-3 rounded-[1.35rem] border border-stone-200 bg-white/70 p-4">
                       <div className="grid gap-3">
@@ -744,6 +442,7 @@ export function ExerciseLibrary({
                         </Button>
                       </div>
                     </div>
+                    </fieldset>
                   </form>
                 </motion.div>
               </Dialog.Content>
@@ -751,35 +450,7 @@ export function ExerciseLibrary({
           </Dialog.Root>
           </div>
 
-          <div className="mt-4 grid gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex shrink-0 items-center gap-2 text-[0.66rem] uppercase tracking-[0.22em] text-stone-400">
-                <Layers3 className="size-4" />
-                Filters
-              </div>
-              <div className="flex items-center gap-2" aria-label="Filter type">
-                <button className="shrink-0 whitespace-nowrap" type="button" aria-pressed={filterType === "category"} onClick={() => changeFilterType("category")}>
-                  <Badge variant={filterType === "category" ? "dark" : "default"}>Category</Badge>
-                </button>
-                <button className="shrink-0 whitespace-nowrap" type="button" aria-pressed={filterType === "pattern"} onClick={() => changeFilterType("pattern")}>
-                  <Badge variant={filterType === "pattern" ? "dark" : "default"}>Pattern</Badge>
-                </button>
-              </div>
-            </div>
-            <div className="no-scrollbar -mx-2 flex gap-2 overflow-x-auto overscroll-x-contain px-2 py-2">
-              {visibleFilters.map((filter) => (
-                <button
-                  key={filter.value || "all"}
-                  className="shrink-0 whitespace-nowrap"
-                  type="button"
-                  aria-pressed={filter.value === activeFilter}
-                  onClick={() => setActiveFilter(filter.value)}
-                >
-                  <Badge variant={filter.value === activeFilter ? "dark" : "default"}>{filter.label}</Badge>
-                </button>
-              ))}
-            </div>
-          </div>
+          <ExerciseFilters value={facets} onChange={updateFacets} onClear={() => setQuery("")} count={visibleExercises.length} />
         </div>
       </Card>
 
@@ -788,12 +459,12 @@ export function ExerciseLibrary({
           <div className="hidden h-10 grid-cols-[5rem_minmax(0,1.4fr)_minmax(8rem,0.75fr)_minmax(8rem,0.8fr)_minmax(7rem,0.65fr)_3rem] items-center gap-3 border-b border-stone-200/90 bg-stone-50/55 px-2 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-stone-500 lg:grid">
             <span>Demo</span>
             <span>Exercise</span>
-            <span>Category</span>
+            <span>Exercise type</span>
             <span>Muscles</span>
             <span>Equipment</span>
             <span className="sr-only">Actions</span>
           </div>
-          {visibleExercises.map((exercise, index) => (
+          {visibleExercises.slice(0, visibleCount).map((exercise, index) => (
             <motion.div
               key={exercise.id}
               initial={{ opacity: 0, y: 12 }}
@@ -805,24 +476,27 @@ export function ExerciseLibrary({
                 exercise={exercise}
                 href={`/trainer/exercises/${exercise.id}`}
                 canEdit={exercise.editable ?? mode === "demo"}
-                onEdit={() => beginEditingExercise(exercise)}
+                onEdit={(trigger) => beginEditingExercise(exercise, trigger)}
               />
             </motion.div>
           ))}
         </div>
       ) : (
         <Card className="p-8 text-center">
-          <p className="font-serif text-3xl font-semibold">No exercises match that view.</p>
+          <p className="font-serif text-3xl font-semibold">{exercises.length ? "No exercises match these filters." : "Build your exercise library."}</p>
           <p className="mt-2 text-sm text-stone-500">Try a broader search or create the movement you need.</p>
-          <Button className="mt-5" variant="warm" onClick={() => setOpen(true)}>
+          {exercises.length > 0 && <Button className="mt-5 mr-3" variant="secondary" onClick={() => { setQuery(""); updateFacets(emptyFacets); }}>Clear all</Button>}
+          <Button className="mt-5" variant="warm" onClick={() => { resetDialogState(); setOpen(true); }}>
             <Plus className="size-4" />
             Create exercise
           </Button>
         </Card>
       )}
 
-      {message ? (
-        <div className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">
+      {visibleExercises.length > visibleCount && <Button className="mt-4" variant="secondary" onClick={() => setVisibleCount((count) => count + 60)}>Show more exercises</Button>}
+
+      {message && !open ? (
+        <div role="status" className="fixed bottom-24 right-3 z-40 rounded-full bg-charcoal-950 px-4 py-3 text-sm text-ivory-50 shadow-soft lg:right-6">
           {message}
         </div>
       ) : null}

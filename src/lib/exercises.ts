@@ -3,8 +3,12 @@ import { isSupabaseConfigured } from "@/lib/auth-server";
 import { createClient } from "@/lib/supabase-server";
 import { getExercisePrescriptionType } from "@/lib/exercise-prescriptions";
 import type { Exercise } from "@/lib/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-type ExerciseRow = {
+export type ExerciseRow = {
+  classification?: Exercise["classification"];
+  regressions?: string[];
+  progressions?: string[];
   id: string;
   trainer_id: string | null;
   is_global: boolean;
@@ -25,6 +29,9 @@ type ExerciseRow = {
 
 export function fromExerciseRow(row: ExerciseRow): Exercise {
   return {
+    classification: row.classification,
+    regressions: row.regressions ?? [],
+    progressions: row.progressions ?? [],
     id: row.id,
     name: row.name,
     category: row.category,
@@ -43,9 +50,20 @@ export function fromExerciseRow(row: ExerciseRow): Exercise {
     substitutions: row.substitutions ?? [],
     demoUrl: row.demo_url ?? "",
     tags: row.exercise_tags?.map((tag) => tag.tag) ?? [],
-    prescriptionType: getExercisePrescriptionType({ category: row.category, prescriptionType: row.prescription_type ?? undefined }),
+    prescriptionType: getExercisePrescriptionType({ category: row.category, pattern: row.movement_pattern ?? undefined, name: row.name, prescriptionType: row.prescription_type ?? undefined }),
     editable: !row.is_global,
   };
+}
+
+export async function getExerciseRowsByIds(supabase: SupabaseClient, ids: string[]) {
+  const uniqueIds = [...new Set(ids)];
+  const rows: ExerciseRow[] = [];
+  for (let offset = 0; offset < uniqueIds.length; offset += 200) {
+    const { data, error } = await supabase.from("exercises").select("*, exercise_tags(tag)").in("id", uniqueIds.slice(offset, offset + 200));
+    if (error) throw new Error("Exercise references could not be loaded. Please try again.");
+    rows.push(...(data ?? []) as ExerciseRow[]);
+  }
+  return rows;
 }
 
 export async function getTrainerExercises() {
@@ -73,18 +91,17 @@ export async function getTrainerExercises() {
 
   const trainerId = trainer?.id ?? null;
 
-  const { data } = await supabase
-    .from("exercises")
-    .select(
-      "id, trainer_id, is_global, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, prescription_type, exercise_tags(tag)",
-    )
-    .or(trainerId ? `is_global.eq.true,trainer_id.eq.${trainerId}` : "is_global.eq.true")
-    .order("created_at", { ascending: false });
+  const exercises: Exercise[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await supabase.from("exercises").select("*, exercise_tags(tag)")
+      .or(trainerId ? `is_global.eq.true,trainer_id.eq.${trainerId}` : "is_global.eq.true")
+      .order("created_at", { ascending: false }).order("id").range(offset, offset + 499);
+    if (error) return { mode: "supabase" as const, exercises, error: "The exercise library could not be loaded. Please try again." };
+    exercises.push(...(data ?? []).map((row) => fromExerciseRow(row as ExerciseRow)));
+    if (!data || data.length < 500) break;
+  }
+  return { mode: "supabase" as const, exercises };
 
-  return {
-    mode: "supabase" as const,
-    exercises: (data ?? []).map((row) => fromExerciseRow(row as ExerciseRow)),
-  };
 }
 
 export async function getTrainerExerciseById(id: string) {
@@ -112,7 +129,7 @@ export async function getTrainerExerciseById(id: string) {
   const { data } = await supabase
     .from("exercises")
     .select(
-      "id, trainer_id, is_global, name, category, muscle_groups, equipment, movement_pattern, difficulty, instructions, coaching_cues, mistakes_to_avoid, substitutions, demo_url, prescription_type, exercise_tags(tag)",
+      "*, exercise_tags(tag)",
     )
     .eq("id", id)
     .or(trainerId ? `is_global.eq.true,trainer_id.eq.${trainerId}` : "is_global.eq.true")

@@ -1,12 +1,15 @@
 {
   "name": "personal-trainer",
-  "version": "0.37.8",
+  "version": "0.38.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --test tests/*.test.cjs",
+    "exercise:taxonomy:check": "node scripts/generate-exercise-classification-migration.cjs --check",
+    "exercise:backfill": "node scripts/backfill-exercise-classification.cjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",

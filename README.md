@@ -125,6 +125,8 @@ Notes:
 
 For existing Supabase projects, run `supabase/trainer-push-notifications-migration.sql` to add trainer push notification tables.
 
+Exercise classification in 0.38.0 also requires `supabase/exercise-classification-migration.sql`, including after a fresh schema install. It is additive and safe to rerun. See [exercise classification rollout](docs/implementation/exercise-library-classification.md) for the dry-run backfill, legacy mappings, and validation steps.
+
 ## Trainer Appointment Push Reminders
 
 1. Generate VAPID keys with `npx web-push generate-vapid-keys`.

@@ -199,6 +199,9 @@ export type ClientIntake = {
 export type ExercisePrescriptionType = "strength" | "duration" | "distance" | "intervals" | "stretch";
 
 export type Exercise = {
+  classification?: import("./exercise-classification").ExerciseClassification | null;
+  regressions?: string[];
+  progressions?: string[];
   id: string;
   name: string;
   category: string;

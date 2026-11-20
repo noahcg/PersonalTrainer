@@ -4,12 +4,12 @@ import { TrainerWorkoutBuilderNav } from "@/components/product/trainer-workout-b
 import { getTrainerExercises } from "@/lib/exercises";
 
 export default async function ExercisesPage() {
-  const { exercises, mode } = await getTrainerExercises();
+  const { exercises, mode, error } = await getTrainerExercises();
 
   return (
     <AppShell role="trainer" title="Exercise library" eyebrow="Movement library" subtitle="A searchable coaching library with instructions, cues, mistakes, substitutions, regressions, progressions, and demo references.">
       <TrainerWorkoutBuilderNav>
-        <ExerciseLibrary initialExercises={exercises} mode={mode} />
+        <ExerciseLibrary initialExercises={exercises} mode={mode} loadError={error} />
       </TrainerWorkoutBuilderNav>
     </AppShell>
   );
